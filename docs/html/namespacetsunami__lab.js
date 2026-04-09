@@ -1,5 +1,0 @@
-var namespacetsunami__lab =
-[
-    [ "t_idx", "namespacetsunami__lab.html#afd26f38678e954f652489c828656cbca", null ],
-    [ "t_real", "namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9", null ]
-];
