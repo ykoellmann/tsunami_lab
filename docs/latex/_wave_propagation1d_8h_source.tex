@@ -1,0 +1,71 @@
+\doxysection{Wave\+Propagation1d.\+h}
+\hypertarget{_wave_propagation1d_8h_source}{}\label{_wave_propagation1d_8h_source}\index{/Users/koellman/01 Projects/tsunami\_lab/src/patches/WavePropagation1d.h@{/Users/koellman/01 Projects/tsunami\_lab/src/patches/WavePropagation1d.h}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#ifndef\ TSUNAMI\_LAB\_PATCHES\_WAVE\_PROPAGATION\_1D}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#define\ TSUNAMI\_LAB\_PATCHES\_WAVE\_PROPAGATION\_1D}}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#include\ "{}WavePropagation.h"{}}}
+\DoxyCodeLine{00011\ }
+\DoxyCodeLine{00012\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespacetsunami__lab}{tsunami\_lab}}\ \{}
+\DoxyCodeLine{00013\ \ \ \textcolor{keyword}{namespace\ }patches\ \{}
+\DoxyCodeLine{00014\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classtsunami__lab_1_1patches_1_1_wave_propagation1d}{WavePropagation1d}};}
+\DoxyCodeLine{00015\ \ \ \}}
+\DoxyCodeLine{00016\ \}}
+\DoxyCodeLine{00017\ }
+\DoxyCodeLine{00018\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classtsunami__lab_1_1patches_1_1_wave_propagation1d}{tsunami\_lab::patches::WavePropagation1d}}:\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classtsunami__lab_1_1patches_1_1_wave_propagation}{WavePropagation}}\ \{}
+\DoxyCodeLine{00019\ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00021\ \ \ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{short}\ m\_step\ =\ 0;}
+\DoxyCodeLine{00022\ }
+\DoxyCodeLine{00024\ \ \ \ \ \doxymbox{\hyperlink{namespacetsunami__lab_afd26f38678e954f652489c828656cbca}{t\_idx}}\ m\_nCells\ =\ 0;}
+\DoxyCodeLine{00025\ }
+\DoxyCodeLine{00027\ \ \ \ \ \doxymbox{\hyperlink{namespacetsunami__lab_a2db0f215df0d48460ce6a8c1e7bfe5a9}{t\_real}}\ *\ m\_h[2]\ =\ \{\ \textcolor{keyword}{nullptr},\ \textcolor{keyword}{nullptr}\ \};}
+\DoxyCodeLine{00028\ }
+\DoxyCodeLine{00030\ \ \ \ \ \doxymbox{\hyperlink{namespacetsunami__lab_a2db0f215df0d48460ce6a8c1e7bfe5a9}{t\_real}}\ *\ m\_hu[2]\ =\ \{\ \textcolor{keyword}{nullptr},\ \textcolor{keyword}{nullptr}\ \};}
+\DoxyCodeLine{00031\ }
+\DoxyCodeLine{00032\ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00038\ \ \ \ \ \doxymbox{\hyperlink{classtsunami__lab_1_1patches_1_1_wave_propagation1d_a888e18ad0bdf59dd05c05f2dc0f90efb}{WavePropagation1d}}(\ \doxymbox{\hyperlink{namespacetsunami__lab_afd26f38678e954f652489c828656cbca}{t\_idx}}\ i\_nCells\ );}
+\DoxyCodeLine{00039\ }
+\DoxyCodeLine{00043\ \ \ \ \ \doxymbox{\hyperlink{classtsunami__lab_1_1patches_1_1_wave_propagation1d_af9cb88214b84e3c2cabbb8a1daaf4784}{\string~WavePropagation1d}}();}
+\DoxyCodeLine{00044\ }
+\DoxyCodeLine{00050\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classtsunami__lab_1_1patches_1_1_wave_propagation1d_ac1884ddb6a52c08a5b65f60e21f6a547}{timeStep}}(\ \doxymbox{\hyperlink{namespacetsunami__lab_a2db0f215df0d48460ce6a8c1e7bfe5a9}{t\_real}}\ i\_scaling\ );}
+\DoxyCodeLine{00051\ }
+\DoxyCodeLine{00055\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classtsunami__lab_1_1patches_1_1_wave_propagation1d_a3f78574d12eb29fa6076e23004de2d22}{setGhostOutflow}}();}
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00062\ \ \ \ \ \doxymbox{\hyperlink{namespacetsunami__lab_afd26f38678e954f652489c828656cbca}{t\_idx}}\ \doxymbox{\hyperlink{classtsunami__lab_1_1patches_1_1_wave_propagation1d_a5ccb6fa952c6dc7f3f4b42a2a7a0cb27}{getStride}}()\{}
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ m\_nCells+2;}
+\DoxyCodeLine{00064\ \ \ \ \ \}}
+\DoxyCodeLine{00065\ }
+\DoxyCodeLine{00071\ \ \ \ \ \doxymbox{\hyperlink{namespacetsunami__lab_a2db0f215df0d48460ce6a8c1e7bfe5a9}{t\_real}}\ \textcolor{keyword}{const}\ *\ \doxymbox{\hyperlink{classtsunami__lab_1_1patches_1_1_wave_propagation1d_aaffed61d8bfc9b09a7dd127cff7f5815}{getHeight}}()\{}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ m\_h[m\_step]+1;}
+\DoxyCodeLine{00073\ \ \ \ \ \}}
+\DoxyCodeLine{00074\ }
+\DoxyCodeLine{00080\ \ \ \ \ \doxymbox{\hyperlink{namespacetsunami__lab_a2db0f215df0d48460ce6a8c1e7bfe5a9}{t\_real}}\ \textcolor{keyword}{const}\ *\ \doxymbox{\hyperlink{classtsunami__lab_1_1patches_1_1_wave_propagation1d_a4f3fc55be8ff55f4810ca3af4acc659c}{getMomentumX}}()\{}
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ m\_hu[m\_step]+1;}
+\DoxyCodeLine{00082\ \ \ \ \ \}}
+\DoxyCodeLine{00083\ }
+\DoxyCodeLine{00087\ \ \ \ \ \doxymbox{\hyperlink{namespacetsunami__lab_a2db0f215df0d48460ce6a8c1e7bfe5a9}{t\_real}}\ \textcolor{keyword}{const}\ *\ \doxymbox{\hyperlink{classtsunami__lab_1_1patches_1_1_wave_propagation1d_a25430ddf3acbbb98bce9f801b8913e7d}{getMomentumY}}()\{}
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00089\ \ \ \ \ \}}
+\DoxyCodeLine{00090\ }
+\DoxyCodeLine{00097\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classtsunami__lab_1_1patches_1_1_wave_propagation1d_adf9a1009d96ea10d8944f1b83daf5644}{setHeight}}(\ \doxymbox{\hyperlink{namespacetsunami__lab_afd26f38678e954f652489c828656cbca}{t\_idx}}\ \ i\_ix,}
+\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacetsunami__lab_afd26f38678e954f652489c828656cbca}{t\_idx}},}
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacetsunami__lab_a2db0f215df0d48460ce6a8c1e7bfe5a9}{t\_real}}\ i\_h\ )\ \{}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ m\_h[m\_step][i\_ix+1]\ =\ i\_h;}
+\DoxyCodeLine{00101\ \ \ \ \ \}}
+\DoxyCodeLine{00102\ }
+\DoxyCodeLine{00109\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classtsunami__lab_1_1patches_1_1_wave_propagation1d_a0344a1bc28432b38bcce02fd0604b3f1}{setMomentumX}}(\ \doxymbox{\hyperlink{namespacetsunami__lab_afd26f38678e954f652489c828656cbca}{t\_idx}}\ \ i\_ix,}
+\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacetsunami__lab_afd26f38678e954f652489c828656cbca}{t\_idx}},}
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacetsunami__lab_a2db0f215df0d48460ce6a8c1e7bfe5a9}{t\_real}}\ i\_hu\ )\ \{}
+\DoxyCodeLine{00112\ \ \ \ \ \ \ m\_hu[m\_step][i\_ix+1]\ =\ i\_hu;}
+\DoxyCodeLine{00113\ \ \ \ \ \}}
+\DoxyCodeLine{00114\ }
+\DoxyCodeLine{00118\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classtsunami__lab_1_1patches_1_1_wave_propagation1d_ab1387901f780a042d2f1b21b1f95f2bb}{setMomentumY}}(\ \doxymbox{\hyperlink{namespacetsunami__lab_afd26f38678e954f652489c828656cbca}{t\_idx}},}
+\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacetsunami__lab_afd26f38678e954f652489c828656cbca}{t\_idx}},}
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespacetsunami__lab_a2db0f215df0d48460ce6a8c1e7bfe5a9}{t\_real}}\ )\ \{\};}
+\DoxyCodeLine{00121\ \};}
+\DoxyCodeLine{00122\ }
+\DoxyCodeLine{00123\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

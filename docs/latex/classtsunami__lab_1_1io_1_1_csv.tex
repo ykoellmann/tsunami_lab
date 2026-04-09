@@ -1,0 +1,49 @@
+\doxysection{tsunami\+\_\+lab::\+io::\+Csv Class Reference}
+\hypertarget{classtsunami__lab_1_1io_1_1_csv}{}\label{classtsunami__lab_1_1io_1_1_csv}\index{tsunami\_lab::io::Csv@{tsunami\_lab::io::Csv}}
+\doxysubsubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static void \doxymbox{\hyperlink{classtsunami__lab_1_1io_1_1_csv_a4e4243c9c33ccfa4adef35542e846113}{write}} (\doxymbox{\hyperlink{namespacetsunami__lab_a2db0f215df0d48460ce6a8c1e7bfe5a9}{t\+\_\+real}} i\+\_\+dxy, \doxymbox{\hyperlink{namespacetsunami__lab_afd26f38678e954f652489c828656cbca}{t\+\_\+idx}} i\+\_\+nx, \doxymbox{\hyperlink{namespacetsunami__lab_afd26f38678e954f652489c828656cbca}{t\+\_\+idx}} i\+\_\+ny, \doxymbox{\hyperlink{namespacetsunami__lab_afd26f38678e954f652489c828656cbca}{t\+\_\+idx}} i\+\_\+stride, \doxymbox{\hyperlink{namespacetsunami__lab_a2db0f215df0d48460ce6a8c1e7bfe5a9}{t\+\_\+real}} const \texorpdfstring{$\ast$}{*}i\+\_\+h, \doxymbox{\hyperlink{namespacetsunami__lab_a2db0f215df0d48460ce6a8c1e7bfe5a9}{t\+\_\+real}} const \texorpdfstring{$\ast$}{*}i\+\_\+hu, \doxymbox{\hyperlink{namespacetsunami__lab_a2db0f215df0d48460ce6a8c1e7bfe5a9}{t\+\_\+real}} const \texorpdfstring{$\ast$}{*}i\+\_\+hv, std::\+ostream \&io\+\_\+stream)
+\end{DoxyCompactItemize}
+
+
+\label{doc-func-members}
+\Hypertarget{classtsunami__lab_1_1io_1_1_csv_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classtsunami__lab_1_1io_1_1_csv_a4e4243c9c33ccfa4adef35542e846113}\index{tsunami\_lab::io::Csv@{tsunami\_lab::io::Csv}!write@{write}}
+\index{write@{write}!tsunami\_lab::io::Csv@{tsunami\_lab::io::Csv}}
+\doxysubsubsection{\texorpdfstring{write()}{write()}}
+{\footnotesize\ttfamily \label{classtsunami__lab_1_1io_1_1_csv_a4e4243c9c33ccfa4adef35542e846113} 
+void tsunami\+\_\+lab::\+io::\+\+Csv::\+write (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{namespacetsunami__lab_a2db0f215df0d48460ce6a8c1e7bfe5a9}{t\+\_\+real}}}]{i\+\_\+dxy}{, }\item[{\doxymbox{\hyperlink{namespacetsunami__lab_afd26f38678e954f652489c828656cbca}{t\+\_\+idx}}}]{i\+\_\+nx}{, }\item[{\doxymbox{\hyperlink{namespacetsunami__lab_afd26f38678e954f652489c828656cbca}{t\+\_\+idx}}}]{i\+\_\+ny}{, }\item[{\doxymbox{\hyperlink{namespacetsunami__lab_afd26f38678e954f652489c828656cbca}{t\+\_\+idx}}}]{i\+\_\+stride}{, }\item[{\doxymbox{\hyperlink{namespacetsunami__lab_a2db0f215df0d48460ce6a8c1e7bfe5a9}{t\+\_\+real}} const \texorpdfstring{$\ast$}{*}}]{i\+\_\+h}{, }\item[{\doxymbox{\hyperlink{namespacetsunami__lab_a2db0f215df0d48460ce6a8c1e7bfe5a9}{t\+\_\+real}} const \texorpdfstring{$\ast$}{*}}]{i\+\_\+hu}{, }\item[{\doxymbox{\hyperlink{namespacetsunami__lab_a2db0f215df0d48460ce6a8c1e7bfe5a9}{t\+\_\+real}} const \texorpdfstring{$\ast$}{*}}]{i\+\_\+hv}{, }\item[{std::\+ostream \&}]{io\+\_\+stream}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+Writes the data as CSV to the given stream.
+
+
+\begin{DoxyParams}{Parameters}
+{\em i\+\_\+dxy} & cell width in x-\/ and y-\/direction. \\
+\hline
+{\em i\+\_\+nx} & number of cells in x-\/direction. \\
+\hline
+{\em i\+\_\+ny} & number of cells in y-\/direction. \\
+\hline
+{\em i\+\_\+stride} & stride of the data arrays in y-\/direction (x is assumed to be stride-\/1). \\
+\hline
+{\em i\+\_\+h} & water height of the cells; optional:\+ use nullptr if not required. \\
+\hline
+{\em i\+\_\+hu} & momentum in x-\/direction of the cells; optional:\+ use nullptr if not required. \\
+\hline
+{\em i\+\_\+hv} & momentum in y-\/direction of the cells; optional:\+ use nullptr if not required. \\
+\hline
+{\em io\+\_\+stream} & stream to which the CSV-\/data is written.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyAuthor}{Author}
+Alexander Breuer (alex.\+breuer AT uni-\/jena.\+de)
+\end{DoxyAuthor}
+\hypertarget{namespacetsunami__lab_DESCRIPTION}{}\doxysubsection{\texorpdfstring{DESCRIPTION}{DESCRIPTION}}\label{namespacetsunami__lab_DESCRIPTION}
+IO-\/routines for writing a snapshot as Comma Separated Values (CSV). 
+
+The documentation for this class was generated from the following files:\+\begin{DoxyCompactItemize}
+\item 
+/\+\+Users/\+koellman/\+01 Projects/\+tsunami\+\_\+lab/\+src/\+io/\+Csv.\+h\item 
+/\+\+Users/\+koellman/\+01 Projects/\+tsunami\+\_\+lab/\+src/\+io/\+Csv.\+cpp\end{DoxyCompactItemize}
