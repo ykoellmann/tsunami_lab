@@ -15,6 +15,8 @@ namespace tsunami_lab {
 
   //! floating point type
   typedef float t_real;
+
+  constexpr t_real g = 9.80665;
 }
 
 #endif
