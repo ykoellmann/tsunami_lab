@@ -1,5 +1,5 @@
 /**
-* @author Yannik Köllmann (yannik.koellmann AT uni-jena.de)
+ * @author Yannik Köllmann (yannik.koellmann AT uni-jena.de)
  * @author Jan Vogt (jan.vogt AT uni-jena.de)
  * @author Mika Brückner (mika.brueckner AT uni-jena.de)
  * @section DESCRIPTION
@@ -35,4 +35,22 @@ TEST_CASE( "Test the derivation of the FWave speeds.", "[FWaveSpeeds]" ) {
 
   REQUIRE( l_waveSpeedL == Approx( -9.7311093998375095 ) );
   REQUIRE( l_waveSpeedR == Approx(  9.5731051658991654 ) );
+}
+
+TEST_CASE("Test the calculation of the FWave flux.", "[FWaveFlux]") {
+  /* Test case:
+   *  h = 2
+   *  hu = 4
+   *
+   *  expected: f[0] = 4
+   *            f[1] = (4*4)/2 + 0.5 * 9.80665 * 2*2 = 8 + 19.6133 = 27.6133
+   */
+
+  float l_flux[2] = {0};
+  tsunami_lab::solvers::FWave::flux(2,
+                                   4,
+                                        l_flux);
+
+  REQUIRE(l_flux[0] == Approx(4.0f));
+  REQUIRE(l_flux[1] == Approx(27.6133f));
 }
