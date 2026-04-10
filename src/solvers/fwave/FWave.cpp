@@ -112,8 +112,7 @@ void tsunami_lab::solvers::FWave::netUpdates(t_real i_hL,
   // set net-updates depending on wave speeds:
   // A^- delta Q = sum of Z_p where lambda_p < 0  (left-going waves)
   // A^+ delta Q = sum of Z_p where lambda_p > 0 (right-going waves)
-  for (unsigned short l_qt = 0; l_qt < 2; l_qt++)
-  {
+  for (unsigned short l_qt = 0; l_qt < 2; l_qt++){
     // init net updates to zero
     o_netUpdateL[l_qt] = 0;
     o_netUpdateR[l_qt] = 0;
