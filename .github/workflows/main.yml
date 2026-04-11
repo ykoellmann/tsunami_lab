@@ -53,3 +53,39 @@ jobs:
           scons
           ./build/tests
           ./build/tsunami_lab 500
+
+  Docs:
+    runs-on: ubuntu-latest
+    needs: CI
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install doxygen
+          pip install sphinx sphinx-rtd-theme
+
+      - name: Build Doxygen
+        run: |
+          cd docs
+          doxygen Doxyfile
+
+      - name: Build Sphinx
+        run: |
+          cd sphinx
+          make html
+
+      - name: Combine Output
+        run: |
+          mkdir -p public
+          cp -r sphinx/_build/html/* public/
+          cp -r docs/html public/doxygen
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
