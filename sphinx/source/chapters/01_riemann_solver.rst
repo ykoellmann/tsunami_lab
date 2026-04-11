@@ -32,11 +32,61 @@ Unit Tests
 Eigenvalue Verification
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
+Tested via ``[FWaveSpeeds]``: given :math:`h_l = 10, u_l = -3` and :math:`h_r = 9, u_r = 3`,
+the Roe averages are computed as :math:`h^{Roe} = 9.5` and :math:`u^{Roe} = -0.079002...`,
+yielding the eigenvalues:
+
+.. math::
+
+   \lambda_1 = -9.7311093998375095, \quad \lambda_2 = 9.5731051658991654
+
+Additionally, ``[FWaveFlux]`` verifies the flux computation for
+:math:`(h, hu) = (10, -30)` and :math:`(h, hu) = (9, 27)`,
+and ``[FWaveStrengths]`` verifies the wave strength decomposition
+:math:`[\alpha_1, \alpha_2]^T = R^{-1} \cdot \Delta f` for the same input values,
+yielding :math:`\alpha_1 = 33.559...` and :math:`\alpha_2 = 23.441...`.
+
+
 Steady-State Test
 ^^^^^^^^^^^^^^^^^^
 
+Tested as part of ``[FWaveUpdates]``: given :math:`q_l = q_r = [10, 0]^T`,
+the flux jump is zero:
+
+.. math::
+
+   \Delta f = f(q_r) - f(q_l) = 0
+
+Therefore all wave strengths and net-updates are zero up to machine precision:
+
+.. math::
+
+   A^- \Delta Q = A^+ \Delta Q = 0
+
+
 Supersonic Case
 ^^^^^^^^^^^^^^^^
+
+Two supersonic cases are tested as part of ``[FWaveUpdates]``:
+
+**Supersonic right** (:math:`\lambda_1, \lambda_2 > 0`): given :math:`h_l = 1, hu_l = 50`
+and :math:`h_r = 2, hu_r = 100`, the Roe velocity :math:`u^{Roe} = 50` exceeds
+the wave speed :math:`\sqrt{g \cdot h^{Roe}} = \sqrt{9.80665 \cdot 1.5} \approx 3.834`,
+yielding :math:`\lambda_1 \approx 46.165 > 0` and :math:`\lambda_2 \approx 53.835 > 0`.
+Both waves travel to the right, so the left net-update is zero:
+
+.. math::
+
+   A^- \Delta Q = 0, \quad A^+ \Delta Q = \Delta f
+
+**Supersonic left** (:math:`\lambda_1, \lambda_2 < 0`): symmetric case with negated momentum
+:math:`hu_l = -50, hu_r = -100`, yielding :math:`\lambda_1 \approx -53.835 < 0`
+and :math:`\lambda_2 \approx -46.165 < 0`.
+Both waves travel to the left, so the right net-update is zero:
+
+.. math::
+
+   A^+ \Delta Q = 0, \quad A^- \Delta Q = \Delta f
 
 
 Results & Visualizations
@@ -50,4 +100,7 @@ Individual Contributions
   build configuration with SCons, Doxygen setup, initial Catch2 integration and .gitignore setup.
   Implementation of the ``flux`` and ``waveStrengths`` methods for the f-wave solver.
 - **Jan Vogt:** ...
-- **Mika Brückner:** ...
+- **Mika Brückner:** Implementation of the ``waveSpeeds`` and ``netUpdates`` methods
+  for the f-wave solver (task 1.3.1). Build configuration to include the FWave solver
+  and tests (scons). Implementation of unit tests for ``waveSpeeds``, ``flux``, ``waveStrengths``,
+  and ``netUpdates``, including steady-state and supersonic cases (task 1.3.2).
