@@ -37,20 +37,199 @@ TEST_CASE( "Test the derivation of the FWave speeds.", "[FWaveSpeeds]" ) {
   REQUIRE( l_waveSpeedR == Approx(  9.5731051658991654 ) );
 }
 
-TEST_CASE("Test the calculation of the FWave flux.", "[FWaveFlux]") {
+TEST_CASE("Test the derivation of the FWave flux.", "[FWaveFlux]") {
   /* Test case:
-   *  h = 2
-   *  hu = 4
+   *  h = 10
+   *  hu = -30
    *
-   *  expected: f[0] = 4
-   *            f[1] = (4*4)/2 + 0.5 * 9.80665 * 2*2 = 8 + 19.6133 = 27.6133
+   *  expected: f[0] = -30
+   *            f[1] =  (-30)^2 / 10 + 0.5 * 9.80665  * 10^2  = 580.3325
    */
 
   float l_flux[2] = {0};
-  tsunami_lab::solvers::FWave::flux(2,
-                                   4,
+  tsunami_lab::solvers::FWave::flux(10,
+                                   -30,
                                         l_flux);
 
-  REQUIRE(l_flux[0] == Approx(4.0f));
-  REQUIRE(l_flux[1] == Approx(27.6133f));
+  REQUIRE(l_flux[0] == Approx(-30.0f));
+  REQUIRE(l_flux[1] == Approx(580.3325f));
+
+  /* Test case:
+   *  h = 9
+   *  hu = 27
+   *
+   *  expected: f[0] = 27
+   *            f[1] =  (27)^2 / 9 + 0.5 * 9.80665  * 9^2  = 478.169325
+   */
+
+  tsunami_lab::solvers::FWave::flux(9,
+                                   27,
+                                        l_flux);
+
+  REQUIRE(l_flux[0] == Approx(27.0f));
+  REQUIRE(l_flux[1] == Approx(478.169325f));
+}
+
+TEST_CASE("Test the derivation of the FWave wave strength.", "[FWaveStrengths]"){
+  /*
+   * Test case:
+   *  h:   10 | 9
+   *  u:   -3 | 3
+   *  hu: -30 | 27
+   *
+   * The derivation of the FWave speeds (s1, s2) and fluxes (f_l, f_r) is given above.
+   *
+   *  Matrix of right eigenvectors:
+   *
+   *      | 1   1 |
+   *  R = |       |
+   *      | s1 s2 |
+   *
+   * Inversion yields:
+   *
+   * wolframalpha.com query: invert {{1, 1}, {-9.7311093998375095, 9.5731051658991654}}
+   *
+   *        | 0.49590751974393229 -0.051802159398648326 |
+   * Rinv = |                                           |
+   *        | 0.50409248025606771  0.051802159398648326 |
+   *
+   * Multiplication with the jump in fluxes gives the wave strengths:
+   *
+   * wolframalpha.com query: {{0.49590751974393229, -0.051802159398648326}, {0.50409248025606771, 0.051802159398648326}} * {27--30, 478.169325-580.3325}
+   *
+   *        | 27 - -30              |   | 33.55900170142614  |
+   * Rinv * |                       | = |                    |
+   *        | 478.169325 - 580.3325 |   | 23.440998298573856 |
+   */
+  float l_strengthL = 0;
+  float l_strengthR = 0;
+
+  tsunami_lab::solvers::FWave::waveStrengths(10,
+                                             9,
+                                             -30,
+                                             27,
+                                             -9.7311093998375095,
+                                             9.5731051658991654,
+                                             l_strengthL,
+                                             l_strengthR);
+
+  REQUIRE(l_strengthL == Approx(33.55900170142614));
+  REQUIRE(l_strengthR == Approx(23.440998298573856));
+}
+
+TEST_CASE("Test the derivation of the FWave net-updates.", "[FWaveUpdates]") {
+  /*
+   * Test case:
+   *
+   *      left | right
+   *  h:    10 | 9
+   *  u:    -3 | 3
+   *  hu:  -30 | 27
+   *
+   * The derivation of the FWave speeds (s1, s2) and wave strengths (a1, a1) is given above.
+   *
+   * The net-updates are given through the scaled eigenvectors.
+   *                      |  1 |   | 33.55900170142614          |
+   * update #1:      a1 * |    | = |                            |
+   *                      | s1 |   | -326.56631690591088539375  |
+   *
+   *                      |  1 |   | 23.440998298573856         |
+   * update #2:      a2 * |    | = |                            |
+   *                      | s2 |   | 224.40314190591092761910   |
+   */
+
+  float l_netUpdatesL[2] = {-5, 3};
+  float l_netUpdatesR[2] = {4, 7};
+
+  tsunami_lab::solvers::FWave::netUpdates(10,
+                                          9,
+                                          -30,
+                                          27,
+                                          l_netUpdatesL,
+                                          l_netUpdatesR);
+
+
+
+  REQUIRE(l_netUpdatesL[0] == Approx(33.55900170142614));
+  REQUIRE(l_netUpdatesL[1] == Approx(-326.56631690591088));
+
+  REQUIRE(l_netUpdatesR[0] == Approx(23.440998298573856));
+  REQUIRE(l_netUpdatesR[1] == Approx(224.40314190591092));
+
+  /*
+   * Test case (dam break):
+   *
+   *     left | right
+   *   h:  10 | 8
+   *   hu:  0 | 0
+   *
+   * FWave speeds are given as:
+   *
+   *   s1 = -sqrt(9.80665 * 9) = -9.39468...
+   *   s2 =  sqrt(9.80665 * 9) =  9.39468...
+   *
+   * Inversion of the matrix of right Eigenvectors:
+   *
+   *   wolframalpha.com query: invert {{1, 1}, {-sqrt(9.80665 * 9), sqrt(9.80665 * 9)}}
+   *
+   *          | 0.5  -0.0532217 |
+   *   Rinv = |                 |
+   *          | 0.5   0.0532217 |
+   *
+   * Multiplication with the jump in fluxes gives the wave strengths:
+   *
+   *   wolframalpha.com query: invert {{1, 1}, {-sqrt(9.80665*9), sqrt(9.80665*9)}} * {0, -176.5197}
+   *
+   *        |  0 - 0                            |   |  9.394671362000908 |   | a1 |
+   * Rinv * |                                   | = |                    | = |    |
+   *        | 1/2*9.80665*8^2-1/2*9.80665*10^2  |   | -9.394671362000908 |   | a2 |
+   *
+   * The net-updates are given through the scaled eigenvectors.
+   *
+   *                      |  1 |   |  9.394671362000908 |
+   * update #1:      a1 * |    | = |                    |
+   *                      | s1 |   | -88.2598500        |
+   *
+   *                      |  1 |   | -9.394671362000908 |
+   * update #2:      a2 * |    | = |                    |
+   *                      | s2 |   | -88.2598500        |
+   */
+
+  tsunami_lab::solvers::FWave::netUpdates(10,
+                                          8,
+                                          0,
+                                          0,
+                                          l_netUpdatesL,
+                                          l_netUpdatesR);
+
+  REQUIRE(l_netUpdatesL[0] == Approx(9.394671362000908));
+  REQUIRE(l_netUpdatesL[1] == Approx(-88.25985));
+
+  REQUIRE(l_netUpdatesR[0] == Approx(-9.394671362000908));
+  REQUIRE(l_netUpdatesR[1] == Approx(-88.25985));
+
+  /*
+   * Test case (trivial steady state):
+   *
+   *     left | right
+   *   h:  10 | 10
+   *  hu:   0 |  0
+   *
+   * Since q_l == q_r, the flux jump is zero:
+   *   delta_f = f(q_r) - f(q_l) = 0
+   * Therefore all wave strengths and net-updates are zero.
+   */
+  
+  tsunami_lab::solvers::FWave::netUpdates(10,
+                                          10,
+                                          0,
+                                          0,
+                                          l_netUpdatesL,
+                                          l_netUpdatesR);
+
+  REQUIRE(l_netUpdatesL[0] == Approx(0));
+  REQUIRE(l_netUpdatesL[1] == Approx(0));
+
+  REQUIRE(l_netUpdatesR[0] == Approx(0));
+  REQUIRE(l_netUpdatesR[1] == Approx(0));
 }
