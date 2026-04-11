@@ -82,7 +82,7 @@ jobs:
       - name: Combine Output
         run: |
           mkdir -p public
-          cp -r sphinx/_build/html/* public/
+          cp -r sphinx/build/html/* public/
           cp -r docs/html public/doxygen
 
       - name: Deploy to GitHub Pages
