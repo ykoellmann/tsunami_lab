@@ -129,6 +129,7 @@ TEST_CASE("Test the derivation of the FWave net-updates.", "[FWaveUpdates]") {
    * The derivation of the FWave speeds (s1, s2) and wave strengths (a1, a1) is given above.
    *
    * The net-updates are given through the scaled eigenvectors.
+   * 
    *                      |  1 |   | 33.55900170142614          |
    * update #1:      a1 * |    | = |                            |
    *                      | s1 |   | -326.56631690591088539375  |
@@ -219,7 +220,7 @@ TEST_CASE("Test the derivation of the FWave net-updates.", "[FWaveUpdates]") {
    *   delta_f = f(q_r) - f(q_l) = 0
    * Therefore all wave strengths and net-updates are zero.
    */
-  
+
   tsunami_lab::solvers::FWave::netUpdates(10,
                                           10,
                                           0,
@@ -229,6 +230,91 @@ TEST_CASE("Test the derivation of the FWave net-updates.", "[FWaveUpdates]") {
 
   REQUIRE(l_netUpdatesL[0] == Approx(0));
   REQUIRE(l_netUpdatesL[1] == Approx(0));
+
+  REQUIRE(l_netUpdatesR[0] == Approx(0));
+  REQUIRE(l_netUpdatesR[1] == Approx(0));
+
+  /*
+   * Test case (supersonic right, lambda_{1,2} > 0):
+   *
+   *     left | right
+   *   h:   1 | 2
+   *  hu:  50 | 100
+   *
+   * FWave speeds are given as:
+   *
+   *   s1 = 50 - sqrt(9.80665 * 1.5) = 46.16464...
+   *   s2 = 50 + sqrt(9.80665 * 1.5) = 53.83536...
+   *
+   * Inversion of the matrix of right Eigenvectors:
+   *
+   *   wolframalpha.com query: invert {{1, 1}, {46.16464, 53.83536}}
+   *
+   *          |  7.018292937299234  -0.1303658587459847 |
+   *   Rinv = |                                         |
+   *          | -6.018292937299234   0.1303658587459847 |
+   *
+   * Multiplication with the jump in fluxes gives the wave strengths:
+   *
+   *   wolframalpha.com query: {{7.018292937299234, -0.1303658587459847}, {-6.018292937299234, 0.1303658587459847}} * {50, 2514.709975}
+   *
+   *        | 100 - 50                                          |   | 23.082321476992945 |   | a1 |
+   * Rinv * |                                                   | = |                    | = |    |
+   *        | 100^2/2+1/2*9.80665*2^2-(50^2/1+1/2*9.80665*1^2)  |   | 26.917678523007055 |   | a2 |
+   *
+   * The net-updates are given through the scaled eigenvectors.
+   *
+   * Since lambda_1 > 0 and lambda_2 > 0, both waves go right -> A^- delta Q = 0
+   *
+   *                      |  1 |   | 23.082321476992945  |
+   * update #1:      a1 * |    | = |                     |
+   *                      | s1 |   | 1065.5870613496475  |
+   *
+   *                      |  1 |   | 26.917678523007055  |
+   * update #2:      a2 * |    | = |                     |
+   *                      | s2 |   | 1449.1229136503530  |
+   */
+  tsunami_lab::solvers::FWave::netUpdates(1,
+                                          2,
+                                          50,
+                                          100,
+                                          l_netUpdatesL,
+                                          l_netUpdatesR);
+
+  REQUIRE(l_netUpdatesL[0] == Approx(0));
+  REQUIRE(l_netUpdatesL[1] == Approx(0));
+
+  REQUIRE(l_netUpdatesR[0] == Approx(23.082321476992945 + 26.917678523007055));
+  REQUIRE(l_netUpdatesR[1] == Approx(1065.5870613496475 + 1449.1229136503530));
+
+
+  /*
+   * Test case (supersonic left, lambda_{1,2} < 0):
+   *
+   *     left | right
+   *   h:    1 | 2
+   *  hu:  -50 | -100
+   *
+   * FWave speeds are given as:
+   *
+   *   s1 = -50 - sqrt(9.80665 * 1.5) = -53.83535852300668
+   *   s2 = -50 + sqrt(9.80665 * 1.5) = -46.16464147699332
+   *
+   * Symmetric to the supersonic right case with negated hu.
+   * Since lambda_1 < 0 and lambda_2 < 0, both waves go left -> A^+ delta Q = 0
+   *
+   *   a1 = -26.91767926150345
+   *   a2 = -23.08232073849655
+   */
+  tsunami_lab::solvers::FWave::netUpdates(1,
+                                          2,
+                                          -50,
+                                          -100,
+                                          l_netUpdatesL,
+                                          l_netUpdatesR);
+
+  REQUIRE(l_netUpdatesL[0] == Approx(-26.91767926150345 + -23.08232073849655));
+  REQUIRE(l_netUpdatesL[1] == Approx(1449.12291365034 + 1065.5870613496609));
 
   REQUIRE(l_netUpdatesR[0] == Approx(0));
   REQUIRE(l_netUpdatesR[1] == Approx(0));
