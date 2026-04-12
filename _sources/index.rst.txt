@@ -10,6 +10,7 @@ Documentation and reports for the Tsunami Lab at Friedrich Schiller University J
    :maxdepth: 2
    :caption: Project Phases:
 
+   Overview <self>
    chapters/01_riemann_solver
    chapters/02_finite_volume
    chapters/03_bathymetry
