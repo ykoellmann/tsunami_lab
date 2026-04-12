@@ -20,3 +20,10 @@ Documentation and reports for the Tsunami Lab at Friedrich Schiller University J
    chapters/08_optimization
    chapters/09_parallelization
    chapters/10_individual
+
+Code Documentation
+==================
+
+The source code documentation is generated using Doxygen and hosted online:
+
+- `Doxygen Documentation <https://ykoellmann.github.io/tsunami_lab/doxygen/>`_
