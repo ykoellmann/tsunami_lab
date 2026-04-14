@@ -20,7 +20,7 @@ public:
   /**
    * Virtual destructor for base class.
    **/
-  virtual ~WavePropagation() {};
+  virtual ~WavePropagation() {}
 
   /**
    * Performs a time step.
