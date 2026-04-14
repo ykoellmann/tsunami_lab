@@ -99,6 +99,7 @@ Individual Contributions
 - **Yannik Köllmann:** Project setup (1.2), including forking the repository,
   build configuration with SCons, Doxygen setup, initial Catch2 integration and .gitignore setup.
   Implementation of the ``flux`` and ``waveStrengths`` methods for the f-wave solver.
+  Adding release of Sphinx and Doxygen to GitHub Pages using GitHub Actions.
 - **Jan Vogt:** CI/CD pipeline setup using GitHub Actions, including automated style checking
   with clang-format (``clang-format --dry-run --Werror``).
   Added ``.clang-format`` configuration (LLVM style, indent width 2) and ``.clangd`` config
