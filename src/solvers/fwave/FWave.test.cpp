@@ -6,13 +6,12 @@
  * F-wave solver for the shallow water equations.
  **/
 
-
 #include <catch2/catch.hpp>
 #define private public
 #include "FWave.h"
 #undef public
 
-TEST_CASE( "Test the derivation of the FWave speeds.", "[FWaveSpeeds]" ) {
+TEST_CASE("Test the derivation of the FWave speeds.", "[FWaveSpeeds]") {
   /*
    * Test case:
    *  h: 10 | 9
@@ -21,20 +20,17 @@ TEST_CASE( "Test the derivation of the FWave speeds.", "[FWaveSpeeds]" ) {
    * roe height: 9.5
    * roe velocity: (sqrt(10) * -3 + 3 * 3) / ( sqrt(10) + sqrt(9) )
    *               = -0.0790021169691720
-   * roe speeds: s1 = -0.079002116969172024 - sqrt(9.80665 * 9.5) = -9.7311093998375095
-   *             s2 = -0.079002116969172024 + sqrt(9.80665 * 9.5) =  9.5731051658991654
+   * roe speeds: s1 = -0.079002116969172024 - sqrt(9.80665 * 9.5) =
+   * -9.7311093998375095 s2 = -0.079002116969172024 + sqrt(9.80665 * 9.5)
+   * =  9.5731051658991654
    */
   float l_waveSpeedL = 0;
   float l_waveSpeedR = 0;
-  tsunami_lab::solvers::FWave::waveSpeeds( 10,
-                                         9,
-                                         -3,
-                                         3,
-                                         l_waveSpeedL,
-                                         l_waveSpeedR );
+  tsunami_lab::solvers::FWave::waveSpeeds(10, 9, -3, 3, l_waveSpeedL,
+                                          l_waveSpeedR);
 
-  REQUIRE( l_waveSpeedL == Approx( -9.7311093998375095 ) );
-  REQUIRE( l_waveSpeedR == Approx(  9.5731051658991654 ) );
+  REQUIRE(l_waveSpeedL == Approx(-9.7311093998375095));
+  REQUIRE(l_waveSpeedR == Approx(9.5731051658991654));
 }
 
 TEST_CASE("Test the derivation of the FWave flux.", "[FWaveFlux]") {
@@ -47,9 +43,7 @@ TEST_CASE("Test the derivation of the FWave flux.", "[FWaveFlux]") {
    */
 
   float l_flux[2] = {0};
-  tsunami_lab::solvers::FWave::flux(10,
-                                   -30,
-                                        l_flux);
+  tsunami_lab::solvers::FWave::flux(10, -30, l_flux);
 
   REQUIRE(l_flux[0] == Approx(-30.0f));
   REQUIRE(l_flux[1] == Approx(580.3325f));
@@ -62,22 +56,22 @@ TEST_CASE("Test the derivation of the FWave flux.", "[FWaveFlux]") {
    *            f[1] =  (27)^2 / 9 + 0.5 * 9.80665  * 9^2  = 478.169325
    */
 
-  tsunami_lab::solvers::FWave::flux(9,
-                                   27,
-                                        l_flux);
+  tsunami_lab::solvers::FWave::flux(9, 27, l_flux);
 
   REQUIRE(l_flux[0] == Approx(27.0f));
   REQUIRE(l_flux[1] == Approx(478.169325f));
 }
 
-TEST_CASE("Test the derivation of the FWave wave strength.", "[FWaveStrengths]"){
+TEST_CASE("Test the derivation of the FWave wave strength.",
+          "[FWaveStrengths]") {
   /*
    * Test case:
    *  h:   10 | 9
    *  u:   -3 | 3
    *  hu: -30 | 27
    *
-   * The derivation of the FWave speeds (s1, s2) and fluxes (f_l, f_r) is given above.
+   * The derivation of the FWave speeds (s1, s2) and fluxes (f_l, f_r) is given
+   * above.
    *
    *  Matrix of right eigenvectors:
    *
@@ -87,7 +81,8 @@ TEST_CASE("Test the derivation of the FWave wave strength.", "[FWaveStrengths]")
    *
    * Inversion yields:
    *
-   * wolframalpha.com query: invert {{1, 1}, {-9.7311093998375095, 9.5731051658991654}}
+   * wolframalpha.com query: invert {{1, 1},
+   * {-9.7311093998375095, 9.5731051658991654}}
    *
    *        | 0.49590751974393229 -0.051802159398648326 |
    * Rinv = |                                           |
@@ -95,7 +90,9 @@ TEST_CASE("Test the derivation of the FWave wave strength.", "[FWaveStrengths]")
    *
    * Multiplication with the jump in fluxes gives the wave strengths:
    *
-   * wolframalpha.com query: {{0.49590751974393229, -0.051802159398648326}, {0.50409248025606771, 0.051802159398648326}} * {27--30, 478.169325-580.3325}
+   * wolframalpha.com query: {{0.49590751974393229, -0.051802159398648326},
+   * {0.50409248025606771, 0.051802159398648326}} * {27--30,
+   * 478.169325-580.3325}
    *
    *        | 27 - -30              |   | 33.55900170142614  |
    * Rinv * |                       | = |                    |
@@ -104,14 +101,9 @@ TEST_CASE("Test the derivation of the FWave wave strength.", "[FWaveStrengths]")
   float l_strengthL = 0;
   float l_strengthR = 0;
 
-  tsunami_lab::solvers::FWave::waveStrengths(10,
-                                             9,
-                                             -30,
-                                             27,
-                                             -9.7311093998375095,
-                                             9.5731051658991654,
-                                             l_strengthL,
-                                             l_strengthR);
+  tsunami_lab::solvers::FWave::waveStrengths(
+      10, 9, -30, 27, -9.7311093998375095, 9.5731051658991654, l_strengthL,
+      l_strengthR);
 
   REQUIRE(l_strengthL == Approx(33.55900170142614));
   REQUIRE(l_strengthR == Approx(23.440998298573856));
@@ -126,10 +118,11 @@ TEST_CASE("Test the derivation of the FWave net-updates.", "[FWaveUpdates]") {
    *  u:    -3 | 3
    *  hu:  -30 | 27
    *
-   * The derivation of the FWave speeds (s1, s2) and wave strengths (a1, a1) is given above.
+   * The derivation of the FWave speeds (s1, s2) and wave strengths (a1, a1) is
+   * given above.
    *
    * The net-updates are given through the scaled eigenvectors.
-   * 
+   *
    *                      |  1 |   | 33.55900170142614          |
    * update #1:      a1 * |    | = |                            |
    *                      | s1 |   | -326.56631690591088539375  |
@@ -142,14 +135,8 @@ TEST_CASE("Test the derivation of the FWave net-updates.", "[FWaveUpdates]") {
   float l_netUpdatesL[2] = {-5, 3};
   float l_netUpdatesR[2] = {4, 7};
 
-  tsunami_lab::solvers::FWave::netUpdates(10,
-                                          9,
-                                          -30,
-                                          27,
-                                          l_netUpdatesL,
+  tsunami_lab::solvers::FWave::netUpdates(10, 9, -30, 27, l_netUpdatesL,
                                           l_netUpdatesR);
-
-
 
   REQUIRE(l_netUpdatesL[0] == Approx(33.55900170142614));
   REQUIRE(l_netUpdatesL[1] == Approx(-326.56631690591088));
@@ -171,7 +158,8 @@ TEST_CASE("Test the derivation of the FWave net-updates.", "[FWaveUpdates]") {
    *
    * Inversion of the matrix of right Eigenvectors:
    *
-   *   wolframalpha.com query: invert {{1, 1}, {-sqrt(9.80665 * 9), sqrt(9.80665 * 9)}}
+   *   wolframalpha.com query: invert {{1, 1}, {-sqrt(9.80665 * 9), sqrt(9.80665
+   * * 9)}}
    *
    *          | 0.5  -0.0532217 |
    *   Rinv = |                 |
@@ -179,11 +167,13 @@ TEST_CASE("Test the derivation of the FWave net-updates.", "[FWaveUpdates]") {
    *
    * Multiplication with the jump in fluxes gives the wave strengths:
    *
-   *   wolframalpha.com query: invert {{1, 1}, {-sqrt(9.80665*9), sqrt(9.80665*9)}} * {0, -176.5197}
+   *   wolframalpha.com query: invert {{1, 1}, {-sqrt(9.80665*9),
+   * sqrt(9.80665*9)}} * {0, -176.5197}
    *
-   *        |  0 - 0                            |   |  9.394671362000908 |   | a1 |
-   * Rinv * |                                   | = |                    | = |    |
-   *        | 1/2*9.80665*8^2-1/2*9.80665*10^2  |   | -9.394671362000908 |   | a2 |
+   *        |  0 - 0                            |   |  9.394671362000908 |   |
+   * a1 | Rinv * |                                   | = |                    |
+   * = |    | | 1/2*9.80665*8^2-1/2*9.80665*10^2  |   | -9.394671362000908 |   |
+   * a2 |
    *
    * The net-updates are given through the scaled eigenvectors.
    *
@@ -196,11 +186,7 @@ TEST_CASE("Test the derivation of the FWave net-updates.", "[FWaveUpdates]") {
    *                      | s2 |   | -88.2598500        |
    */
 
-  tsunami_lab::solvers::FWave::netUpdates(10,
-                                          8,
-                                          0,
-                                          0,
-                                          l_netUpdatesL,
+  tsunami_lab::solvers::FWave::netUpdates(10, 8, 0, 0, l_netUpdatesL,
                                           l_netUpdatesR);
 
   REQUIRE(l_netUpdatesL[0] == Approx(9.394671362000908));
@@ -221,11 +207,7 @@ TEST_CASE("Test the derivation of the FWave net-updates.", "[FWaveUpdates]") {
    * Therefore all wave strengths and net-updates are zero.
    */
 
-  tsunami_lab::solvers::FWave::netUpdates(10,
-                                          10,
-                                          0,
-                                          0,
-                                          l_netUpdatesL,
+  tsunami_lab::solvers::FWave::netUpdates(10, 10, 0, 0, l_netUpdatesL,
                                           l_netUpdatesR);
 
   REQUIRE(l_netUpdatesL[0] == Approx(0));
@@ -256,11 +238,13 @@ TEST_CASE("Test the derivation of the FWave net-updates.", "[FWaveUpdates]") {
    *
    * Multiplication with the jump in fluxes gives the wave strengths:
    *
-   *   wolframalpha.com query: {{7.018292937299234, -0.1303658587459847}, {-6.018292937299234, 0.1303658587459847}} * {50, 2514.709975}
+   *   wolframalpha.com query: {{7.018292937299234, -0.1303658587459847},
+   * {-6.018292937299234, 0.1303658587459847}} * {50, 2514.709975}
    *
-   *        | 100 - 50                                          |   | 23.082321476992945 |   | a1 |
-   * Rinv * |                                                   | = |                    | = |    |
-   *        | 100^2/2+1/2*9.80665*2^2-(50^2/1+1/2*9.80665*1^2)  |   | 26.917678523007055 |   | a2 |
+   *        | 100 - 50                                          |
+   * | 23.082321476992945 |   | a1 | Rinv * | | = |                    | = | |
+   *        | 100^2/2+1/2*9.80665*2^2-(50^2/1+1/2*9.80665*1^2)  |
+   * | 26.917678523007055 |   | a2 |
    *
    * The net-updates are given through the scaled eigenvectors.
    *
@@ -274,11 +258,7 @@ TEST_CASE("Test the derivation of the FWave net-updates.", "[FWaveUpdates]") {
    * update #2:      a2 * |    | = |                     |
    *                      | s2 |   | 1449.1229136503530  |
    */
-  tsunami_lab::solvers::FWave::netUpdates(1,
-                                          2,
-                                          50,
-                                          100,
-                                          l_netUpdatesL,
+  tsunami_lab::solvers::FWave::netUpdates(1, 2, 50, 100, l_netUpdatesL,
                                           l_netUpdatesR);
 
   REQUIRE(l_netUpdatesL[0] == Approx(0));
@@ -286,7 +266,6 @@ TEST_CASE("Test the derivation of the FWave net-updates.", "[FWaveUpdates]") {
 
   REQUIRE(l_netUpdatesR[0] == Approx(23.082321476992945 + 26.917678523007055));
   REQUIRE(l_netUpdatesR[1] == Approx(1065.5870613496475 + 1449.1229136503530));
-
 
   /*
    * Test case (supersonic left, lambda_{1,2} < 0):
@@ -306,11 +285,7 @@ TEST_CASE("Test the derivation of the FWave net-updates.", "[FWaveUpdates]") {
    *   a1 = -26.91767926150345
    *   a2 = -23.08232073849655
    */
-  tsunami_lab::solvers::FWave::netUpdates(1,
-                                          2,
-                                          -50,
-                                          -100,
-                                          l_netUpdatesL,
+  tsunami_lab::solvers::FWave::netUpdates(1, 2, -50, -100, l_netUpdatesL,
                                           l_netUpdatesR);
 
   REQUIRE(l_netUpdatesL[0] == Approx(-26.91767926150345 + -23.08232073849655));

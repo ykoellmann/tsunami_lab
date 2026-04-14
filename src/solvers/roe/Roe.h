@@ -1,27 +1,23 @@
 /**
- * @author Yannik Köllmann (yannik.koellmann AT uni-jena.de)
- * @author Jan Vogt (jan.vogt AT uni-jena.de)
- * @author Mika Brückner (mika.brueckner AT uni-jena.de)
+ * @author Alexander Breuer (alex.breuer AT uni-jena.de)
+ *
  * @section DESCRIPTION
- * F-wave solver for the shallow water equations.
+ * Roe Riemann solver for the one-dimensional shallow water equations.
  **/
-
-#ifndef TSUNAMI_LAB_SOLVERS_FWAVE
-#define TSUNAMI_LAB_SOLVERS_FWAVE
+#ifndef TSUNAMI_LAB_SOLVERS_ROE
+#define TSUNAMI_LAB_SOLVERS_ROE
 
 #include "../../constants.h"
 
 namespace tsunami_lab {
 namespace solvers {
-class FWave;
+class Roe;
 }
 } // namespace tsunami_lab
 
-class tsunami_lab::solvers::FWave {
+class tsunami_lab::solvers::Roe {
 private:
-  //! gravity constant
-  static t_real constexpr m_g = 9.80665;
-  //! square root of gravity constant
+  //! square root of gravity
   static t_real constexpr m_gSqrt = 3.131557121;
 
   /**
@@ -57,16 +53,6 @@ private:
                             t_real i_huR, t_real i_waveSpeedL,
                             t_real i_waveSpeedR, t_real &o_strengthL,
                             t_real &o_strengthR);
-
-  /**
-   * Computes the flux.
-   *
-   * @param i_h height of the left/right side.
-   * @param i_huL momentum of the left/right side.
-   * @param o_flux will be set to the flux function hu, h*u^2 + 1/2*g*h^2.
-   **/
-
-  static void flux(t_real i_h, t_real i_hu, t_real *o_flux);
 
 public:
   /**
