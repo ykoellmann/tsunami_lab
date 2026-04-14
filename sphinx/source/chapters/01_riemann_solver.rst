@@ -99,7 +99,11 @@ Individual Contributions
 - **Yannik Köllmann:** Project setup (1.2), including forking the repository,
   build configuration with SCons, Doxygen setup, initial Catch2 integration and .gitignore setup.
   Implementation of the ``flux`` and ``waveStrengths`` methods for the f-wave solver.
-- **Jan Vogt:** ...
+- **Jan Vogt:** CI/CD pipeline setup using GitHub Actions, including automated style checking
+  with clang-format (``clang-format --dry-run --Werror``).
+  Added ``.clang-format`` configuration (LLVM style, indent width 2) and ``.clangd`` config
+  for IDE support in CLion. Extended the Nix shell with ``clang-tools`` and ``bear`` for local style
+  checking and IDE support.
 - **Mika Brückner:** Implementation of the ``waveSpeeds`` and ``netUpdates`` methods
   for the f-wave solver (task 1.3.1). Build configuration to include the FWave solver
   and tests (scons). Implementation of unit tests for ``waveSpeeds``, ``flux``, ``waveStrengths``,
