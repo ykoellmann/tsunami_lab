@@ -23,7 +23,7 @@ public:
   /**
    * Virtual destructor for base class.
    **/
-  virtual ~Setup() {};
+  virtual ~Setup() {}
 
   /**
    * Gets the water height at a given point.
