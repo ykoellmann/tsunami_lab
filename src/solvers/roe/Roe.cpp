@@ -4,7 +4,7 @@
  * @section DESCRIPTION
  * Roe Riemann solver for the shallow water equations.
  **/
-#include "../Roe.h"
+#include "Roe.h"
 #include <cmath>
 
 void tsunami_lab::solvers::Roe::waveSpeeds(t_real i_hL, t_real i_hR,
@@ -32,7 +32,7 @@ void tsunami_lab::solvers::Roe::waveStrengths(
   // compute inverse of right eigenvector-matrix
   t_real l_detInv = 1 / (i_waveSpeedR - i_waveSpeedL);
 
-  t_real l_rInv[2][2] = {0};
+  t_real l_rInv[2][2] = {{0}};
   l_rInv[0][0] = l_detInv * i_waveSpeedR;
   l_rInv[0][1] = -l_detInv;
   l_rInv[1][0] = -l_detInv * i_waveSpeedL;

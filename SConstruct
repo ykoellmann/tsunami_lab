@@ -40,7 +40,8 @@ Help( vars.GenerateHelpText( env ) )
 env.Append( CXXFLAGS = [ '-std=c++11',
                          '-Wall',
                          '-Wextra',
-                         '-Wpedantic' ] )
+                         '-Wpedantic',
+                         '-Wno-keyword-macro' ] )
 
 # set optimization mode
 if 'debug' in env['mode']:
