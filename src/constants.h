@@ -10,13 +10,13 @@
 #include <cstddef>
 
 namespace tsunami_lab {
-  //! integral type for cell-ids, pointer arithmetic, etc.
-  typedef std::size_t t_idx;
+//! integral type for cell-ids, pointer arithmetic, etc.
+typedef std::size_t t_idx;
 
-  //! floating point type
-  typedef float t_real;
+//! floating point type
+typedef float t_real;
 
-  constexpr t_real g = 9.80665;
-}
+constexpr t_real g = 9.80665;
+} // namespace tsunami_lab
 
 #endif
