@@ -95,6 +95,34 @@
 <li><p><a class="reference external" href="https://ykoellmann.github.io/tsunami_lab/doxygen/">Doxygen Documentation</a></p></li>
 </ul>
 </section>
+<section id="build-process">
+<h1>Build Process<a class="headerlink" href="#build-process" title="Link to this heading"></a></h1>
+<p>The project uses <a class="reference external" href="https://scons.org/">SCons</a> as its build tool and
+<a class="reference external" href="https://nixos.org/">Nix</a> to provide a reproducible development environment.</p>
+<p><strong>Setup (first time):</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>--proto<span class="w"> </span><span class="s1">&#39;=https&#39;</span><span class="w"> </span>--tlsv1.2<span class="w"> </span>-sSf<span class="w"> </span>-L<span class="w"> </span>https://install.determinate.systems/nix<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh<span class="w"> </span>-s<span class="w"> </span>--<span class="w"> </span>install
+</pre></div>
+</div>
+<p>Then restart your terminal.</p>
+<p><strong>Local build:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nix-shell
+scons<span class="w"> </span><span class="nv">mode</span><span class="o">=</span>debug
+./build/tests
+</pre></div>
+</div>
+<p><strong>Style check:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>find<span class="w"> </span>src/<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.cpp&quot;</span><span class="w"> </span>-o<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.h&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>xargs<span class="w"> </span>clang-format<span class="w"> </span>--dry-run<span class="w"> </span>--Werror
+</pre></div>
+</div>
+<p>To fix style violations automatically:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>find<span class="w"> </span>src/<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.cpp&quot;</span><span class="w"> </span>-o<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.h&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>xargs<span class="w"> </span>clang-format<span class="w"> </span>-i
+</pre></div>
+</div>
+<p><strong>CI/CD:</strong></p>
+<p>Every push and pull request to <code class="docutils literal notranslate"><span class="pre">main</span></code> triggers the GitHub Actions pipeline, which runs
+style checking (clang-format), static analysis (cppcheck), unit tests, sanitizer builds,
+and Valgrind memory checks.</p>
+</section>
 
 
            </div>
