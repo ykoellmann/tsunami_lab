@@ -2,5 +2,8 @@
 Tsunami Lab
 ###########
 
-This is the initial code of the Tsunami Lab taught at Friedrich Schiller University Jena.
-Further information is available from: https://scalable.uni-jena.de/opt/tsunami/
+Repository is hosted under https://github.com/ykoellmann/tsunami_lab.
+
+User Documentation is hosted under https://ykoellmann.github.io/tsunami_lab/.
+
+Code Documentation is hosted under https://ykoellmann.github.io/tsunami_lab/doxygen/.
