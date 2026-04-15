@@ -1,14 +1,6 @@
 1. Riemann Solver
 ==================
 
-Introduction
-------------
-
-
-Mathematical Background
-------------------------
-
-
 Implementation
 ---------------
 
@@ -92,6 +84,7 @@ Both waves travel to the left, so the right net-update is zero:
 Results & Visualizations
 -------------------------
 
+All unit tests passed as expected.
 
 Individual Contributions
 -------------------------
