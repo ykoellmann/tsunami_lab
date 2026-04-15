@@ -28,3 +28,43 @@ Code Documentation
 The source code documentation is generated using Doxygen and hosted online:
 
 - `Doxygen Documentation <https://ykoellmann.github.io/tsunami_lab/doxygen/>`_
+
+Build Process
+=============
+
+The project uses `SCons <https://scons.org/>`_ as its build tool and
+`Nix <https://nixos.org/>`_ to provide a reproducible development environment.
+
+**Setup (first time):**
+
+.. code-block:: bash
+
+   curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+
+Then restart your terminal.
+
+**Local build:**
+
+.. code-block:: bash
+
+   nix-shell
+   scons mode=debug
+   ./build/tests
+
+**Style check:**
+
+.. code-block:: bash
+
+   find src/ -name "*.cpp" -o -name "*.h" | xargs clang-format --dry-run --Werror
+
+To fix style violations automatically:
+
+.. code-block:: bash
+
+   find src/ -name "*.cpp" -o -name "*.h" | xargs clang-format -i
+
+**CI/CD:**
+
+Every push and pull request to ``main`` triggers the GitHub Actions pipeline, which runs
+style checking (clang-format), static analysis (cppcheck), unit tests, sanitizer builds,
+and Valgrind memory checks.
