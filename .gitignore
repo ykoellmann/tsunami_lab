@@ -4,3 +4,5 @@ build/*
 /docs/latex/*
 .idea/*
 .sconsign.dblite
+simulations/*
+!simulations/visualizations/**
