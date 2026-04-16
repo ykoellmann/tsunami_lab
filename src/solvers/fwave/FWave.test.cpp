@@ -2,6 +2,7 @@
  * @author Yannik Köllmann (yannik.koellmann AT uni-jena.de)
  * @author Jan Vogt (jan.vogt AT uni-jena.de)
  * @author Mika Brückner (mika.brueckner AT uni-jena.de)
+ *
  * @section DESCRIPTION
  * F-wave solver for the shallow water equations.
  **/
