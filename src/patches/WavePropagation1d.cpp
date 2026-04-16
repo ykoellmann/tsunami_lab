@@ -61,6 +61,7 @@ void tsunami_lab::patches::WavePropagation1d::timeStep(t_real i_scaling,
     // compute net-updates
     t_real l_netUpdates[2][2] = {0};
 
+    // use 'netUpdates' method based on solver mode Roe or FWave
     if (i_mode == "ROE") {
       solvers::Roe::netUpdates(l_hOld[l_ceL], l_hOld[l_ceR], l_huOld[l_ceL],
                                l_huOld[l_ceR], l_netUpdates[0],
