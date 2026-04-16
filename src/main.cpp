@@ -7,6 +7,7 @@
 #include "io/Csv.h"
 #include "patches/WavePropagation1d.h"
 #include "setups/DamBreak1d.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
@@ -17,6 +18,7 @@ int main(int i_argc, char* i_argv[]) {
   // number of cells in x- and y-direction
   tsunami_lab::t_idx l_nx = 0;
   tsunami_lab::t_idx l_ny = 1;
+  std::string l_solverMode;
 
   // set cell size
   tsunami_lab::t_real l_dxy = 1;
@@ -27,10 +29,11 @@ int main(int i_argc, char* i_argv[]) {
   std::cout << "### https://scalable.uni-jena.de ###" << std::endl;
   std::cout << "####################################" << std::endl;
 
-  if (i_argc != 2) {
+  if (i_argc != 3) {
     std::cerr << "invalid number of arguments, usage:" << std::endl;
-    std::cerr << "  ./build/tsunami_lab N_CELLS_X" << std::endl;
-    std::cerr << "where N_CELLS_X is the number of cells in x-direction."
+    std::cerr << "  ./build/tsunami_lab N_CELLS_X SOLVER_MODE" << std::endl;
+    std::cerr << "where N_CELLS_X is the number of cells in x-direction and "
+                 "SOLVER_MODE is a selection from 'FWave' and 'Roe'."
               << std::endl;
     return EXIT_FAILURE;
   } else {
@@ -40,6 +43,14 @@ int main(int i_argc, char* i_argv[]) {
       return EXIT_FAILURE;
     }
     l_dxy = 10.0 / l_nx;
+
+    l_solverMode = i_argv[2];
+    std::transform(l_solverMode.begin(), l_solverMode.end(),
+                   l_solverMode.begin(), ::toupper);
+    if (l_solverMode != "FWAVE" && l_solverMode != "ROE") {
+      std::cerr << "invalid solver mode" << std::endl;
+      return EXIT_FAILURE;
+    }
   }
   std::cout << "runtime configuration" << std::endl;
   std::cout << "  number of cells in x-direction: " << l_nx << std::endl;
@@ -116,7 +127,7 @@ int main(int i_argc, char* i_argv[]) {
     }
 
     l_waveProp->setGhostOutflow();
-    l_waveProp->timeStep(l_scaling);
+    l_waveProp->timeStep(l_scaling, l_solverMode);
 
     l_timeStep++;
     l_simTime += l_dt;

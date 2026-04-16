@@ -7,6 +7,8 @@
 #ifndef TSUNAMI_LAB_PATCHES_WAVE_PROPAGATION_1D
 #define TSUNAMI_LAB_PATCHES_WAVE_PROPAGATION_1D
 
+#include <string>
+
 #include "WavePropagation.h"
 
 namespace tsunami_lab {
@@ -46,8 +48,9 @@ public:
    * Performs a time step.
    *
    * @param i_scaling scaling of the time step (dt / dx).
+   * @param i_mode solver mode (Roe / FWave)
    **/
-  void timeStep(t_real i_scaling);
+  void timeStep(t_real i_scaling, std::string i_mode);
 
   /**
    * Sets the values of the ghost cells according to outflow boundary

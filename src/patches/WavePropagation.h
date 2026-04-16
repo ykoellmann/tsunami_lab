@@ -27,7 +27,7 @@ public:
    *
    * @param i_scaling scaling of the time step.
    **/
-  virtual void timeStep(t_real i_scaling) = 0;
+  virtual void timeStep(t_real i_scalingm, std::string i_mode) = 0;
 
   /**
    * Sets the values of the ghost cells according to outflow boundary
