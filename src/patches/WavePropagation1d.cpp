@@ -59,7 +59,7 @@ void tsunami_lab::patches::WavePropagation1d::timeStep(t_real i_scaling,
     t_idx l_ceR = l_ed + 1;
 
     // compute net-updates
-    t_real l_netUpdates[2][2];
+    t_real l_netUpdates[2][2] = {0};
 
     if (i_mode == "ROE") {
       solvers::Roe::netUpdates(l_hOld[l_ceL], l_hOld[l_ceR], l_huOld[l_ceL],
