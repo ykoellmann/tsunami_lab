@@ -11,11 +11,14 @@
 #include "patches/WavePropagation1d.h"
 #include "setups/dambreak/DamBreak1d.h"
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <errno.h>
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <sys/stat.h>
 
 #include "setups/rarerare/RareRare1d.h"
 #include "setups/shockshock/ShockShock1d.h"
@@ -56,17 +59,17 @@ int main(int i_argc, char* i_argv[]) {
 
     l_solverMode = i_argv[2];
     std::transform(l_solverMode.begin(), l_solverMode.end(),
-                   l_solverMode.begin(), ::toupper);
-    if (l_solverMode != "FWAVE" && l_solverMode != "ROE") {
+                   l_solverMode.begin(), ::tolower);
+    if (l_solverMode != "fwave" && l_solverMode != "roe") {
       std::cerr << "invalid solver mode" << std::endl;
       return EXIT_FAILURE;
     }
 
     l_setupMode = i_argv[3];
     std::transform(l_setupMode.begin(), l_setupMode.end(), l_setupMode.begin(),
-                   ::toupper);
-    if (l_setupMode != "DAMBREAK" && l_setupMode != "RARERARE" &&
-        l_setupMode != "SHOCKSHOCK") {
+                   ::tolower);
+    if (l_setupMode != "dambreak" && l_setupMode != "rarerare" &&
+        l_setupMode != "shockshock") {
       std::cerr << "invalid setup mode" << std::endl;
       return EXIT_FAILURE;
     }
@@ -79,11 +82,11 @@ int main(int i_argc, char* i_argv[]) {
   // construct setup
   tsunami_lab::setups::Setup* l_setup = nullptr;
 
-  if (l_setupMode == "DAMBREAK") {
+  if (l_setupMode == "dambreak") {
     l_setup = new tsunami_lab::setups::DamBreak1d(10, 5, 5);
-  } else if (l_setupMode == "RARERARE") {
+  } else if (l_setupMode == "rarerare") {
     l_setup = new tsunami_lab::setups::RareRare1d(10, 5, 5);
-  } else if (l_setupMode == "SHOCKSHOCK") {
+  } else if (l_setupMode == "shockshock") {
     l_setup = new tsunami_lab::setups::ShockShock1d(10, 5, 5);
   }
 
@@ -133,6 +136,21 @@ int main(int i_argc, char* i_argv[]) {
   tsunami_lab::t_real l_endTime = 1.25;
   tsunami_lab::t_real l_simTime = 0;
 
+  // create new directory for simulation (simulation/SETUP_SOLVER_CELLNUMBER_TIMESTAMP
+  std::string l_simBaseDir = "simulations/";
+  auto l_ts = std::chrono::duration_cast<std::chrono::seconds>(
+                  std::chrono::system_clock::now().time_since_epoch())
+                  .count();
+  std::string l_simName = l_setupMode + "_" + l_solverMode + "_" +
+                          std::to_string(l_nx) + "_" + std::to_string(l_ts);
+  std::string l_simDir = l_simBaseDir + l_simName;
+
+  mkdir(l_simBaseDir.c_str(), 0755);
+  if (mkdir(l_simDir.c_str(), 0755) != 0 && errno != EEXIST) {
+    std::cerr << "Failed to create directory: " << l_simDir << std::endl;
+    return EXIT_FAILURE;
+  }
+
   std::cout << "entering time loop" << std::endl;
 
   // iterate over time
@@ -141,7 +159,8 @@ int main(int i_argc, char* i_argv[]) {
       std::cout << "  simulation time / #time steps: " << l_simTime << " / "
                 << l_timeStep << std::endl;
 
-      std::string l_path = "solution_" + std::to_string(l_nOut) + ".csv";
+      std::string l_path =
+          l_simDir + "/solution_" + std::to_string(l_nOut) + ".csv";
       std::cout << "  writing wave field to " << l_path << std::endl;
 
       std::ofstream l_file;
@@ -167,6 +186,9 @@ int main(int i_argc, char* i_argv[]) {
   delete l_setup;
   delete l_waveProp;
 
+  // print output dir
+  std::cout << "\033[32m" << "Simulation results written to: " << "\033[36m "
+            << l_simDir << "\033[0m" << '\n';
   std::cout << "finished, exiting" << std::endl;
   return EXIT_SUCCESS;
 }
