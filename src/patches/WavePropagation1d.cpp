@@ -1,5 +1,8 @@
 /**
  * @author Alexander Breuer (alex.breuer AT uni-jena.de)
+ * @author Yannik Köllmann (yannik.koellmann AT uni-jena.de)
+ * @author Jan Vogt (jan.vogt AT uni-jena.de)
+ * @author Mika Brückner (mika.brueckner AT uni-jena.de)
  *
  * @section DESCRIPTION
  * One-dimensional wave propagation patch.
