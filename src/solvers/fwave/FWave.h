@@ -36,8 +36,12 @@ private:
    * @param o_waveSpeedR will be set to the speed of the wave propagating to the
    * right.
    **/
-  static void waveSpeeds(t_real i_hL, t_real i_hR, t_real i_uL, t_real i_uR,
-                         t_real &o_waveSpeedL, t_real &o_waveSpeedR);
+  static void waveSpeeds(t_real i_hL,
+                         t_real i_hR,
+                         t_real i_uL,
+                         t_real i_uR,
+                         t_real &o_waveSpeedL,
+                         t_real &o_waveSpeedR);
 
   /**
    * Computes the wave strengths.
@@ -53,9 +57,13 @@ private:
    * @param o_strengthR will be set to the strength of the wave propagating to
    * the right.
    **/
-  static void waveStrengths(t_real i_hL, t_real i_hR, t_real i_huL,
-                            t_real i_huR, t_real i_waveSpeedL,
-                            t_real i_waveSpeedR, t_real &o_strengthL,
+  static void waveStrengths(t_real i_hL,
+                            t_real i_hR,
+                            t_real i_huL,
+                            t_real i_huR,
+                            t_real i_waveSpeedL,
+                            t_real i_waveSpeedR,
+                            t_real &o_strengthL,
                             t_real &o_strengthR);
 
   /**
@@ -81,8 +89,12 @@ public:
    * @param o_netUpdateR will be set to the net-updates for the right side; 0:
    * height, 1: momentum.
    **/
-  static void netUpdates(t_real i_hL, t_real i_hR, t_real i_huL, t_real i_huR,
-                         t_real o_netUpdateL[2], t_real o_netUpdateR[2]);
+  static void netUpdates(t_real i_hL,
+                         t_real i_hR,
+                         t_real i_huL,
+                         t_real i_huR,
+                         t_real o_netUpdateL[2],
+                         t_real o_netUpdateR[2]);
 };
 
 #endif
