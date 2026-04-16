@@ -1,5 +1,5 @@
 /**
-* @author Yannik Köllmann (yannik.koellmann AT uni-jena.de)
+ * @author Yannik Köllmann (yannik.koellmann AT uni-jena.de)
  * @author Jan Vogt (jan.vogt AT uni-jena.de)
  * @author Mika Brückner (mika.brueckner AT uni-jena.de)
  *
@@ -16,8 +16,8 @@ tsunami_lab::setups::RareRare1d::RareRare1d(t_real i_height,
   m_locationDis = i_locationDis;
 }
 
-tsunami_lab::t_real
-tsunami_lab::setups::RareRare1d::getHeight(t_real, t_real) const {
+tsunami_lab::t_real tsunami_lab::setups::RareRare1d::getHeight(t_real,
+                                                               t_real) const {
   return m_height;
 }
 

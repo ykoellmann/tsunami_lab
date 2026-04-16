@@ -18,7 +18,6 @@ typedef float t_real;
 
 constexpr t_real g = 9.80665;
 
-
 } // namespace tsunami_lab
 
 #endif

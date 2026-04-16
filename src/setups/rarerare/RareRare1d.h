@@ -1,5 +1,5 @@
 /**
-* @author Yannik Köllmann (yannik.koellmann AT uni-jena.de)
+ * @author Yannik Köllmann (yannik.koellmann AT uni-jena.de)
  * @author Jan Vogt (jan.vogt AT uni-jena.de)
  * @author Mika Brückner (mika.brueckner AT uni-jena.de)
  *
@@ -12,9 +12,9 @@
 #include "../Setup.h"
 
 namespace tsunami_lab {
-  namespace setups {
-    class RareRare1d;
-  }
+namespace setups {
+class RareRare1d;
+}
 } // namespace tsunami_lab
 
 /**
@@ -25,7 +25,8 @@ private:
   //! water height on both sides
   t_real m_height = 0;
 
-  //! magnitude of momentum; left side flows left (-), right side flows right (+)
+  //! magnitude of momentum; left side flows left (-), right side flows right
+  //! (+)
   t_real m_momentum = 0;
 
   //! location of the initial discontinuity
