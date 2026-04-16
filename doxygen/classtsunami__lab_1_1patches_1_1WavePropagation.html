@@ -109,8 +109,8 @@ Inheritance diagram for tsunami_lab::patches::WavePropagation:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a5f0a9d03b1ab9387cf90f172800aaa92" id="r_a5f0a9d03b1ab9387cf90f172800aaa92"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtsunami__lab_1_1patches_1_1WavePropagation.html#a5f0a9d03b1ab9387cf90f172800aaa92">~WavePropagation</a> ()</td></tr>
 <tr class="separator:a5f0a9d03b1ab9387cf90f172800aaa92"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3d8390f139fc8cede21eb4f534a4e7fc" id="r_a3d8390f139fc8cede21eb4f534a4e7fc"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtsunami__lab_1_1patches_1_1WavePropagation.html#a3d8390f139fc8cede21eb4f534a4e7fc">timeStep</a> (<a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> i_scaling)=0</td></tr>
-<tr class="separator:a3d8390f139fc8cede21eb4f534a4e7fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86f2084f6921173b014acdb4d5e81bbc" id="r_a86f2084f6921173b014acdb4d5e81bbc"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtsunami__lab_1_1patches_1_1WavePropagation.html#a86f2084f6921173b014acdb4d5e81bbc">timeStep</a> (<a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> i_scalingm, std::string i_mode)=0</td></tr>
+<tr class="separator:a86f2084f6921173b014acdb4d5e81bbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a02af1c6f56a9cc310efc8f997957faec" id="r_a02af1c6f56a9cc310efc8f997957faec"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtsunami__lab_1_1patches_1_1WavePropagation.html#a02af1c6f56a9cc310efc8f997957faec">setGhostOutflow</a> ()=0</td></tr>
 <tr class="separator:a02af1c6f56a9cc310efc8f997957faec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad87630b516ccda72b4a7bae3044e802a" id="r_ad87630b516ccda72b4a7bae3044e802a"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacetsunami__lab.html#afd26f38678e954f652489c828656cbca">t_idx</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtsunami__lab_1_1patches_1_1WavePropagation.html#ad87630b516ccda72b4a7bae3044e802a">getStride</a> ()=0</td></tr>
@@ -459,8 +459,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a3d8390f139fc8cede21eb4f534a4e7fc" name="a3d8390f139fc8cede21eb4f534a4e7fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3d8390f139fc8cede21eb4f534a4e7fc">&#9670;&#160;</a></span>timeStep()</h2>
+<a id="a86f2084f6921173b014acdb4d5e81bbc" name="a86f2084f6921173b014acdb4d5e81bbc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86f2084f6921173b014acdb4d5e81bbc">&#9670;&#160;</a></span>timeStep()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -472,8 +472,18 @@ Public Member Functions</h2></td></tr>
           <td class="memname">virtual void tsunami_lab::patches::WavePropagation::timeStep </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a>&#160;</td>
-          <td class="paramname"><em>i_scaling</em></td><td>)</td>
+          <td class="paramname"><em>i_scalingm</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>i_mode</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -490,7 +500,7 @@ Public Member Functions</h2></td></tr>
   </dd>
 </dl>
 
-<p>Implemented in <a class="el" href="classtsunami__lab_1_1patches_1_1WavePropagation1d.html#ac1884ddb6a52c08a5b65f60e21f6a547">tsunami_lab::patches::WavePropagation1d</a>.</p>
+<p>Implemented in <a class="el" href="classtsunami__lab_1_1patches_1_1WavePropagation1d.html#aaa9f4c932965234b2edcdc6c2fe19f6e">tsunami_lab::patches::WavePropagation1d</a>.</p>
 
 </div>
 </div>
