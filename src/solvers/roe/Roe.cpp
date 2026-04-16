@@ -7,8 +7,10 @@
 #include "Roe.h"
 #include <cmath>
 
-void tsunami_lab::solvers::Roe::waveSpeeds(t_real i_hL, t_real i_hR,
-                                           t_real i_uL, t_real i_uR,
+void tsunami_lab::solvers::Roe::waveSpeeds(t_real i_hL,
+                                           t_real i_hR,
+                                           t_real i_uL,
+                                           t_real i_uR,
                                            t_real &o_waveSpeedL,
                                            t_real &o_waveSpeedR) {
   // pre-compute square-root ops
@@ -26,9 +28,14 @@ void tsunami_lab::solvers::Roe::waveSpeeds(t_real i_hL, t_real i_hR,
   o_waveSpeedR = l_uRoe + l_ghSqrtRoe;
 }
 
-void tsunami_lab::solvers::Roe::waveStrengths(
-    t_real i_hL, t_real i_hR, t_real i_huL, t_real i_huR, t_real i_waveSpeedL,
-    t_real i_waveSpeedR, t_real &o_strengthL, t_real &o_strengthR) {
+void tsunami_lab::solvers::Roe::waveStrengths(t_real i_hL,
+                                              t_real i_hR,
+                                              t_real i_huL,
+                                              t_real i_huR,
+                                              t_real i_waveSpeedL,
+                                              t_real i_waveSpeedR,
+                                              t_real &o_strengthL,
+                                              t_real &o_strengthR) {
   // compute inverse of right eigenvector-matrix
   t_real l_detInv = 1 / (i_waveSpeedR - i_waveSpeedL);
 
@@ -50,8 +57,10 @@ void tsunami_lab::solvers::Roe::waveStrengths(
   o_strengthR += l_rInv[1][1] * l_huJump;
 }
 
-void tsunami_lab::solvers::Roe::netUpdates(t_real i_hL, t_real i_hR,
-                                           t_real i_huL, t_real i_huR,
+void tsunami_lab::solvers::Roe::netUpdates(t_real i_hL,
+                                           t_real i_hR,
+                                           t_real i_huL,
+                                           t_real i_huR,
                                            t_real o_netUpdateL[2],
                                            t_real o_netUpdateR[2]) {
   // compute particle velocities
