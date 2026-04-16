@@ -7,7 +7,8 @@
 #include "WavePropagation1d.h"
 #include <catch2/catch.hpp>
 
-TEST_CASE("Test the 1d wave propagation solver.", "[WaveProp1d]") {
+TEST_CASE("Test the 1d wave propagation solver with Roe solver.",
+          "[WaveProp1dRoe]") {
   /*
    * Test case:
    *
@@ -41,7 +42,7 @@ TEST_CASE("Test the 1d wave propagation solver.", "[WaveProp1d]") {
   m_waveProp.setGhostOutflow();
 
   // perform a time step
-  m_waveProp.timeStep(0.1);
+  m_waveProp.timeStep(0.1, "ROE");
 
   // steady state
   for (std::size_t l_ce = 0; l_ce < 49; l_ce++) {
