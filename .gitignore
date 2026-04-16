@@ -5,4 +5,6 @@ build/*
 .idea/*
 .sconsign.dblite
 simulations/*
+!simulations/
+!simulations/visualizations/
 !simulations/visualizations/**
