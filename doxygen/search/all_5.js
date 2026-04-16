@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['roe_0',['Roe',['../classtsunami__lab_1_1solvers_1_1Roe.html',1,'tsunami_lab::solvers']]]
+  ['rarerare1d_0',['rarerare1d',['../classtsunami__lab_1_1setups_1_1RareRare1d.html',1,'tsunami_lab::setups::RareRare1d'],['../classtsunami__lab_1_1setups_1_1RareRare1d.html#a8391c32b43b9aac5a17714e7e1d6c23c',1,'tsunami_lab::setups::RareRare1d::RareRare1d()']]],
+  ['roe_1',['Roe',['../classtsunami__lab_1_1solvers_1_1Roe.html',1,'tsunami_lab::solvers']]]
 ];

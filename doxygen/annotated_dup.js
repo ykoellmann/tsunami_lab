@@ -10,7 +10,9 @@ var annotated_dup =
       ] ],
       [ "setups", null, [
         [ "DamBreak1d", "classtsunami__lab_1_1setups_1_1DamBreak1d.html", "classtsunami__lab_1_1setups_1_1DamBreak1d" ],
-        [ "Setup", "classtsunami__lab_1_1setups_1_1Setup.html", "classtsunami__lab_1_1setups_1_1Setup" ]
+        [ "RareRare1d", "classtsunami__lab_1_1setups_1_1RareRare1d.html", "classtsunami__lab_1_1setups_1_1RareRare1d" ],
+        [ "Setup", "classtsunami__lab_1_1setups_1_1Setup.html", "classtsunami__lab_1_1setups_1_1Setup" ],
+        [ "ShockShock1d", "classtsunami__lab_1_1setups_1_1ShockShock1d.html", "classtsunami__lab_1_1setups_1_1ShockShock1d" ]
       ] ],
       [ "solvers", null, [
         [ "FWave", "classtsunami__lab_1_1solvers_1_1FWave.html", null ],
