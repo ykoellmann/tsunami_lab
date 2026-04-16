@@ -13,7 +13,8 @@
 #
 # Packages the given directory into
 # submission_YY_MM_DD_brueckner_koellmann_vogt.tar.xz,
-# excluding hidden files and directories (.git, .DS_Store, etc.).
+# excluding hidden files/directories (.git, .DS_Store, etc.)
+# and the top-level 'submission' folder (contains weekly submission archives).
 # The tarball is created in the current working directory.
 #
 
@@ -59,8 +60,11 @@ echo ""
 TMPDIR="$(mktemp -d)"
 trap 'rm -rf "$TMPDIR"' EXIT
 
-echo "Copying project files (excluding hidden files)..."
-rsync -a --exclude='.*' "${PROJECT_PATH}/" "${TMPDIR}/${DIR_NAME}/"
+echo "Copying project files (excluding hidden files and top-level submission folder)..."
+rsync -a \
+    --exclude='.*' \
+    --exclude='/submission' \
+    "${PROJECT_PATH}/" "${TMPDIR}/${DIR_NAME}/"
 
 echo "Creating tarball..."
 tar -cvJf "$TARBALL" -C "$TMPDIR" "$DIR_NAME"
