@@ -136,7 +136,8 @@ int main(int i_argc, char* i_argv[]) {
   tsunami_lab::t_real l_endTime = 1.25;
   tsunami_lab::t_real l_simTime = 0;
 
-  // create new directory for simulation (simulation/SETUP_SOLVER_CELLNUMBER_TIMESTAMP
+  // create new directory for simulation
+  // (simulation/SETUP_SOLVER_CELLNUMBER_TIMESTAMP
   std::string l_simBaseDir = "simulations/";
   auto l_ts = std::chrono::duration_cast<std::chrono::seconds>(
                   std::chrono::system_clock::now().time_since_epoch())
