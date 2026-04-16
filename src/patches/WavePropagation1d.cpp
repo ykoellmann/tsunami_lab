@@ -34,12 +34,12 @@ tsunami_lab::patches::WavePropagation1d::~WavePropagation1d() {
 
 void tsunami_lab::patches::WavePropagation1d::timeStep(t_real i_scaling) {
   // pointers to old and new data
-  t_real *l_hOld = m_h[m_step];
-  t_real *l_huOld = m_hu[m_step];
+  t_real* l_hOld = m_h[m_step];
+  t_real* l_huOld = m_hu[m_step];
 
   m_step = (m_step + 1) % 2;
-  t_real *l_hNew = m_h[m_step];
-  t_real *l_huNew = m_hu[m_step];
+  t_real* l_hNew = m_h[m_step];
+  t_real* l_huNew = m_hu[m_step];
 
   // init new cell quantities
   for (t_idx l_ce = 1; l_ce < m_nCells + 1; l_ce++) {
@@ -69,8 +69,8 @@ void tsunami_lab::patches::WavePropagation1d::timeStep(t_real i_scaling) {
 }
 
 void tsunami_lab::patches::WavePropagation1d::setGhostOutflow() {
-  t_real *l_h = m_h[m_step];
-  t_real *l_hu = m_hu[m_step];
+  t_real* l_h = m_h[m_step];
+  t_real* l_hu = m_hu[m_step];
 
   // set left boundary
   l_h[0] = l_h[1];

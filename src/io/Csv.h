@@ -39,10 +39,10 @@ public:
                     t_idx i_nx,
                     t_idx i_ny,
                     t_idx i_stride,
-                    t_real const *i_h,
-                    t_real const *i_hu,
-                    t_real const *i_hv,
-                    std::ostream &io_stream);
+                    t_real const* i_h,
+                    t_real const* i_hu,
+                    t_real const* i_hv,
+                    std::ostream& io_stream);
 };
 
 #endif

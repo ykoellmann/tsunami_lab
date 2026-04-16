@@ -24,10 +24,10 @@ private:
   t_idx m_nCells = 0;
 
   //! water heights for the current and next time step for all cells
-  t_real *m_h[2] = {nullptr, nullptr};
+  t_real* m_h[2] = {nullptr, nullptr};
 
   //! momenta for the current and next time step for all cells
-  t_real *m_hu[2] = {nullptr, nullptr};
+  t_real* m_hu[2] = {nullptr, nullptr};
 
 public:
   /**
@@ -67,19 +67,19 @@ public:
    *
    * @return water heights.
    */
-  t_real const *getHeight() { return m_h[m_step] + 1; }
+  t_real const* getHeight() { return m_h[m_step] + 1; }
 
   /**
    * Gets the cells' momenta in x-direction.
    *
    * @return momenta in x-direction.
    **/
-  t_real const *getMomentumX() { return m_hu[m_step] + 1; }
+  t_real const* getMomentumX() { return m_hu[m_step] + 1; }
 
   /**
    * Dummy function which returns a nullptr.
    **/
-  t_real const *getMomentumY() { return nullptr; }
+  t_real const* getMomentumY() { return nullptr; }
 
   /**
    * Sets the height of the cell to the given value.
