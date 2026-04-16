@@ -1,5 +1,5 @@
 /**
-* @author Yannik Köllmann (yannik.koellmann AT uni-jena.de)
+ * @author Yannik Köllmann (yannik.koellmann AT uni-jena.de)
  * @author Jan Vogt (jan.vogt AT uni-jena.de)
  * @author Mika Brückner (mika.brueckner AT uni-jena.de)
  *
@@ -41,7 +41,7 @@ TEST_CASE("One-dimensional rare-rare setup", "[RareRare1d]") {
   }
 
   SECTION("setup is time-independent") {
-    REQUIRE(l_setup.getHeight(2, 5)     == l_setup.getHeight(2, 0));
+    REQUIRE(l_setup.getHeight(2, 5) == l_setup.getHeight(2, 0));
     REQUIRE(l_setup.getMomentumX(4, 99) == l_setup.getMomentumX(4, 0));
   }
 }

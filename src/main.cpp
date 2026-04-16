@@ -6,7 +6,7 @@
  **/
 #include "io/Csv.h"
 #include "patches/WavePropagation1d.h"
-#include "setups/DamBreak1d.h"
+#include "setups/dambreak/DamBreak1d.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
