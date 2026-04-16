@@ -40,8 +40,8 @@ private:
                          t_real i_hR,
                          t_real i_uL,
                          t_real i_uR,
-                         t_real &o_waveSpeedL,
-                         t_real &o_waveSpeedR);
+                         t_real& o_waveSpeedL,
+                         t_real& o_waveSpeedR);
 
   /**
    * Computes the wave strengths.
@@ -63,8 +63,8 @@ private:
                             t_real i_huR,
                             t_real i_waveSpeedL,
                             t_real i_waveSpeedR,
-                            t_real &o_strengthL,
-                            t_real &o_strengthR);
+                            t_real& o_strengthL,
+                            t_real& o_strengthR);
 
   /**
    * Computes the flux.
@@ -74,7 +74,7 @@ private:
    * @param o_flux will be set to the flux function hu, h*u^2 + 1/2*g*h^2.
    **/
 
-  static void flux(t_real i_h, t_real i_hu, t_real *o_flux);
+  static void flux(t_real i_h, t_real i_hu, t_real* o_flux);
 
 public:
   /**

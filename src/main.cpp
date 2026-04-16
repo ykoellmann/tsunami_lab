@@ -13,7 +13,7 @@
 #include <iostream>
 #include <limits>
 
-int main(int i_argc, char *i_argv[]) {
+int main(int i_argc, char* i_argv[]) {
   // number of cells in x- and y-direction
   tsunami_lab::t_idx l_nx = 0;
   tsunami_lab::t_idx l_ny = 1;
@@ -47,10 +47,10 @@ int main(int i_argc, char *i_argv[]) {
   std::cout << "  cell size:                      " << l_dxy << std::endl;
 
   // construct setup
-  tsunami_lab::setups::Setup *l_setup;
+  tsunami_lab::setups::Setup* l_setup;
   l_setup = new tsunami_lab::setups::DamBreak1d(10, 5, 5);
   // construct solver
-  tsunami_lab::patches::WavePropagation *l_waveProp;
+  tsunami_lab::patches::WavePropagation* l_waveProp;
   l_waveProp = new tsunami_lab::patches::WavePropagation1d(l_nx);
 
   // maximum observed height in the setup

@@ -36,8 +36,8 @@ private:
                          t_real i_hR,
                          t_real i_uL,
                          t_real i_uR,
-                         t_real &o_waveSpeedL,
-                         t_real &o_waveSpeedR);
+                         t_real& o_waveSpeedL,
+                         t_real& o_waveSpeedR);
 
   /**
    * Computes the wave strengths.
@@ -59,8 +59,8 @@ private:
                             t_real i_huR,
                             t_real i_waveSpeedL,
                             t_real i_waveSpeedR,
-                            t_real &o_strengthL,
-                            t_real &o_strengthR);
+                            t_real& o_strengthL,
+                            t_real& o_strengthR);
 
 public:
   /**

@@ -47,21 +47,21 @@ public:
    *
    * @return water heights.
    */
-  virtual t_real const *getHeight() = 0;
+  virtual t_real const* getHeight() = 0;
 
   /**
    * Gets the cells' momenta in x-direction.
    *
    * @return momenta in x-direction.
    **/
-  virtual t_real const *getMomentumX() = 0;
+  virtual t_real const* getMomentumX() = 0;
 
   /**
    * Gets the cells' momenta in y-direction.
    *
    * @return momenta in y-direction.
    **/
-  virtual t_real const *getMomentumY() = 0;
+  virtual t_real const* getMomentumY() = 0;
 
   /**
    * Sets the height of the cell to the given value.

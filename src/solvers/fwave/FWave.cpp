@@ -14,8 +14,8 @@ void tsunami_lab::solvers::FWave::waveSpeeds(t_real i_hL,
                                              t_real i_hR,
                                              t_real i_uL,
                                              t_real i_uR,
-                                             t_real &o_waveSpeedL,
-                                             t_real &o_waveSpeedR) {
+                                             t_real& o_waveSpeedL,
+                                             t_real& o_waveSpeedR) {
   // pre-compute square-root ops
   t_real l_hSqrtL = std::sqrt(i_hL);
   t_real l_hSqrtR = std::sqrt(i_hR);
@@ -33,7 +33,7 @@ void tsunami_lab::solvers::FWave::waveSpeeds(t_real i_hL,
 
 void tsunami_lab::solvers::FWave::flux(t_real i_h,
                                        t_real i_hu,
-                                       t_real *o_flux) {
+                                       t_real* o_flux) {
   // pre-compute u = hu / h
   t_real l_u = i_hu / i_h;
 
@@ -48,8 +48,8 @@ void tsunami_lab::solvers::FWave::waveStrengths(t_real i_hL,
                                                 t_real i_huR,
                                                 t_real i_waveSpeedL,
                                                 t_real i_waveSpeedR,
-                                                t_real &o_strengthL,
-                                                t_real &o_strengthR) {
+                                                t_real& o_strengthL,
+                                                t_real& o_strengthR) {
   // compute inverse of right eigenvector-matrix
   t_real l_detInv = 1 / (i_waveSpeedR - i_waveSpeedL);
 
