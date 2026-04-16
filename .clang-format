@@ -1,5 +1,22 @@
 BasedOnStyle: LLVM
+
+#Indentation:
 IndentWidth: 2
+
+#Brackets and Parameters:
 AlignAfterOpenBracket: Align
 BinPackParameters: false
+
+#Layout:
 ColumnLimit: 80
+MaxEmptyLinesToKeep: 1
+
+#Pointers:
+PointerAlignment: Left
+
+#Includes:
+SortIncludes: CaseSensitive
+IncludeBlocks: Preserve
+
+#Comments:
+ReflowComments: true
