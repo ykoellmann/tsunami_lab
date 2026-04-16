@@ -17,11 +17,15 @@
 #include <iostream>
 #include <limits>
 
+#include "setups/rarerare/RareRare1d.h"
+#include "setups/shockshock/ShockShock1d.h"
+
 int main(int i_argc, char* i_argv[]) {
   // number of cells in x- and y-direction
   tsunami_lab::t_idx l_nx = 0;
   tsunami_lab::t_idx l_ny = 1;
   std::string l_solverMode;
+  std::string l_setupMode;
 
   // set cell size
   tsunami_lab::t_real l_dxy = 1;
@@ -32,11 +36,14 @@ int main(int i_argc, char* i_argv[]) {
   std::cout << "### https://scalable.uni-jena.de ###" << std::endl;
   std::cout << "####################################" << std::endl;
 
-  if (i_argc != 3) {
+  if (i_argc != 4) {
     std::cerr << "invalid number of arguments, usage:" << std::endl;
-    std::cerr << "  ./build/tsunami_lab N_CELLS_X SOLVER_MODE" << std::endl;
-    std::cerr << "where N_CELLS_X is the number of cells in x-direction and "
-                 "SOLVER_MODE is a selection from 'FWave' and 'Roe'."
+    std::cerr << "  ./build/tsunami_lab N_CELLS_X SOLVER_MODE SETUP_MODE"
+              << std::endl;
+    std::cerr << "where N_CELLS_X is the number of cells in x-direction, "
+                 "SOLVER_MODE is a selection from 'FWave' and 'Roe' and "
+                 "SETUP_MODE is a selection from 'DamBreak', 'RareRare', "
+                 "'ShockShock'."
               << std::endl;
     return EXIT_FAILURE;
   } else {
@@ -54,6 +61,15 @@ int main(int i_argc, char* i_argv[]) {
       std::cerr << "invalid solver mode" << std::endl;
       return EXIT_FAILURE;
     }
+
+    l_setupMode = i_argv[3];
+    std::transform(l_setupMode.begin(), l_setupMode.end(), l_setupMode.begin(),
+                   ::toupper);
+    if (l_setupMode != "DAMBREAK" && l_setupMode != "RARERARE" &&
+        l_setupMode != "SHOCKSHOCK") {
+      std::cerr << "invalid setup mode" << std::endl;
+      return EXIT_FAILURE;
+    }
   }
   std::cout << "runtime configuration" << std::endl;
   std::cout << "  number of cells in x-direction: " << l_nx << std::endl;
@@ -61,8 +77,16 @@ int main(int i_argc, char* i_argv[]) {
   std::cout << "  cell size:                      " << l_dxy << std::endl;
 
   // construct setup
-  tsunami_lab::setups::Setup* l_setup;
-  l_setup = new tsunami_lab::setups::DamBreak1d(10, 5, 5);
+  tsunami_lab::setups::Setup* l_setup = nullptr;
+
+  if (l_setupMode == "DAMBREAK") {
+    l_setup = new tsunami_lab::setups::DamBreak1d(10, 5, 5);
+  } else if (l_setupMode == "RARERARE") {
+    l_setup = new tsunami_lab::setups::RareRare1d(10, 5, 5);
+  } else if (l_setupMode == "SHOCKSHOCK") {
+    l_setup = new tsunami_lab::setups::ShockShock1d(10, 5, 5);
+  }
+
   // construct solver
   tsunami_lab::patches::WavePropagation* l_waveProp;
   l_waveProp = new tsunami_lab::patches::WavePropagation1d(l_nx);
