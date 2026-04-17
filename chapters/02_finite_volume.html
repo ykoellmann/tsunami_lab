@@ -18,7 +18,8 @@
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" /> 
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="1. Riemann Solver" href="01_riemann_solver.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -41,9 +42,21 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Project Phases:</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="01_riemann_solver.html">1. Riemann Solver</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">2. Finite Volume Discretization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#implementation">Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#unit-tests">Unit Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#results-visualizations">Results &amp; Visualizations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#dambreak-simulation-with-fwave-solver-and-500-cells">Dambreak simulation with FWave solver and 500 cells</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#shock-shock-simulation-with-fwave-solver-and-500-cells">Shock Shock simulation with FWave solver and 500 cells</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rare-rare-simulation-with-fwave-solver-and-500-cells">Rare Rare simulation with FWave solver and 500 cells</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#individual-contributions">Individual Contributions</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -62,7 +75,7 @@
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
       <li class="breadcrumb-item active">2. Finite Volume Discretization</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../_sources/chapters/02_finite_volume_discretization.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/chapters/02_finite_volume.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -80,13 +93,28 @@
 </section>
 <section id="results-visualizations">
 <h2>Results &amp; Visualizations<a class="headerlink" href="#results-visualizations" title="Link to this heading"></a></h2>
+<section id="dambreak-simulation-with-fwave-solver-and-500-cells">
+<h3>Dambreak simulation with FWave solver and 500 cells<a class="headerlink" href="#dambreak-simulation-with-fwave-solver-and-500-cells" title="Link to this heading"></a></h3>
+<img alt="../_images/dambreak_fwave_500.gif" src="../_images/dambreak_fwave_500.gif" />
+</section>
+<section id="shock-shock-simulation-with-fwave-solver-and-500-cells">
+<h3>Shock Shock simulation with FWave solver and 500 cells<a class="headerlink" href="#shock-shock-simulation-with-fwave-solver-and-500-cells" title="Link to this heading"></a></h3>
+<img alt="../_images/shockshock_fwave_500.gif" src="../_images/shockshock_fwave_500.gif" />
+</section>
+<section id="rare-rare-simulation-with-fwave-solver-and-500-cells">
+<h3>Rare Rare simulation with FWave solver and 500 cells<a class="headerlink" href="#rare-rare-simulation-with-fwave-solver-and-500-cells" title="Link to this heading"></a></h3>
+<img alt="../_images/rarerare_fwave_500.gif" src="../_images/rarerare_fwave_500.gif" />
+</section>
 </section>
 <section id="individual-contributions">
 <h2>Individual Contributions<a class="headerlink" href="#individual-contributions" title="Link to this heading"></a></h2>
 <ul class="simple">
 <li><p><strong>Yannik Köllmann:</strong></p></li>
 <li><p><strong>Jan Vogt:</strong></p></li>
-<li><p><strong>Mika Brückner:</strong></p></li>
+<li><p><strong>Mika Brückner:</strong> Integration of f-wave solver into <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.h</span></code>, <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.cpp</span></code> and <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.test.cpp</span></code> (<code class="docutils literal notranslate"><span class="pre">[WaveProp1dFWave]</span></code>).
+Implementation of commandline arguments with flags for problem and solver mode to <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code>.
+Implementation of <code class="docutils literal notranslate"><span class="pre">visualize_simulation.py</span></code> script for visualizing simulation results from <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code>.
+Simulations and visualizations for Dambreak, ShockShock and RareRare problem with f-wave solver.</p></li>
 </ul>
 </section>
 </section>
@@ -94,7 +122,9 @@
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="01_riemann_solver.html" class="btn btn-neutral float-left" title="1. Riemann Solver" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
 
   <hr/>
 
