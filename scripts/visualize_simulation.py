@@ -34,14 +34,14 @@ def plot_static(solutions: list[tuple[int, pd.DataFrame]], output: str = "soluti
         ax_h = axes[0][col]
         ax_m = axes[1][col]
 
-        ax_h.plot(df["x"], df["height"], color="steelblue", linewidth=1.5)
+        ax_h.plot(df["x"], df["height"], color="skyblue", linewidth=1.5)
         ax_h.set_title(f"Step {idx}", fontsize=10)
         ax_h.set_xlabel("x")
         if col == 0:
             ax_h.set_ylabel("Height h")
         ax_h.grid(True, linestyle="--", alpha=0.5)
 
-        ax_m.plot(df["x"], df["momentum_x"], color="tomato", linewidth=1.5)
+        ax_m.plot(df["x"], df["momentum_x"], color="coral", linewidth=1.5)
         ax_m.set_xlabel("x")
         if col == 0:
             ax_m.set_ylabel("Momentum hu")
@@ -63,13 +63,13 @@ def plot_animation(solutions: list[tuple[int, pd.DataFrame]], output: str = "sol
     h_pad = (h_max - h_min) * 0.05 or 0.5
     m_pad = (m_max - m_min) * 0.05 or 0.5
 
-    line_h, = ax_h.plot([], [], color="steelblue", linewidth=1.5)
+    line_h, = ax_h.plot([], [], color="skyblue", linewidth=1.5)
     ax_h.set_xlim(solutions[0][1]["x"].min(), solutions[0][1]["x"].max())
     ax_h.set_ylim(h_min - h_pad, h_max + h_pad)
     ax_h.set_ylabel("Height h")
     ax_h.grid(True, linestyle="--", alpha=0.5)
 
-    line_m, = ax_m.plot([], [], color="tomato", linewidth=1.5)
+    line_m, = ax_m.plot([], [], color="coral", linewidth=1.5)
     ax_m.set_xlim(solutions[0][1]["x"].min(), solutions[0][1]["x"].max())
     ax_m.set_ylim(m_min - m_pad, m_max + m_pad)
     ax_m.set_ylabel("Momentum hu")
@@ -90,12 +90,13 @@ def plot_animation(solutions: list[tuple[int, pd.DataFrame]], output: str = "sol
         title.set_text(f"{title_prefix}  |  Output step {idx}")
         return line_h, line_m, title
 
+    fps = max(1, len(solutions) // 10)
     ani = animation.FuncAnimation(
         fig, update, frames=len(solutions),
-        init_func=init, interval=600, blit=False, repeat=True
+        init_func=init, interval=1000 // fps, blit=False, repeat=True
     )
 
-    ani.save(output, writer="pillow", fps=2)
+    ani.save(output, writer="pillow", fps=fps)
     print(f"Saved animation to '{output}'.")
     plt.show()
 
