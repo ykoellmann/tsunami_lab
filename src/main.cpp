@@ -23,14 +23,19 @@
 #include "setups/rarerare/RareRare1d.h"
 #include "setups/shockshock/ShockShock1d.h"
 
+static void printUsage(const char* i_prog) {
+  std::cerr << "usage: " << i_prog
+            << " -n N_CELLS_X -s SOLVER_MODE -p SETUP_MODE" << std::endl;
+  std::cerr << "  -n   number of cells in x-direction (>= 1)" << std::endl;
+  std::cerr << "  -s   solver:  FWave | Roe" << std::endl;
+  std::cerr << "  -p   setup:   DamBreak | RareRare | ShockShock" << std::endl;
+}
+
 int main(int i_argc, char* i_argv[]) {
-  // number of cells in x- and y-direction
   tsunami_lab::t_idx l_nx = 0;
   tsunami_lab::t_idx l_ny = 1;
   std::string l_solverMode;
   std::string l_setupMode;
-
-  // set cell size
   tsunami_lab::t_real l_dxy = 1;
 
   std::cout << "####################################" << std::endl;
@@ -39,41 +44,46 @@ int main(int i_argc, char* i_argv[]) {
   std::cout << "### https://scalable.uni-jena.de ###" << std::endl;
   std::cout << "####################################" << std::endl;
 
-  if (i_argc != 4) {
-    std::cerr << "invalid number of arguments, usage:" << std::endl;
-    std::cerr << "  ./build/tsunami_lab N_CELLS_X SOLVER_MODE SETUP_MODE"
-              << std::endl;
-    std::cerr << "where N_CELLS_X is the number of cells in x-direction, "
-                 "SOLVER_MODE is a selection from 'FWave' and 'Roe' and "
-                 "SETUP_MODE is a selection from 'DamBreak', 'RareRare', "
-                 "'ShockShock'."
-              << std::endl;
-    return EXIT_FAILURE;
-  } else {
-    l_nx = atoi(i_argv[1]);
-    if (l_nx < 1) {
-      std::cerr << "invalid number of cells" << std::endl;
-      return EXIT_FAILURE;
-    }
-    l_dxy = 10.0 / l_nx;
+  // parse flags
+  for (int l_i = 1; l_i < i_argc; ++l_i) {
+    std::string l_arg = i_argv[l_i];
 
-    l_solverMode = i_argv[2];
-    std::transform(l_solverMode.begin(), l_solverMode.end(),
-                   l_solverMode.begin(), ::tolower);
-    if (l_solverMode != "fwave" && l_solverMode != "roe") {
-      std::cerr << "invalid solver mode" << std::endl;
-      return EXIT_FAILURE;
-    }
-
-    l_setupMode = i_argv[3];
-    std::transform(l_setupMode.begin(), l_setupMode.end(), l_setupMode.begin(),
-                   ::tolower);
-    if (l_setupMode != "dambreak" && l_setupMode != "rarerare" &&
-        l_setupMode != "shockshock") {
-      std::cerr << "invalid setup mode" << std::endl;
+    if ((l_arg == "-n" || l_arg == "--cells") && l_i + 1 < i_argc) {
+      l_nx = atoi(i_argv[++l_i]);
+    } else if ((l_arg == "-s" || l_arg == "--solver") && l_i + 1 < i_argc) {
+      l_solverMode = i_argv[++l_i];
+      std::transform(l_solverMode.begin(), l_solverMode.end(),
+                     l_solverMode.begin(), ::tolower);
+    } else if ((l_arg == "-p" || l_arg == "--problem") && l_i + 1 < i_argc) {
+      l_setupMode = i_argv[++l_i];
+      std::transform(l_setupMode.begin(), l_setupMode.end(),
+                     l_setupMode.begin(), ::tolower);
+    } else {
+      std::cerr << "unknown or incomplete argument: " << l_arg << std::endl;
+      printUsage(i_argv[0]);
       return EXIT_FAILURE;
     }
   }
+
+  if (l_nx < 1) {
+    std::cerr << "invalid or missing number of cells (-n)" << std::endl;
+    printUsage(i_argv[0]);
+    return EXIT_FAILURE;
+  }
+  if (l_solverMode != "fwave" && l_solverMode != "roe") {
+    std::cerr << "invalid or missing solver mode (-s)" << std::endl;
+    printUsage(i_argv[0]);
+    return EXIT_FAILURE;
+  }
+  if (l_setupMode != "dambreak" && l_setupMode != "rarerare" &&
+      l_setupMode != "shockshock") {
+    std::cerr << "invalid or missing setup mode (-e)" << std::endl;
+    printUsage(i_argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  l_dxy = 10.0 / l_nx;
+
   std::cout << "runtime configuration" << std::endl;
   std::cout << "  number of cells in x-direction: " << l_nx << std::endl;
   std::cout << "  number of cells in y-direction: " << l_ny << std::endl;
