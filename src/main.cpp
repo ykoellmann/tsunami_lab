@@ -143,19 +143,15 @@ int main(int i_argc, char* i_argv[]) {
           printUsage(i_argv[0]);
           return EXIT_FAILURE;
         }
-        l_setup = new tsunami_lab::setups::DamBreak1d(l_p1, l_p2, l_p3);
 
-        // TODO: add hu_l; hu_r to DamBreak1d setup
-        //  // optional huLeft / huRight — stop consuming if next token is a
-        //  flag if (l_i + 1 < i_argc && i_argv[l_i + 1][0] != '-') {
-        //    l_p4 = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
-        //  }
-        //  if (l_i + 1 < i_argc && i_argv[l_i + 1][0] != '-') {
-        //    l_p5 = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
-        //  }
-        //
-        //  //l_setup = new tsunami_lab::setups::DamBreak1d(l_p1, l_p2, l_p3,
-        //  l_p4, l_p5);
+        if (l_i + 1 < i_argc && i_argv[l_i + 1][0] != '-') {
+          l_p4 = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
+        }
+        if (l_i + 1 < i_argc && i_argv[l_i + 1][0] != '-') {
+          l_p5 = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
+        }
+        l_setup =
+            new tsunami_lab::setups::DamBreak1d(l_p1, l_p2, l_p3, l_p4, l_p5);
 
       } else if (l_setupMode == "rarerare") {
         if (l_i + 3 >= i_argc) {
