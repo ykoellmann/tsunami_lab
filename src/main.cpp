@@ -214,7 +214,7 @@ int main(int i_argc, char* i_argv[]) {
     return EXIT_FAILURE;
   }
 
-  // derived quantities — computed AFTER all args are parsed
+  // derived quantities — computed after all args are parsed
   tsunami_lab::t_real l_dxy =
       l_domainSize / static_cast<tsunami_lab::t_real>(l_nx);
 
@@ -235,29 +235,40 @@ int main(int i_argc, char* i_argv[]) {
   tsunami_lab::patches::WavePropagation* l_waveProp =
       new tsunami_lab::patches::WavePropagation1d(l_nx);
 
+  // maximum observed height in the setup
   tsunami_lab::t_real l_hMax =
       std::numeric_limits<tsunami_lab::t_real>::lowest();
 
+  // set up solver
   for (tsunami_lab::t_idx l_cy = 0; l_cy < l_ny; l_cy++) {
     tsunami_lab::t_real l_y = l_cy * l_dxy;
+
     for (tsunami_lab::t_idx l_cx = 0; l_cx < l_nx; l_cx++) {
       tsunami_lab::t_real l_x = l_cx * l_dxy;
 
+      // get initial values of the setup
       tsunami_lab::t_real l_h = l_setup->getHeight(l_x, l_y);
+      l_hMax = std::max(l_h, l_hMax);
+
       tsunami_lab::t_real l_hu = l_setup->getMomentumX(l_x, l_y);
       tsunami_lab::t_real l_hv = l_setup->getMomentumY(l_x, l_y);
 
-      l_hMax = std::max(l_h, l_hMax);
-
+      // set initial values in wave propagation solver
       l_waveProp->setHeight(l_cx, l_cy, l_h);
+
       l_waveProp->setMomentumX(l_cx, l_cy, l_hu);
+
       l_waveProp->setMomentumY(l_cx, l_cy, l_hv);
     }
   }
 
-  // CFL-stable time step
+  // derive maximum wave speed in setup; the momentum is ignored
   tsunami_lab::t_real l_speedMax = std::sqrt(9.81f * l_hMax);
+
+  // derive constant time step; changes at simulation time are ignored
   tsunami_lab::t_real l_dt = 0.5f * l_dxy / l_speedMax;
+
+  // derive scaling for a time step
   tsunami_lab::t_real l_scaling = l_dt / l_dxy;
 
   // output directory
@@ -289,6 +300,7 @@ int main(int i_argc, char* i_argv[]) {
 
   std::cout << "entering time loop" << std::endl;
 
+  // iterate over time
   while (l_simTime < l_endTime) {
     if (l_timeStep % l_outInterval == 0) {
       std::cout << "  simulation time / #time steps: " << l_simTime << " s / "
@@ -301,6 +313,7 @@ int main(int i_argc, char* i_argv[]) {
       std::ofstream l_file(l_path);
       tsunami_lab::io::Csv::write(l_dxy, l_nx, 1, 1, l_waveProp->getHeight(),
                                   l_waveProp->getMomentumX(), nullptr, l_file);
+      l_file.close();
       l_nOut++;
     }
 
@@ -313,10 +326,12 @@ int main(int i_argc, char* i_argv[]) {
 
   std::cout << "finished time loop" << std::endl;
 
+  // free memory
   std::cout << "freeing memory" << std::endl;
   delete l_setup;
   delete l_waveProp;
 
+  // print output dir
   std::cout << "\033[32mSimulation results written to:\033[36m " << l_simDir
             << "\033[0m" << std::endl;
   std::cout << "finished, exiting" << std::endl;
