@@ -147,7 +147,7 @@ int main(int i_argc, char* i_argv[]) {
           l_p5 = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
         }
         l_setup =
-            new tsunami_lab::setups::DamBreak1d(l_p1, l_p2, l_p3, l_p4, l_p5);
+            new tsunami_lab::setups::DamBreak1d(l_p1, l_p4, l_p2, l_p5, l_p3);
 
       } else if (l_setupMode == "rarerare") {
         if (l_i + 3 >= i_argc) {
@@ -296,10 +296,10 @@ int main(int i_argc, char* i_argv[]) {
   tsunami_lab::t_idx l_nOut = 0;
   tsunami_lab::t_real l_simTime = 0;
 
-  // ~20 snapshots evenly distributed over simulation time
-  tsunami_lab::t_idx l_outInterval =
-      std::max(static_cast<tsunami_lab::t_idx>(25),
-               static_cast<tsunami_lab::t_idx>(0.05f * l_endTime / l_dt));
+  // one snapshot every 0.5 % of total time steps
+  tsunami_lab::t_idx l_outInterval = std::max(
+    static_cast<tsunami_lab::t_idx>(25),
+    static_cast<tsunami_lab::t_idx>(0.005f * l_endTime / l_dt));
 
   std::cout << "entering time loop" << std::endl;
 
