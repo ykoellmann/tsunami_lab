@@ -297,9 +297,9 @@ int main(int i_argc, char* i_argv[]) {
   tsunami_lab::t_real l_simTime = 0;
 
   // one snapshot every 0.5 % of total time steps
-  tsunami_lab::t_idx l_outInterval = std::max(
-    static_cast<tsunami_lab::t_idx>(25),
-    static_cast<tsunami_lab::t_idx>(0.005f * l_endTime / l_dt));
+  tsunami_lab::t_idx l_outInterval =
+      std::max(static_cast<tsunami_lab::t_idx>(25),
+               static_cast<tsunami_lab::t_idx>(0.005f * l_endTime / l_dt));
 
   std::cout << "entering time loop" << std::endl;
 
@@ -315,7 +315,8 @@ int main(int i_argc, char* i_argv[]) {
 
       std::ofstream l_file(l_path);
       tsunami_lab::io::Csv::write(l_dxy, l_nx, 1, 1, l_waveProp->getHeight(),
-                                  l_waveProp->getMomentumX(), nullptr, l_file);
+                                  l_waveProp->getMomentumX(), nullptr,
+                                  l_simTime, l_file);
       l_file.close();
       l_nOut++;
     }
