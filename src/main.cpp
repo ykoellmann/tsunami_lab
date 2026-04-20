@@ -40,19 +40,17 @@ static void printUsage(const char* i_prog) {
             << std::endl;
   std::cerr << std::endl;
   std::cerr << "optional parameters:" << std::endl;
-  std::cerr << "  -s   solver:  FWave | Roe" << std::endl;
+  std::cerr << "  -s   solver:  FWave | Roe (default: FWave)" << std::endl;
   std::cerr << "  -d   total domain size in meters (default: 10.0)"
             << std::endl;
   std::cerr << "  -t   simulation end time in seconds (default: 1.25)"
             << std::endl;
   std::cerr << std::endl;
   std::cerr << "examples:" << std::endl;
-  std::cerr << "  " << i_prog << " -n 100 -s FWave -p DamBreak 10 5 5"
+  std::cerr << "  " << i_prog << " -n 100 -p DamBreak 10 5 5" << std::endl;
+  std::cerr << "  " << i_prog
+            << " -n 2500 -s Roe -d 25000 -t 7200 -p DamBreak 14 3.5 12500 0 0.7"
             << std::endl;
-  std::cerr
-      << "  " << i_prog
-      << " -n 2500 -s FWave -d 25000 -t 7200 -p DamBreak 14 3.5 12500 0 0.7"
-      << std::endl;
 }
 
 int main(int i_argc, char* i_argv[]) {
