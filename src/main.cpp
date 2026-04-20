@@ -63,9 +63,7 @@ int main(int i_argc, char* i_argv[]) {
 
   tsunami_lab::t_real l_p1 = 0, l_p2 = 0, l_p3 = 0;
 
-  // TODO: add hu_l; hu_r to DamBreak1d setup
-  // tsunami_lab::t_real l_p4 = 0,
-  //                    l_p5 = 0; // optional: huLeft / huRight for DamBreak
+  tsunami_lab::t_real l_p4 = 0, l_p5 = 0; // optional: huLeft / huRight for DamBreak
 
   tsunami_lab::setups::Setup* l_setup = nullptr;
 
