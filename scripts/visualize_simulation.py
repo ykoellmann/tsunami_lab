@@ -15,27 +15,36 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 
-def load_solutions(directory: str = ".") -> list[tuple[int, pd.DataFrame]]:
+def load_solutions(directory: str = ".") -> list[tuple[int, pd.DataFrame, float | None]]:
     pattern = os.path.join(directory, "solution_*.csv")
     files = sorted(glob.glob(pattern), key=lambda f: int(f.split("solution_")[1].split(".csv")[0]))
     if not files:
         print(f"No solution_*.csv files found in '{directory}'.")
         sys.exit(1)
-    return [(int(f.split("solution_")[1].split(".csv")[0]), pd.read_csv(f)) for f in files]
+    result = []
+    for f in files:
+        idx = int(f.split("solution_")[1].split(".csv")[0])
+        with open(f) as fh:
+            first = fh.readline()
+        sim_time = float(first.split("=")[1]) if first.startswith("# sim_time=") else None
+        df = pd.read_csv(f, comment="#")
+        result.append((idx, df, sim_time))
+    return result
 
 
-def plot_static(solutions: list[tuple[int, pd.DataFrame]], output: str = "solution_static.png", title: str = "Tsunami Lab — Wave Propagation") -> None:
+def plot_static(solutions: list[tuple[int, pd.DataFrame, float | None]], output: str = "solution_static.png", title: str = "Tsunami Lab — Wave Propagation") -> None:
     n = len(solutions)
     fig, axes = plt.subplots(2, n, figsize=(4 * n, 6), sharey="row", layout="constrained")
     if n == 1:
         axes = [[axes[0]], [axes[1]]]
 
-    for col, (idx, df) in enumerate(solutions):
+    for col, (idx, df, sim_time) in enumerate(solutions):
         ax_h = axes[0][col]
         ax_m = axes[1][col]
 
         ax_h.plot(df["x"], df["height"], color="skyblue", linewidth=1.5)
-        ax_h.set_title(f"Step {idx}", fontsize=10)
+        time_str = f"  (t = {sim_time:.2f} s)" if sim_time is not None else ""
+        ax_h.set_title(f"Step {idx}{time_str}", fontsize=10)
         ax_h.set_xlabel("x")
         if col == 0:
             ax_h.set_ylabel("Height h")
@@ -53,24 +62,24 @@ def plot_static(solutions: list[tuple[int, pd.DataFrame]], output: str = "soluti
     plt.show()
 
 
-def plot_animation(solutions: list[tuple[int, pd.DataFrame]], output: str = "solution_animation.gif", title_prefix: str = "Tsunami Lab — Wave Propagation", duration: float = 10.0) -> None:
+def plot_animation(solutions: list[tuple[int, pd.DataFrame, float | None]], output: str = "solution_animation.gif", title_prefix: str = "Tsunami Lab — Wave Propagation", duration: float = 10.0) -> None:
     fig, (ax_h, ax_m) = plt.subplots(2, 1, figsize=(8, 6))
 
-    all_h = pd.concat([df["height"] for _, df in solutions])
-    all_m = pd.concat([df["momentum_x"] for _, df in solutions])
+    all_h = pd.concat([df["height"] for _, df, _ in solutions])
+    all_m = pd.concat([df["momentum_x"] for _, df, _ in solutions])
     h_min, h_max = all_h.min(), all_h.max()
     m_min, m_max = all_m.min(), all_m.max()
     h_pad = (h_max - h_min) * 0.05 or 0.5
     m_pad = (m_max - m_min) * 0.05 or 0.5
 
     line_h, = ax_h.plot([], [], color="skyblue", linewidth=1.5)
-    ax_h.set_xlim(solutions[0][1]["x"].min(), solutions[0][1]["x"].max())
+    ax_h.set_xlim(solutions[0][1]["x"].min(), solutions[0][1]["x"].max())  # type: ignore[index]
     ax_h.set_ylim(h_min - h_pad, h_max + h_pad)
     ax_h.set_ylabel("Height h")
     ax_h.grid(True, linestyle="--", alpha=0.5)
 
     line_m, = ax_m.plot([], [], color="coral", linewidth=1.5)
-    ax_m.set_xlim(solutions[0][1]["x"].min(), solutions[0][1]["x"].max())
+    ax_m.set_xlim(solutions[0][1]["x"].min(), solutions[0][1]["x"].max())  # type: ignore[index]
     ax_m.set_ylim(m_min - m_pad, m_max + m_pad)
     ax_m.set_ylabel("Momentum hu")
     ax_m.set_xlabel("x")
@@ -84,10 +93,11 @@ def plot_animation(solutions: list[tuple[int, pd.DataFrame]], output: str = "sol
         return line_h, line_m
 
     def update(frame):
-        idx, df = solutions[frame]
+        idx, df, sim_time = solutions[frame]
         line_h.set_data(df["x"], df["height"])
         line_m.set_data(df["x"], df["momentum_x"])
-        title.set_text(f"{title_prefix}  |  Output step {idx}")
+        time_str = f"  |  t = {sim_time:.2f} s" if sim_time is not None else ""
+        title.set_text(f"{title_prefix}  |  Output step {idx}{time_str}")
         return line_h, line_m, title
 
     fps = max(1, round(len(solutions) / duration))
