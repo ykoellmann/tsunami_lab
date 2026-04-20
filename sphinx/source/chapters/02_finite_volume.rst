@@ -95,7 +95,7 @@ Results:
 
 The analytical estimate using the Roe eigenvalue :math:`λ_r^{Roe} = 9.33\frac{m}{s}` yields an evacuation time of :math:`\sim 44.66 min`.
 The numerical simulation shows the shock front reaching the village at :math:`t \approx 2256 s (\sim37.6 min)` , which is :math:`\sim 7 min` earlier.
-This discrepancy is expected, as :math:`λ_r^{Roe}` underestimates the actual shock speed.
+This discrepancy is expected, as :math:`λ_r^{Roe}` underestimates the actual shock speed since the shock wave propagates through water that has already been set in motion by the dam break..
 
 Individual Contributions
 ------------------------
