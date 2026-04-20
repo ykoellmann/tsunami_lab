@@ -27,9 +27,10 @@ static void printUsage(const char* i_prog) {
   std::cerr << std::endl;
   std::cerr << "mandatory parameters:"<<std::endl;
   std::cerr << "  -n   number of cells in x-direction (>= 1)" << std::endl;
-  std::cerr << "  -p DamBreak   <hLeft> <hRight> <location> [huLeft=0] [huRight=0]" << std::endl;
-  std::cerr << "  -p RareRare   <height> <momentum> <location>" << std::endl;
-  std::cerr << "  -p ShockShock <height> <momentum> <location>" << std::endl;
+  std::cerr << "  -p   setup with configuration:" << std::endl;
+  std::cerr << "        > DamBreak   <hLeft> <hRight> <location> [huLeft=0] [huRight=0]" << std::endl;
+  std::cerr << "        > RareRare   <height> <momentum> <location>" << std::endl;
+  std::cerr << "        > ShockShock <height> <momentum> <location>" << std::endl;
   std::cerr << std::endl;
   std::cerr << "optional parameters:"<<std::endl;
   std::cerr << "  -s   solver:  FWave | Roe" << std::endl;
