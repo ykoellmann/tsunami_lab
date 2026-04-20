@@ -1,7 +1,7 @@
 var classtsunami__lab_1_1setups_1_1DamBreak1d =
 [
-    [ "DamBreak1d", "classtsunami__lab_1_1setups_1_1DamBreak1d.html#a9d09ba838d9a6699b6e2821bc9ed08b7", null ],
+    [ "DamBreak1d", "classtsunami__lab_1_1setups_1_1DamBreak1d.html#a1eb959374ac3855f0988c0e74791e6a8", null ],
     [ "getHeight", "classtsunami__lab_1_1setups_1_1DamBreak1d.html#a81271bb57c44ea59e88dcc9541cf00ee", null ],
-    [ "getMomentumX", "classtsunami__lab_1_1setups_1_1DamBreak1d.html#a425544509438f8b6ee2a705cf02d9a3c", null ],
+    [ "getMomentumX", "classtsunami__lab_1_1setups_1_1DamBreak1d.html#a4ac0da5ba87317dc61a8f4a30ddbbde0", null ],
     [ "getMomentumY", "classtsunami__lab_1_1setups_1_1DamBreak1d.html#a1f16fbb0280757323fb3696fb460da66", null ]
 ];
