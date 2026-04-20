@@ -16,6 +16,7 @@
       <script src="../_static/documentation_options.js?v=5929fcd5"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -87,9 +88,39 @@
 <h1>2. Finite Volume Discretization<a class="headerlink" href="#finite-volume-discretization" title="Link to this heading"></a></h1>
 <section id="implementation">
 <h2>Implementation<a class="headerlink" href="#implementation" title="Link to this heading"></a></h2>
+<p>The one-dimensional finite volume discretization is realized in
+<code class="docutils literal notranslate"><span class="pre">WavePropagation1d</span></code>, which manages the cell quantities, two ghost
+cells at each boundary, and the time-step update. The update iterates
+over all <span class="math notranslate nohighlight">\(n+1\)</span> edges, invokes the selected Riemann solver, and
+applies the returned net-updates to the neighbouring cells. The solver
+can be switched between Roe and f-wave at runtime via a string
+parameter passed to <code class="docutils literal notranslate"><span class="pre">timeStep</span></code>.</p>
+<p>Three Riemann setups are provided. <code class="docutils literal notranslate"><span class="pre">DamBreak1d</span></code> (Sec. 2.2) supports
+independently configurable water heights and momenta on both sides,
+which covers both the classical dam break and the 2.2.2 evacuation
+scenario with a pre-existing river flow (<code class="docutils literal notranslate"><span class="pre">q_r</span> <span class="pre">=</span> <span class="pre">[3.5,</span> <span class="pre">0.7]</span></code>).
+<code class="docutils literal notranslate"><span class="pre">ShockShock1d</span></code> and <code class="docutils literal notranslate"><span class="pre">RareRare1d</span></code> (Sec. 2.1) are symmetric Riemann
+problems with equal water height on both sides and antisymmetric
+momentum — the two streams move towards each other (shock-shock) or
+away from each other (rare-rare). All setups follow the convention
+<span class="math notranslate nohighlight">\(x \leq x_{\text{dis}}\)</span> for the left state.</p>
+<p>The command-line interface in <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code> selects a setup via <code class="docutils literal notranslate"><span class="pre">-p</span></code>
+with its parameters as positional arguments. For <code class="docutils literal notranslate"><span class="pre">DamBreak</span></code>, the
+momenta on both sides are optional (default zero), so the classical
+dam break and the 2.2.2 scenario use the same setup class. Simulation
+results are written as CSV snapshots at roughly 20 evenly spaced
+points in time.</p>
 </section>
 <section id="unit-tests">
 <h2>Unit Tests<a class="headerlink" href="#unit-tests" title="Link to this heading"></a></h2>
+<p>Each setup has its own test file tagged with the class name
+(<code class="docutils literal notranslate"><span class="pre">[DamBreak1d]</span></code>, <code class="docutils literal notranslate"><span class="pre">[ShockShock1d]</span></code>, <code class="docutils literal notranslate"><span class="pre">[RareRare1d]</span></code>). The tests
+are organized into Catch2 <code class="docutils literal notranslate"><span class="pre">SECTION</span></code> blocks covering constant height
+on both sides, the expected sign of the momentum on each side,
+antisymmetry across the discontinuity, assignment of the discontinuity
+cell itself to the left state, zero y-momentum, and time-independence
+of the initial state. <code class="docutils literal notranslate"><span class="pre">DamBreak1d</span></code> additionally has a test case for
+the extended signature with non-zero momentum on both sides.</p>
 </section>
 <section id="results-visualizations">
 <h2>Results &amp; Visualizations<a class="headerlink" href="#results-visualizations" title="Link to this heading"></a></h2>
@@ -109,7 +140,14 @@
 <section id="individual-contributions">
 <h2>Individual Contributions<a class="headerlink" href="#individual-contributions" title="Link to this heading"></a></h2>
 <ul class="simple">
-<li><p><strong>Yannik Köllmann:</strong></p></li>
+<li><p><strong>Yannik Köllmann:</strong> Implementation of 2.1.1 setups <code class="docutils literal notranslate"><span class="pre">ShockShock1d</span></code> and <code class="docutils literal notranslate"><span class="pre">RareRare1d</span></code>
+(<code class="docutils literal notranslate"><span class="pre">[ShockShock1d]</span></code>, <code class="docutils literal notranslate"><span class="pre">[RareRare1d]</span></code>) with corresponding unit tests, copied from the
+<code class="docutils literal notranslate"><span class="pre">DamBreak1d</span></code> template and adapted for shock-shock and rare-rare Riemann problems.
+Extension of <code class="docutils literal notranslate"><span class="pre">DamBreak1d</span></code> with configurable left and right momentum parameters
+(<code class="docutils literal notranslate"><span class="pre">m_momentumLeft</span></code>, <code class="docutils literal notranslate"><span class="pre">m_momentumRight</span></code>) to enable setups such as the 2.2.2 evacuation
+scenario with a pre-existing river flow. Added corresponding unit tests and updated
+the command-line interface in <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code> to accept optional <code class="docutils literal notranslate"><span class="pre">huLeft</span></code>/<code class="docutils literal notranslate"><span class="pre">huRight</span></code>
+arguments. Integrated the new setup files into the SCons build configuration.</p></li>
 <li><p><strong>Jan Vogt:</strong></p></li>
 <li><p><strong>Mika Brückner:</strong> Integration of f-wave solver into <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.h</span></code>, <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.cpp</span></code> and <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.test.cpp</span></code> (<code class="docutils literal notranslate"><span class="pre">[WaveProp1dFWave]</span></code>).
 Implementation of commandline arguments with flags for problem and solver mode to <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code>.
