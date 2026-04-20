@@ -266,7 +266,7 @@ int main(int i_argc, char* i_argv[]) {
   }
 
   // derive maximum wave speed in setup; the momentum is ignored
-  tsunami_lab::t_real l_speedMax = std::sqrt(9.81f * l_hMax);
+  tsunami_lab::t_real l_speedMax = std::sqrt(tsunami_lab::g * l_hMax);
 
   // derive constant time step; changes at simulation time are ignored
   tsunami_lab::t_real l_dt = 0.5f * l_dxy / l_speedMax;
