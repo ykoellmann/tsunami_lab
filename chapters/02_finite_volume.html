@@ -53,6 +53,13 @@
 <li class="toctree-l3"><a class="reference internal" href="#dambreak-simulation-with-fwave-solver-and-500-cells">Dambreak simulation with FWave solver and 500 cells</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#shock-shock-simulation-with-fwave-solver-and-500-cells">Shock Shock simulation with FWave solver and 500 cells</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#rare-rare-simulation-with-fwave-solver-and-500-cells">Rare Rare simulation with FWave solver and 500 cells</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#village-evacuation-time">Village Evacuation Time</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#setup">Setup:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#theoretical-estimate-2-2-2">Theoretical Estimate (2.2.2):</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#simulation">Simulation:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#results">Results:</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#individual-contributions">Individual Contributions</a></li>
@@ -107,9 +114,12 @@ away from each other (rare-rare). All setups follow the convention
 <p>The command-line interface in <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code> selects a setup via <code class="docutils literal notranslate"><span class="pre">-p</span></code>
 with its parameters as positional arguments. For <code class="docutils literal notranslate"><span class="pre">DamBreak</span></code>, the
 momenta on both sides are optional (default zero), so the classical
-dam break and the 2.2.2 scenario use the same setup class. Simulation
-results are written as CSV snapshots at roughly 20 evenly spaced
-points in time.</p>
+dam break and the evacuation scenario (Section 2.2.2) use the same
+setup class. The domain size and simulation end time are configurable
+via <code class="docutils literal notranslate"><span class="pre">-d</span></code> and <code class="docutils literal notranslate"><span class="pre">-t</span></code> respectively, defaulting to <code class="docutils literal notranslate"><span class="pre">10.0</span> <span class="pre">m</span></code> and
+<code class="docutils literal notranslate"><span class="pre">1.25</span> <span class="pre">s</span></code>. Simulation results are written as CSV snapshots at every 0.5% of total time
+steps, each annotated with the current simulation time via a
+<code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">sim_time=...</span></code> comment in the first line.</p>
 </section>
 <section id="unit-tests">
 <h2>Unit Tests<a class="headerlink" href="#unit-tests" title="Link to this heading"></a></h2>
@@ -136,6 +146,38 @@ the extended signature with non-zero momentum on both sides.</p>
 <h3>Rare Rare simulation with FWave solver and 500 cells<a class="headerlink" href="#rare-rare-simulation-with-fwave-solver-and-500-cells" title="Link to this heading"></a></h3>
 <img alt="../_images/rarerare_fwave_500.gif" src="../_images/rarerare_fwave_500.gif" />
 </section>
+<section id="village-evacuation-time">
+<h3>Village Evacuation Time<a class="headerlink" href="#village-evacuation-time" title="Link to this heading"></a></h3>
+<section id="setup">
+<h4>Setup:<a class="headerlink" href="#setup" title="Link to this heading"></a></h4>
+<p>Dam at <span class="math notranslate nohighlight">\(x=5000m\)</span> and village at <span class="math notranslate nohighlight">\(x=30000m\)</span> with a distance of <span class="math notranslate nohighlight">\(s_{village} = 25000m\)</span>.
+Initial water heights and momenta are <span class="math notranslate nohighlight">\(h_l = 14m\)</span>, <span class="math notranslate nohighlight">\(h_r = 3.5m\)</span>, <span class="math notranslate nohighlight">\(hu_l = 0\)</span>, <span class="math notranslate nohighlight">\(hu_r = 0.7 m^2/s\)</span>.
+The evacuation time is estimated by the speed of the right-going wave, which is the fastest way to reach the village</p>
+</section>
+<section id="theoretical-estimate-2-2-2">
+<h4>Theoretical Estimate (2.2.2):<a class="headerlink" href="#theoretical-estimate-2-2-2" title="Link to this heading"></a></h4>
+<div class="math notranslate nohighlight">
+\[\begin{split}s_{village} &amp;= 25000m \\\\
+q_l &amp;= \begin{bmatrix} 14 \\ 0 \end{bmatrix},\ q_r = \begin{bmatrix} 3.5 \\ 0.7 \end{bmatrix}\\
+u_r &amp;= \frac{hu_r}{h_r} = \frac{0.7}{3.5} = 0.2 \frac{m}{s}\\\\
+h^{Roe} &amp;= \frac{1}{2} (h_l + h_r) = \frac{1}{2} (14 + 3.5) = 8.75 m \\
+u^{Roe} &amp;= \frac{u_l \sqrt{h_l} + u_r \sqrt{h_r}}{\sqrt{h_l}+\sqrt{h_r}} = \frac{0 \cdot \sqrt{14} + 0.2 \cdot \sqrt{3.5}}{\sqrt{14}+\sqrt{3.5}} = 0.06667 \frac{m}{s}\\\\
+\lambda_r^{Roe} &amp;= u^{Roe} + \sqrt{gh^{Roe}} = 0.06667 + \sqrt{9.80665 \cdot 8.75} = 9.32994 \frac{m}{s} \\
+t_{evac} &amp;= \frac{s_{village}}{\lambda_r^{Roe}} = \frac{25000m}{9.32994} = 2679.54 s \approx 44.66 min\end{split}\]</div>
+</section>
+<section id="simulation">
+<h4>Simulation:<a class="headerlink" href="#simulation" title="Link to this heading"></a></h4>
+<p>The following graphic shows the plotted simulation data with setup: <code class="docutils literal notranslate"><span class="pre">./build/tsunami_lab</span> <span class="pre">-n</span> <span class="pre">30000</span> <span class="pre">-d</span> <span class="pre">30000</span> <span class="pre">-t</span> <span class="pre">2400</span> <span class="pre">-p</span> <span class="pre">DamBreak</span> <span class="pre">14</span> <span class="pre">3.5</span> <span class="pre">5000</span> <span class="pre">0</span> <span class="pre">0.7</span></code> and the f-wave solver.
+The shock front reaches the village(<span class="math notranslate nohighlight">\(x=30000\)</span>) at <span class="math notranslate nohighlight">\(t \approx 2256 s (\sim 37.6 min)\)</span>.</p>
+<img alt="../_images/evacuation_problem.gif" src="../_images/evacuation_problem.gif" />
+</section>
+<section id="results">
+<h4>Results:<a class="headerlink" href="#results" title="Link to this heading"></a></h4>
+<p>The analytical estimate using the Roe eigenvalue <span class="math notranslate nohighlight">\(λ_r^{Roe} = 9.33\frac{m}{s}\)</span> yields an evacuation time of <span class="math notranslate nohighlight">\(\sim 44.66 min\)</span>.
+The numerical simulation shows the shock front reaching the village at <span class="math notranslate nohighlight">\(t \approx 2256 s (\sim37.6 min)\)</span> , which is <span class="math notranslate nohighlight">\(\sim 7 min\)</span> earlier.
+This discrepancy is expected, as <span class="math notranslate nohighlight">\(λ_r^{Roe}\)</span> underestimates the actual shock speed since the shock wave propagates through water that has already been set in motion by the dam break.</p>
+</section>
+</section>
 </section>
 <section id="individual-contributions">
 <h2>Individual Contributions<a class="headerlink" href="#individual-contributions" title="Link to this heading"></a></h2>
@@ -149,10 +191,11 @@ scenario with a pre-existing river flow. Added corresponding unit tests and upda
 the command-line interface in <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code> to accept optional <code class="docutils literal notranslate"><span class="pre">huLeft</span></code>/<code class="docutils literal notranslate"><span class="pre">huRight</span></code>
 arguments. Integrated the new setup files into the SCons build configuration.</p></li>
 <li><p><strong>Jan Vogt:</strong></p></li>
-<li><p><strong>Mika Brückner:</strong> Integration of f-wave solver into <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.h</span></code>, <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.cpp</span></code> and <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.test.cpp</span></code> (<code class="docutils literal notranslate"><span class="pre">[WaveProp1dFWave]</span></code>).
-Implementation of commandline arguments with flags for problem and solver mode to <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code>.
+<li><p><strong>Mika Brückner:</strong> Integration of f-wave solver into <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.h</span></code>, <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.cpp</span></code> and <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.test.cpp</span></code> (<code class="docutils literal notranslate"><span class="pre">[WaveProp1dFWave]</span></code>) for task 2.1.
+Implementation of commandline arguments in <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code>.
 Implementation of <code class="docutils literal notranslate"><span class="pre">visualize_simulation.py</span></code> script for visualizing simulation results from <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code>.
-Simulations and visualizations for Dambreak, ShockShock and RareRare problem with f-wave solver.</p></li>
+Simulations and visualizations for Dambreak, ShockShock and RareRare problem with f-wave solver.
+Simulation, visualization and calculation of evacuation time for the 2.2.2 scenario with f-wave solver.</p></li>
 </ul>
 </section>
 </section>
