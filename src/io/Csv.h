@@ -34,6 +34,7 @@ public:
    * @param i_hv momentum in y-direction of the cells; optional: use nullptr if
    * not required.
    * @param io_stream stream to which the CSV-data is written.
+   * @param i_simTime current simulation time in seconds.
    **/
   static void write(t_real i_dxy,
                     t_idx i_nx,
@@ -42,6 +43,7 @@ public:
                     t_real const* i_h,
                     t_real const* i_hu,
                     t_real const* i_hv,
+                    t_real i_simTime,
                     std::ostream& io_stream);
 };
 
