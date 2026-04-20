@@ -1,5 +1,5 @@
 /**
- * @author Alexander Breuer (alex.breuer AT uni-jena.de)
+* @author Alexander Breuer (alex.breuer AT uni-jena.de)
  *
  * @section DESCRIPTION
  * One-dimensional dam break problem.
@@ -22,10 +22,12 @@ class tsunami_lab::setups::DamBreak1d : public Setup {
 private:
   //! height on the left side
   t_real m_heightLeft = 0;
-
+  //! momentum on the left side
+  t_real m_momentumLeft = 0;
   //! height on the right side
   t_real m_heightRight = 0;
-
+  //! momentum on the right side
+  t_real m_momentumRight = 0;
   //! location of the dam
   t_real m_locationDam = 0;
 
@@ -34,10 +36,16 @@ public:
    * Constructor.
    *
    * @param i_heightLeft water height on the left side of the dam.
+   * @param i_momentumLeft momentum on the left side of the dam.
    * @param i_heightRight water height on the right side of the dam.
+   * @param i_momentumRight momentum on the right side of the dam.
    * @param i_locationDam location (x-coordinate) of the dam.
    **/
-  DamBreak1d(t_real i_heightLeft, t_real i_heightRight, t_real i_locationDam);
+  DamBreak1d(t_real i_heightLeft,
+             t_real i_momentumLeft,
+             t_real i_heightRight,
+             t_real i_momentumRight,
+             t_real i_locationDam);
 
   /**
    * Gets the water height at a given point.
@@ -50,9 +58,10 @@ public:
   /**
    * Gets the momentum in x-direction.
    *
+   * @param i_x x-coordinate of the queried point.
    * @return momentum in x-direction.
    **/
-  t_real getMomentumX(t_real, t_real) const;
+  t_real getMomentumX(t_real i_x, t_real) const;
 
   /**
    * Gets the momentum in y-direction.
