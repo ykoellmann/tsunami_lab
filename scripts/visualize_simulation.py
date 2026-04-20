@@ -53,7 +53,7 @@ def plot_static(solutions: list[tuple[int, pd.DataFrame]], output: str = "soluti
     plt.show()
 
 
-def plot_animation(solutions: list[tuple[int, pd.DataFrame]], output: str = "solution_animation.gif", title_prefix: str = "Tsunami Lab — Wave Propagation") -> None:
+def plot_animation(solutions: list[tuple[int, pd.DataFrame]], output: str = "solution_animation.gif", title_prefix: str = "Tsunami Lab — Wave Propagation", duration: float = 10.0) -> None:
     fig, (ax_h, ax_m) = plt.subplots(2, 1, figsize=(8, 6))
 
     all_h = pd.concat([df["height"] for _, df in solutions])
@@ -90,7 +90,7 @@ def plot_animation(solutions: list[tuple[int, pd.DataFrame]], output: str = "sol
         title.set_text(f"{title_prefix}  |  Output step {idx}")
         return line_h, line_m, title
 
-    fps = max(1, len(solutions) // 10)
+    fps = max(1, round(len(solutions) / duration))
     ani = animation.FuncAnimation(
         fig, update, frames=len(solutions),
         init_func=init, interval=1000 // fps, blit=False, repeat=True
@@ -107,6 +107,7 @@ def main():
     parser.add_argument("-a", "--animate", action="store_true", help="Create an animation instead of a static plot.")
     parser.add_argument("-o", "--output", help="Output filename.")
     parser.add_argument("-n", "--name", default="Tsunami Lab — Wave Propagation", help="Title of the plot.")
+    parser.add_argument("-d", "--duration", type=float, default=10.0, help="Animation duration in seconds (default: 10).")
 
     args = parser.parse_args()
 
@@ -115,7 +116,7 @@ def main():
 
     if args.animate:
         output = args.output if args.output else "solution_animation.gif"
-        plot_animation(solutions, output=output, title_prefix=args.name)
+        plot_animation(solutions, output=output, title_prefix=args.name, duration=args.duration)
     else:
         output = args.output if args.output else "solution_static.png"
         plot_static(solutions, output=output, title=args.name)
