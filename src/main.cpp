@@ -23,23 +23,36 @@
 #include <sys/stat.h>
 
 static void printUsage(const char* i_prog) {
-  std::cerr << "usage: " << i_prog << " -n N_CELLS_X -s SOLVER -p SETUP [PARAMS...] [-d DOMAIN_SIZE] [-t END_TIME]" << std::endl;
+  std::cerr << "usage: " << i_prog
+            << " -n N_CELLS_X -s SOLVER -p SETUP [PARAMS...] [-d DOMAIN_SIZE] "
+               "[-t END_TIME]"
+            << std::endl;
   std::cerr << std::endl;
-  std::cerr << "mandatory parameters:"<<std::endl;
+  std::cerr << "mandatory parameters:" << std::endl;
   std::cerr << "  -n   number of cells in x-direction (>= 1)" << std::endl;
   std::cerr << "  -p   setup with configuration:" << std::endl;
-  std::cerr << "        > DamBreak   <hLeft> <hRight> <location> [huLeft=0] [huRight=0]" << std::endl;
-  std::cerr << "        > RareRare   <height> <momentum> <location>" << std::endl;
-  std::cerr << "        > ShockShock <height> <momentum> <location>" << std::endl;
+  std::cerr << "        > DamBreak   <hLeft> <hRight> <location> [huLeft=0] "
+               "[huRight=0]"
+            << std::endl;
+  std::cerr << "        > RareRare   <height> <momentum> <location>"
+            << std::endl;
+  std::cerr << "        > ShockShock <height> <momentum> <location>"
+            << std::endl;
   std::cerr << std::endl;
-  std::cerr << "optional parameters:"<<std::endl;
+  std::cerr << "optional parameters:" << std::endl;
   std::cerr << "  -s   solver:  FWave | Roe" << std::endl;
-  std::cerr << "  -d   total domain size in meters (default: 10.0)" << std::endl;
-  std::cerr << "  -t   simulation end time in seconds (default: 1.25)" << std::endl;
+  std::cerr << "  -d   total domain size in meters (default: 10.0)"
+            << std::endl;
+  std::cerr << "  -t   simulation end time in seconds (default: 1.25)"
+            << std::endl;
   std::cerr << std::endl;
   std::cerr << "examples:" << std::endl;
-  std::cerr << "  " << i_prog << " -n 100 -s FWave -p DamBreak 10 5 5" << std::endl;
-  std::cerr << "  " << i_prog << " -n 2500 -s FWave -d 25000 -t 7200 -p DamBreak 14 3.5 12500 0 0.7" << std::endl;
+  std::cerr << "  " << i_prog << " -n 100 -s FWave -p DamBreak 10 5 5"
+            << std::endl;
+  std::cerr
+      << "  " << i_prog
+      << " -n 2500 -s FWave -d 25000 -t 7200 -p DamBreak 14 3.5 12500 0 0.7"
+      << std::endl;
 }
 
 int main(int i_argc, char* i_argv[]) {
@@ -53,7 +66,7 @@ int main(int i_argc, char* i_argv[]) {
   tsunami_lab::t_real l_p1 = 0, l_p2 = 0, l_p3 = 0;
 
   // TODO: add hu_l; hu_r to DamBreak1d setup
-  //tsunami_lab::t_real l_p4 = 0,
+  // tsunami_lab::t_real l_p4 = 0,
   //                    l_p5 = 0; // optional: huLeft / huRight for DamBreak
 
   tsunami_lab::setups::Setup* l_setup = nullptr;
