@@ -30,23 +30,25 @@ TEST_CASE("Test the one-dimensional dam break setup (classic, zero momentum).",
   REQUIRE(l_damBreak.getMomentumY(4, 2) == 0);
 }
 
-TEST_CASE("Test the one-dimensional dam break setup with non-zero momentum on both sides.",
+TEST_CASE("Test the one-dimensional dam break setup with non-zero momentum on "
+          "both sides.",
           "[DamBreak1d]") {
   // q_l = [h=14, hu=0.3], q_r = [h=3.5, hu=0.7], dam at x=3
   tsunami_lab::setups::DamBreak1d l_damBreak(14.0f, 0.3f, 3.5f, 0.7f, 3);
 
   // left side
-  REQUIRE(l_damBreak.getHeight(2, 0)    == Approx(14.0f));
+  REQUIRE(l_damBreak.getHeight(2, 0) == Approx(14.0f));
   REQUIRE(l_damBreak.getMomentumX(2, 0) == Approx(0.3f));
   REQUIRE(l_damBreak.getMomentumY(2, 0) == 0);
 
   // right side
-  REQUIRE(l_damBreak.getHeight(4, 0)    == Approx(3.5f));
+  REQUIRE(l_damBreak.getHeight(4, 0) == Approx(3.5f));
   REQUIRE(l_damBreak.getMomentumX(4, 0) == Approx(0.7f));
   REQUIRE(l_damBreak.getMomentumY(4, 0) == 0);
 }
 
-TEST_CASE("Test the one-dimensional dam break setup with negative momentum (reverse flow).",
+TEST_CASE("Test the one-dimensional dam break setup with negative momentum "
+          "(reverse flow).",
           "[DamBreak1d]") {
   // Wasser fließt links nach rechts, rechts auch positiv -> beide nach rechts
   // Hier: links positiv, rechts negativ -> aufeinander zu (shock-shock-artig)
