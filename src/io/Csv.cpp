@@ -13,7 +13,11 @@ void tsunami_lab::io::Csv::write(t_real i_dxy,
                                  t_real const* i_h,
                                  t_real const* i_hu,
                                  t_real const* i_hv,
+                                 t_real i_simTime,
                                  std::ostream& io_stream) {
+
+  // write simulation time as comment
+  io_stream << "# sim_time=" << i_simTime << "\n";
   // write the CSV header
   io_stream << "x,y";
   if (i_h != nullptr)
