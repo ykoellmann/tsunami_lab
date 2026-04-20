@@ -1,5 +1,5 @@
 /**
-* @author Alexander Breuer (alex.breuer AT uni-jena.de)
+ * @author Alexander Breuer (alex.breuer AT uni-jena.de)
  *
  * @section DESCRIPTION
  * One-dimensional dam break problem.
