@@ -112,5 +112,4 @@ Individual Contributions
 - **Mika Brückner:** Integration of f-wave solver into ``WavePropagation1d.h``, ``WavePropagation1d.cpp`` and ``WavePropagation1d.test.cpp`` (``[WaveProp1dFWave]``) for task 2.1.
   Implementation of commandline arguments in ``main.cpp``.
   Implementation of ``visualize_simulation.py`` script for visualizing simulation results from ``main.cpp``.
-  Simulations and visualizations for Dambreak, ShockShock and RareRare problem with f-wave solver.
   Simulation, visualization and calculation of evacuation time for the 2.2.2 scenario with f-wave solver.
