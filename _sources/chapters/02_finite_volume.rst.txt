@@ -20,6 +20,8 @@ end time are set via ``-d`` and ``-t``. CSV snapshots are written at
 every 0.5% of total time steps, each annotated with a
 ``# sim_time=...`` header.
 
+The Middle State Sanity Check is implementes as a dedicated Catch2 test case (``[MiddleStates]``).
+
 Unit Tests
 ----------
 
@@ -28,64 +30,127 @@ Each setup has its own test file (``[DamBreak1d]``,
 momentum signs, antisymmetry, left-state assignment of the
 discontinuity cell, zero y-momentum, and time-independence of the
 initial state.
-
-Middle-State Sanity Check
--------------------------
-
-A dedicated Catch2 test case (``[MiddleStates]``) reads
-``middle_states.csv``, runs the f-wave solver on each listed Riemann
-problem, and compares the computed middle state height :math:`h^*`
-against the reference within a relative tolerance of :math:`10^{-3}`.
+``[MiddleStates]`` reads ``middle_states.csv``, runs the f-wave solver on each listed Riemann problem, and compares the computed middle state height :math:`h^*` against the reference within a relative tolerance of :math:`10^{-3}`.
 The solver passes across the full data set.
 
 Results & Visualizations
 ------------------------
 
-Dambreak simulation with FWave solver and 500 cells
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Rare-Rare problem (2.1)
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Setup: ``./build/tsunami_lab -n 500 -s FWave -p DamBreak 10 5 5``.
-The solution splits into a left-going rarefaction and a right-going
-shock.
+Observations
+""""""""""""
 
-.. image:: ../../../simulations/visualizations/dambreak_fwave_500.gif
+As the graphics below show, we were able to observe that changing the momentum doesn't affect the speed of the wave.
+On the other hand, changing the height does have an effect on the speed.
+These observations match the expectations, since mathematically the momentum gets canceled out, while the height directly influences the wave speed through the gravitational term.:
 
-Shock Shock simulation with FWave solver and 500 cells
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. math::
+  h_r &= h_l\ \land\ hu_r = -hu_l\ \Rightarrow\ u_r = -u_l \\
+  h &= \frac{1}{2}(h_l+h_r) = h_l = h_r \\
+  u &= \frac{u_l \sqrt{h_l} + u_r \sqrt{h_r}}{\sqrt{h_l}+\sqrt{h_r}} = \frac{u_l \sqrt{h_l} - u_l \sqrt{h_l}}{2\sqrt{h_l}} = 0 \\
+  \lambda_{1,2} &= 0 \pm \sqrt{gh}
 
-Setup: ``./build/tsunami_lab -n 500 -s FWave -p ShockShock 10 5 5``.
-Two outgoing shocks with a raised middle state.
 
-.. image:: ../../../simulations/visualizations/shockshock_fwave_500.gif
+**1. Different initial heights**:
 
-Height variation (:math:`h = 2` vs. :math:`h = 25`, :math:`hu = 5`):
-the lower height produces slower but proportionally stronger shocks,
-while the larger height yields faster but weaker ones — matching
-:math:`\lambda_{1/2} = u \mp \sqrt{gh}`.
+|rr510| |rr1510|
 
-.. image:: ../../../simulations/visualizations/shockshock_fwave_500_h2.gif
+.. |rr510| image:: ../../../simulations/visualizations/rarerare_5_10_5.gif
+   :width: 20%
 
-.. image:: ../../../simulations/visualizations/shockshock_fwave_500_h25.gif
+.. |rr1510| image:: ../../../simulations/visualizations/rarerare_15_10_5.gif
+   :width: 20%
 
-Rare Rare simulation with FWave solver and 500 cells
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Setup: ``./build/tsunami_lab -n 500 -s FWave -p RareRare 10 5 5``.
-Two outgoing rarefactions with a lowered middle state.
+**2. Different initial momenta**:
 
-.. image:: ../../../simulations/visualizations/rarerare_fwave_500.gif
+|rr105| |rr1015|
 
-Height variation (:math:`h = 2` vs. :math:`h = 25`, :math:`hu = 5`):
-at :math:`h = 2` the rarefactions are slow and the middle state
-drops sharply (close to dry-bed limit); at :math:`h = 25` they
-spread fast and the middle state barely deviates from :math:`h_l`.
+.. |rr105| image:: ../../../simulations/visualizations/rarerare_10_5_5.gif
+   :width: 20%
 
-.. image:: ../../../simulations/visualizations/rarerare_fwave_500_h2.gif
+.. |rr1015| image:: ../../../simulations/visualizations/rarerare_10_15_5.gif
+   :width: 20%
 
-.. image:: ../../../simulations/visualizations/rarerare_fwave_500_h25.gif
 
-Village Evacuation Time
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Shock-Shock problem (2.1)
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Observations
+""""""""""""
+
+Here we were able to observe the same effects as in the rare-rare problem, which is expected since the shock-shock and rare-rare problems are symmetric counterparts with respect to the momentum.
+Again, changing the momentum does not affect the wave speed, while changing the height does, due to its influence on the gravitational term in the wave speed calculation.
+
+**1. Different initial heights**:
+
+|ss510| |ss1510|
+
+.. |ss510| image:: ../../../simulations/visualizations/shockshock_5_10_5.gif
+   :width: 20%
+
+.. |ss1510| image:: ../../../simulations/visualizations/shockshock_15_10_5.gif
+   :width: 20%
+
+
+**2. Different initial momenta**:
+
+|ss105| |ss1015|
+
+.. |ss105| image:: ../../../simulations/visualizations/shockshock_10_5_5.gif
+   :width: 20%
+
+.. |ss1015| image:: ../../../simulations/visualizations/shockshock_10_15_5.gif
+   :width: 20%
+
+
+Dam-Break (2.2.1)
+^^^^^^^^^^^^^^^^^^
+
+Setup
+"""""
+The dam-break solver is applied with varying initial water heights :math:`h_l` and :math:`h_r`
+while keeping the initial momenta at zero (:math:`hu_l = hu_r = 0`).
+The dam is placed at the center of the domain.
+
+Observations
+""""""""""""
+
+|db105| |db205|
+
+.. |db105| image:: ../../../simulations/visualizations/dambreak_10_5_5.gif
+   :width: 20%
+
+.. |db205| image:: ../../../simulations/visualizations/dambreak_20_5_5.gif
+   :width: 20%
+
+
+As the ratio :math:`h_l / h_r` increases, two effects become clearly visible.
+First, the shock wave propagating to the right accelerates — the higher the left
+water column, the faster the shock front travels. Second, the rarefaction wave on
+the left side widens and the water height drops more steeply behind it.
+This is consistent with the Roe eigenvalue :math:`\lambda_r^{Roe} = u^{Roe} + \sqrt{g h^{Roe}}`,
+where a larger :math:`h^{Roe}` directly increases the shock speed.
+
+Impact of :math:`u_r`
+""""""""""""""""""""""
+The initial particle velocity :math:`u_r` in the river has a comparatively small
+impact on the overall wave structure. Since :math:`u_r` enters the Roe average only
+as a weighted contribution,
+
+.. math::
+
+   u^{Roe} = \frac{u_l \sqrt{h_l} + u_r \sqrt{h_r}}{\sqrt{h_l} + \sqrt{h_r}},
+
+its influence on :math:`\lambda_r^{Roe}` is small compared to the gravitational term
+:math:`\sqrt{g h^{Roe}}`, which is dominated by the water heights. For the tested
+configurations, the shock speed and wave structure are therefore primarily
+determined by the ratio :math:`h_l / h_r`.
+
+Village Evacuation Time (2.2.2)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Setup:
 """"""
 Dam at :math:`x=5000m`, village at :math:`x=30000m`,
@@ -93,8 +158,8 @@ Dam at :math:`x=5000m`, village at :math:`x=30000m`,
 :math:`h_r = 3.5m`, :math:`hu_l = 0`, :math:`hu_r = 0.7 m^2/s`.
 Evacuation time is estimated via the speed of the right-going wave.
 
-Theoretical Estimate (2.2.2):
-"""""""""""""""""""""""""""""
+Theoretical Estimate:
+"""""""""""""""""""""
 .. math::
 
   s_{village} &= 25000m \\\\
@@ -112,7 +177,7 @@ The shock front reaches the village (:math:`x=30000`) at
 :math:`t \approx 2256 s (\sim 37.6 min)`.
 
 .. image:: ../../../simulations/visualizations/evacuation_problem.gif
-
+   :width: 30%
 Results:
 """"""""
 
@@ -144,3 +209,5 @@ Individual Contributions
   Implementation of commandline arguments in ``main.cpp``.
   Implementation of ``visualize_simulation.py`` script for visualizing simulation results from ``main.cpp``.
   Simulation, visualization and calculation of evacuation time for the 2.2.2 scenario with f-wave solver.
+  Generation of the GIF visualizations for the dam-break, shock-shock, rare-rare, and evacuation-problem simulations.
+  Parameter-study observations for tasks 2.1.2 and 2.2.1.

@@ -9,6 +9,7 @@
   <title>2. Finite Volume Discretization &mdash; Tsunami Lab  documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/full_width.css?v=8223e249" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
@@ -49,14 +50,24 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">2. Finite Volume Discretization</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#implementation">Implementation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#unit-tests">Unit Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#middle-state-sanity-check">Middle-State Sanity Check</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#results-visualizations">Results &amp; Visualizations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#dambreak-simulation-with-fwave-solver-and-500-cells">Dambreak simulation with FWave solver and 500 cells</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#shock-shock-simulation-with-fwave-solver-and-500-cells">Shock Shock simulation with FWave solver and 500 cells</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#rare-rare-simulation-with-fwave-solver-and-500-cells">Rare Rare simulation with FWave solver and 500 cells</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#village-evacuation-time">Village Evacuation Time</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#setup">Setup:</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#theoretical-estimate-2-2-2">Theoretical Estimate (2.2.2):</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rare-rare-problem-2-1">Rare-Rare problem (2.1)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#observations">Observations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#shock-shock-problem-2-1">Shock-Shock problem (2.1)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id1">Observations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#dam-break-2-2-1">Dam-Break (2.2.1)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#setup">Setup</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id2">Observations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#impact-of-u-r">Impact of <span class="math notranslate nohighlight">\(u_r\)</span></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#village-evacuation-time-2-2-2">Village Evacuation Time (2.2.2)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id3">Setup:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#theoretical-estimate">Theoretical Estimate:</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#simulation">Simulation:</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#results">Results:</a></li>
 </ul>
@@ -109,6 +120,7 @@ convention <span class="math notranslate nohighlight">\(x \leq x_{\text{dis}}\)<
 end time are set via <code class="docutils literal notranslate"><span class="pre">-d</span></code> and <code class="docutils literal notranslate"><span class="pre">-t</span></code>. CSV snapshots are written at
 every 0.5% of total time steps, each annotated with a
 <code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">sim_time=...</span></code> header.</p>
+<p>The Middle State Sanity Check is implementes as a dedicated Catch2 test case (<code class="docutils literal notranslate"><span class="pre">[MiddleStates]</span></code>).</p>
 </section>
 <section id="unit-tests">
 <h2>Unit Tests<a class="headerlink" href="#unit-tests" title="Link to this heading"></a></h2>
@@ -116,60 +128,84 @@ every 0.5% of total time steps, each annotated with a
 <code class="docutils literal notranslate"><span class="pre">[ShockShock1d]</span></code>, <code class="docutils literal notranslate"><span class="pre">[RareRare1d]</span></code>) covering constant heights,
 momentum signs, antisymmetry, left-state assignment of the
 discontinuity cell, zero y-momentum, and time-independence of the
-initial state.</p>
-</section>
-<section id="middle-state-sanity-check">
-<h2>Middle-State Sanity Check<a class="headerlink" href="#middle-state-sanity-check" title="Link to this heading"></a></h2>
-<p>A dedicated Catch2 test case (<code class="docutils literal notranslate"><span class="pre">[MiddleStates]</span></code>) reads
-<code class="docutils literal notranslate"><span class="pre">middle_states.csv</span></code>, runs the f-wave solver on each listed Riemann
-problem, and compares the computed middle state height <span class="math notranslate nohighlight">\(h^*\)</span>
-against the reference within a relative tolerance of <span class="math notranslate nohighlight">\(10^{-3}\)</span>.
+initial state.
+<code class="docutils literal notranslate"><span class="pre">[MiddleStates]</span></code> reads <code class="docutils literal notranslate"><span class="pre">middle_states.csv</span></code>, runs the f-wave solver on each listed Riemann problem, and compares the computed middle state height <span class="math notranslate nohighlight">\(h^*\)</span> against the reference within a relative tolerance of <span class="math notranslate nohighlight">\(10^{-3}\)</span>.
 The solver passes across the full data set.</p>
 </section>
 <section id="results-visualizations">
 <h2>Results &amp; Visualizations<a class="headerlink" href="#results-visualizations" title="Link to this heading"></a></h2>
-<section id="dambreak-simulation-with-fwave-solver-and-500-cells">
-<h3>Dambreak simulation with FWave solver and 500 cells<a class="headerlink" href="#dambreak-simulation-with-fwave-solver-and-500-cells" title="Link to this heading"></a></h3>
-<p>Setup: <code class="docutils literal notranslate"><span class="pre">./build/tsunami_lab</span> <span class="pre">-n</span> <span class="pre">500</span> <span class="pre">-s</span> <span class="pre">FWave</span> <span class="pre">-p</span> <span class="pre">DamBreak</span> <span class="pre">10</span> <span class="pre">5</span> <span class="pre">5</span></code>.
-The solution splits into a left-going rarefaction and a right-going
-shock.</p>
-<img alt="../_images/dambreak_fwave_500.gif" src="../_images/dambreak_fwave_500.gif" />
+<section id="rare-rare-problem-2-1">
+<h3>Rare-Rare problem (2.1)<a class="headerlink" href="#rare-rare-problem-2-1" title="Link to this heading"></a></h3>
+<section id="observations">
+<h4>Observations<a class="headerlink" href="#observations" title="Link to this heading"></a></h4>
+<p>As the graphics below show, we were able to observe that changing the momentum doesn’t affect the speed of the wave.
+On the other hand, changing the height does have an effect on the speed.
+These observations match the expectations, since mathematically the momentum gets canceled out, while the height directly influences the wave speed through the gravitational term.:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}h_r &amp;= h_l\ \land\ hu_r = -hu_l\ \Rightarrow\ u_r = -u_l \\
+h &amp;= \frac{1}{2}(h_l+h_r) = h_l = h_r \\
+u &amp;= \frac{u_l \sqrt{h_l} + u_r \sqrt{h_r}}{\sqrt{h_l}+\sqrt{h_r}} = \frac{u_l \sqrt{h_l} - u_l \sqrt{h_l}}{2\sqrt{h_l}} = 0 \\
+\lambda_{1,2} &amp;= 0 \pm \sqrt{gh}\end{split}\]</div>
+<p><strong>1. Different initial heights</strong>:</p>
+<p><a class="reference internal" href="../_images/rarerare_5_10_5.gif"><img alt="rr510" src="../_images/rarerare_5_10_5.gif" style="width: 20%;" /></a> <a class="reference internal" href="../_images/rarerare_15_10_5.gif"><img alt="rr1510" src="../_images/rarerare_15_10_5.gif" style="width: 20%;" /></a></p>
+<p><strong>2. Different initial momenta</strong>:</p>
+<p><a class="reference internal" href="../_images/rarerare_10_5_5.gif"><img alt="rr105" src="../_images/rarerare_10_5_5.gif" style="width: 20%;" /></a> <a class="reference internal" href="../_images/rarerare_10_15_5.gif"><img alt="rr1015" src="../_images/rarerare_10_15_5.gif" style="width: 20%;" /></a></p>
 </section>
-<section id="shock-shock-simulation-with-fwave-solver-and-500-cells">
-<h3>Shock Shock simulation with FWave solver and 500 cells<a class="headerlink" href="#shock-shock-simulation-with-fwave-solver-and-500-cells" title="Link to this heading"></a></h3>
-<p>Setup: <code class="docutils literal notranslate"><span class="pre">./build/tsunami_lab</span> <span class="pre">-n</span> <span class="pre">500</span> <span class="pre">-s</span> <span class="pre">FWave</span> <span class="pre">-p</span> <span class="pre">ShockShock</span> <span class="pre">10</span> <span class="pre">5</span> <span class="pre">5</span></code>.
-Two outgoing shocks with a raised middle state.</p>
-<img alt="../_images/shockshock_fwave_500.gif" src="../_images/shockshock_fwave_500.gif" />
-<p>Height variation (<span class="math notranslate nohighlight">\(h = 2\)</span> vs. <span class="math notranslate nohighlight">\(h = 25\)</span>, <span class="math notranslate nohighlight">\(hu = 5\)</span>):
-the lower height produces slower but proportionally stronger shocks,
-while the larger height yields faster but weaker ones — matching
-<span class="math notranslate nohighlight">\(\lambda_{1/2} = u \mp \sqrt{gh}\)</span>.</p>
-<img alt="../_images/shockshock_fwave_500_h2.gif" src="../_images/shockshock_fwave_500_h2.gif" />
-<img alt="../_images/shockshock_fwave_500_h25.gif" src="../_images/shockshock_fwave_500_h25.gif" />
 </section>
-<section id="rare-rare-simulation-with-fwave-solver-and-500-cells">
-<h3>Rare Rare simulation with FWave solver and 500 cells<a class="headerlink" href="#rare-rare-simulation-with-fwave-solver-and-500-cells" title="Link to this heading"></a></h3>
-<p>Setup: <code class="docutils literal notranslate"><span class="pre">./build/tsunami_lab</span> <span class="pre">-n</span> <span class="pre">500</span> <span class="pre">-s</span> <span class="pre">FWave</span> <span class="pre">-p</span> <span class="pre">RareRare</span> <span class="pre">10</span> <span class="pre">5</span> <span class="pre">5</span></code>.
-Two outgoing rarefactions with a lowered middle state.</p>
-<img alt="../_images/rarerare_fwave_500.gif" src="../_images/rarerare_fwave_500.gif" />
-<p>Height variation (<span class="math notranslate nohighlight">\(h = 2\)</span> vs. <span class="math notranslate nohighlight">\(h = 25\)</span>, <span class="math notranslate nohighlight">\(hu = 5\)</span>):
-at <span class="math notranslate nohighlight">\(h = 2\)</span> the rarefactions are slow and the middle state
-drops sharply (close to dry-bed limit); at <span class="math notranslate nohighlight">\(h = 25\)</span> they
-spread fast and the middle state barely deviates from <span class="math notranslate nohighlight">\(h_l\)</span>.</p>
-<img alt="../_images/rarerare_fwave_500_h2.gif" src="../_images/rarerare_fwave_500_h2.gif" />
-<img alt="../_images/rarerare_fwave_500_h25.gif" src="../_images/rarerare_fwave_500_h25.gif" />
+<section id="shock-shock-problem-2-1">
+<h3>Shock-Shock problem (2.1)<a class="headerlink" href="#shock-shock-problem-2-1" title="Link to this heading"></a></h3>
+<section id="id1">
+<h4>Observations<a class="headerlink" href="#id1" title="Link to this heading"></a></h4>
+<p>Here we were able to observe the same effects as in the rare-rare problem, which is expected since the shock-shock and rare-rare problems are symmetric counterparts with respect to the momentum.
+Again, changing the momentum does not affect the wave speed, while changing the height does, due to its influence on the gravitational term in the wave speed calculation.</p>
+<p><strong>1. Different initial heights</strong>:</p>
+<p><a class="reference internal" href="../_images/shockshock_5_10_5.gif"><img alt="ss510" src="../_images/shockshock_5_10_5.gif" style="width: 20%;" /></a> <a class="reference internal" href="../_images/shockshock_15_10_5.gif"><img alt="ss1510" src="../_images/shockshock_15_10_5.gif" style="width: 20%;" /></a></p>
+<p><strong>2. Different initial momenta</strong>:</p>
+<p><a class="reference internal" href="../_images/shockshock_10_5_5.gif"><img alt="ss105" src="../_images/shockshock_10_5_5.gif" style="width: 20%;" /></a> <a class="reference internal" href="../_images/shockshock_10_15_5.gif"><img alt="ss1015" src="../_images/shockshock_10_15_5.gif" style="width: 20%;" /></a></p>
 </section>
-<section id="village-evacuation-time">
-<h3>Village Evacuation Time<a class="headerlink" href="#village-evacuation-time" title="Link to this heading"></a></h3>
+</section>
+<section id="dam-break-2-2-1">
+<h3>Dam-Break (2.2.1)<a class="headerlink" href="#dam-break-2-2-1" title="Link to this heading"></a></h3>
 <section id="setup">
-<h4>Setup:<a class="headerlink" href="#setup" title="Link to this heading"></a></h4>
+<h4>Setup<a class="headerlink" href="#setup" title="Link to this heading"></a></h4>
+<p>The dam-break solver is applied with varying initial water heights <span class="math notranslate nohighlight">\(h_l\)</span> and <span class="math notranslate nohighlight">\(h_r\)</span>
+while keeping the initial momenta at zero (<span class="math notranslate nohighlight">\(hu_l = hu_r = 0\)</span>).
+The dam is placed at the center of the domain.</p>
+</section>
+<section id="id2">
+<h4>Observations<a class="headerlink" href="#id2" title="Link to this heading"></a></h4>
+<p><a class="reference internal" href="../_images/dambreak_10_5_5.gif"><img alt="db105" src="../_images/dambreak_10_5_5.gif" style="width: 20%;" /></a> <a class="reference internal" href="../_images/dambreak_20_5_5.gif"><img alt="db205" src="../_images/dambreak_20_5_5.gif" style="width: 20%;" /></a></p>
+<p>As the ratio <span class="math notranslate nohighlight">\(h_l / h_r\)</span> increases, two effects become clearly visible.
+First, the shock wave propagating to the right accelerates — the higher the left
+water column, the faster the shock front travels. Second, the rarefaction wave on
+the left side widens and the water height drops more steeply behind it.
+This is consistent with the Roe eigenvalue <span class="math notranslate nohighlight">\(\lambda_r^{Roe} = u^{Roe} + \sqrt{g h^{Roe}}\)</span>,
+where a larger <span class="math notranslate nohighlight">\(h^{Roe}\)</span> directly increases the shock speed.</p>
+</section>
+<section id="impact-of-u-r">
+<h4>Impact of <span class="math notranslate nohighlight">\(u_r\)</span><a class="headerlink" href="#impact-of-u-r" title="Link to this heading"></a></h4>
+<p>The initial particle velocity <span class="math notranslate nohighlight">\(u_r\)</span> in the river has a comparatively small
+impact on the overall wave structure. Since <span class="math notranslate nohighlight">\(u_r\)</span> enters the Roe average only
+as a weighted contribution,</p>
+<div class="math notranslate nohighlight">
+\[u^{Roe} = \frac{u_l \sqrt{h_l} + u_r \sqrt{h_r}}{\sqrt{h_l} + \sqrt{h_r}},\]</div>
+<p>its influence on <span class="math notranslate nohighlight">\(\lambda_r^{Roe}\)</span> is small compared to the gravitational term
+<span class="math notranslate nohighlight">\(\sqrt{g h^{Roe}}\)</span>, which is dominated by the water heights. For the tested
+configurations, the shock speed and wave structure are therefore primarily
+determined by the ratio <span class="math notranslate nohighlight">\(h_l / h_r\)</span>.</p>
+</section>
+</section>
+<section id="village-evacuation-time-2-2-2">
+<h3>Village Evacuation Time (2.2.2)<a class="headerlink" href="#village-evacuation-time-2-2-2" title="Link to this heading"></a></h3>
+<section id="id3">
+<h4>Setup:<a class="headerlink" href="#id3" title="Link to this heading"></a></h4>
 <p>Dam at <span class="math notranslate nohighlight">\(x=5000m\)</span>, village at <span class="math notranslate nohighlight">\(x=30000m\)</span>,
 <span class="math notranslate nohighlight">\(s_{village} = 25000m\)</span>. Initial state: <span class="math notranslate nohighlight">\(h_l = 14m\)</span>,
 <span class="math notranslate nohighlight">\(h_r = 3.5m\)</span>, <span class="math notranslate nohighlight">\(hu_l = 0\)</span>, <span class="math notranslate nohighlight">\(hu_r = 0.7 m^2/s\)</span>.
 Evacuation time is estimated via the speed of the right-going wave.</p>
 </section>
-<section id="theoretical-estimate-2-2-2">
-<h4>Theoretical Estimate (2.2.2):<a class="headerlink" href="#theoretical-estimate-2-2-2" title="Link to this heading"></a></h4>
+<section id="theoretical-estimate">
+<h4>Theoretical Estimate:<a class="headerlink" href="#theoretical-estimate" title="Link to this heading"></a></h4>
 <div class="math notranslate nohighlight">
 \[\begin{split}s_{village} &amp;= 25000m \\\\
 q_l &amp;= \begin{bmatrix} 14 \\ 0 \end{bmatrix},\ q_r = \begin{bmatrix} 3.5 \\ 0.7 \end{bmatrix}\\
@@ -184,7 +220,8 @@ t_{evac} &amp;= \frac{s_{village}}{\lambda_r^{Roe}} = \frac{25000m}{9.32994} = 2
 <p>Setup: <code class="docutils literal notranslate"><span class="pre">./build/tsunami_lab</span> <span class="pre">-n</span> <span class="pre">30000</span> <span class="pre">-d</span> <span class="pre">30000</span> <span class="pre">-t</span> <span class="pre">2400</span> <span class="pre">-p</span> <span class="pre">DamBreak</span> <span class="pre">14</span> <span class="pre">3.5</span> <span class="pre">5000</span> <span class="pre">0</span> <span class="pre">0.7</span></code>.
 The shock front reaches the village (<span class="math notranslate nohighlight">\(x=30000\)</span>) at
 <span class="math notranslate nohighlight">\(t \approx 2256 s (\sim 37.6 min)\)</span>.</p>
-<img alt="../_images/evacuation_problem.gif" src="../_images/evacuation_problem.gif" />
+<a class="reference internal image-reference" href="../_images/evacuation_problem.gif"><img alt="../_images/evacuation_problem.gif" src="../_images/evacuation_problem.gif" style="width: 30%;" />
+</a>
 </section>
 <section id="results">
 <h4>Results:<a class="headerlink" href="#results" title="Link to this heading"></a></h4>
@@ -217,7 +254,9 @@ the parameter-study observations.</p></li>
 <li><p><strong>Mika Brückner:</strong> Integration of f-wave solver into <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.h</span></code>, <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.cpp</span></code> and <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.test.cpp</span></code> (<code class="docutils literal notranslate"><span class="pre">[WaveProp1dFWave]</span></code>) for task 2.1.
 Implementation of commandline arguments in <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code>.
 Implementation of <code class="docutils literal notranslate"><span class="pre">visualize_simulation.py</span></code> script for visualizing simulation results from <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code>.
-Simulation, visualization and calculation of evacuation time for the 2.2.2 scenario with f-wave solver.</p></li>
+Simulation, visualization and calculation of evacuation time for the 2.2.2 scenario with f-wave solver.
+Generation of the GIF visualizations for the dam-break, shock-shock, rare-rare, and evacuation-problem simulations.
+Parameter-study observations for tasks 2.1.2 and 2.2.1.</p></li>
 </ul>
 </section>
 </section>
