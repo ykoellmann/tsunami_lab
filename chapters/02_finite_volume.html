@@ -140,12 +140,24 @@ shock.</p>
 <p>Setup: <code class="docutils literal notranslate"><span class="pre">./build/tsunami_lab</span> <span class="pre">-n</span> <span class="pre">500</span> <span class="pre">-s</span> <span class="pre">FWave</span> <span class="pre">-p</span> <span class="pre">ShockShock</span> <span class="pre">10</span> <span class="pre">5</span> <span class="pre">5</span></code>.
 Two outgoing shocks with a raised middle state.</p>
 <img alt="../_images/shockshock_fwave_500.gif" src="../_images/shockshock_fwave_500.gif" />
+<p>Height variation (<span class="math notranslate nohighlight">\(h = 2\)</span> vs. <span class="math notranslate nohighlight">\(h = 25\)</span>, <span class="math notranslate nohighlight">\(hu = 5\)</span>):
+the lower height produces slower but proportionally stronger shocks,
+while the larger height yields faster but weaker ones — matching
+<span class="math notranslate nohighlight">\(\lambda_{1/2} = u \mp \sqrt{gh}\)</span>.</p>
+<img alt="../_images/shockshock_fwave_500_h2.gif" src="../_images/shockshock_fwave_500_h2.gif" />
+<img alt="../_images/shockshock_fwave_500_h25.gif" src="../_images/shockshock_fwave_500_h25.gif" />
 </section>
 <section id="rare-rare-simulation-with-fwave-solver-and-500-cells">
 <h3>Rare Rare simulation with FWave solver and 500 cells<a class="headerlink" href="#rare-rare-simulation-with-fwave-solver-and-500-cells" title="Link to this heading"></a></h3>
 <p>Setup: <code class="docutils literal notranslate"><span class="pre">./build/tsunami_lab</span> <span class="pre">-n</span> <span class="pre">500</span> <span class="pre">-s</span> <span class="pre">FWave</span> <span class="pre">-p</span> <span class="pre">RareRare</span> <span class="pre">10</span> <span class="pre">5</span> <span class="pre">5</span></code>.
 Two outgoing rarefactions with a lowered middle state.</p>
 <img alt="../_images/rarerare_fwave_500.gif" src="../_images/rarerare_fwave_500.gif" />
+<p>Height variation (<span class="math notranslate nohighlight">\(h = 2\)</span> vs. <span class="math notranslate nohighlight">\(h = 25\)</span>, <span class="math notranslate nohighlight">\(hu = 5\)</span>):
+at <span class="math notranslate nohighlight">\(h = 2\)</span> the rarefactions are slow and the middle state
+drops sharply (close to dry-bed limit); at <span class="math notranslate nohighlight">\(h = 25\)</span> they
+spread fast and the middle state barely deviates from <span class="math notranslate nohighlight">\(h_l\)</span>.</p>
+<img alt="../_images/rarerare_fwave_500_h2.gif" src="../_images/rarerare_fwave_500_h2.gif" />
+<img alt="../_images/rarerare_fwave_500_h25.gif" src="../_images/rarerare_fwave_500_h25.gif" />
 </section>
 <section id="village-evacuation-time">
 <h3>Village Evacuation Time<a class="headerlink" href="#village-evacuation-time" title="Link to this heading"></a></h3>
@@ -200,7 +212,8 @@ arguments. Integrated the new setup files into the SCons build configuration.</p
 verifying the computed middle state height <span class="math notranslate nohighlight">\(h^*\)</span> within the
 chosen tolerance. Generation of the GIF visualizations for the
 dam-break, shock-shock, rare-rare, and evacuation-problem
-simulations. Writing of this chapter’s documentation.</p></li>
+simulations. Writing of this chapter’s documentation, including
+the parameter-study observations.</p></li>
 <li><p><strong>Mika Brückner:</strong> Integration of f-wave solver into <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.h</span></code>, <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.cpp</span></code> and <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.test.cpp</span></code> (<code class="docutils literal notranslate"><span class="pre">[WaveProp1dFWave]</span></code>) for task 2.1.
 Implementation of commandline arguments in <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code>.
 Implementation of <code class="docutils literal notranslate"><span class="pre">visualize_simulation.py</span></code> script for visualizing simulation results from <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code>.
