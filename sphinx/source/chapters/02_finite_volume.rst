@@ -58,6 +58,15 @@ Two outgoing shocks with a raised middle state.
 
 .. image:: ../../../simulations/visualizations/shockshock_fwave_500.gif
 
+Height variation (:math:`h = 2` vs. :math:`h = 25`, :math:`hu = 5`):
+the lower height produces slower but proportionally stronger shocks,
+while the larger height yields faster but weaker ones — matching
+:math:`\lambda_{1/2} = u \mp \sqrt{gh}`.
+
+.. image:: ../../../simulations/visualizations/shockshock_fwave_500_h2.gif
+
+.. image:: ../../../simulations/visualizations/shockshock_fwave_500_h25.gif
+
 Rare Rare simulation with FWave solver and 500 cells
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -66,6 +75,14 @@ Two outgoing rarefactions with a lowered middle state.
 
 .. image:: ../../../simulations/visualizations/rarerare_fwave_500.gif
 
+Height variation (:math:`h = 2` vs. :math:`h = 25`, :math:`hu = 5`):
+at :math:`h = 2` the rarefactions are slow and the middle state
+drops sharply (close to dry-bed limit); at :math:`h = 25` they
+spread fast and the middle state barely deviates from :math:`h_l`.
+
+.. image:: ../../../simulations/visualizations/rarerare_fwave_500_h2.gif
+
+.. image:: ../../../simulations/visualizations/rarerare_fwave_500_h25.gif
 
 Village Evacuation Time
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -121,7 +138,8 @@ Individual Contributions
   verifying the computed middle state height :math:`h^*` within the
   chosen tolerance. Generation of the GIF visualizations for the
   dam-break, shock-shock, rare-rare, and evacuation-problem
-  simulations. Writing of this chapter's documentation.
+  simulations. Writing of this chapter's documentation, including
+  the parameter-study observations.
 - **Mika Brückner:** Integration of f-wave solver into ``WavePropagation1d.h``, ``WavePropagation1d.cpp`` and ``WavePropagation1d.test.cpp`` (``[WaveProp1dFWave]``) for task 2.1.
   Implementation of commandline arguments in ``main.cpp``.
   Implementation of ``visualize_simulation.py`` script for visualizing simulation results from ``main.cpp``.
