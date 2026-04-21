@@ -49,6 +49,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">2. Finite Volume Discretization</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#implementation">Implementation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#unit-tests">Unit Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#middle-state-sanity-check">Middle-State Sanity Check</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#results-visualizations">Results &amp; Visualizations</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#dambreak-simulation-with-fwave-solver-and-500-cells">Dambreak simulation with FWave solver and 500 cells</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#shock-shock-simulation-with-fwave-solver-and-500-cells">Shock Shock simulation with FWave solver and 500 cells</a></li>
@@ -96,63 +97,64 @@
 <section id="implementation">
 <h2>Implementation<a class="headerlink" href="#implementation" title="Link to this heading"></a></h2>
 <p>The one-dimensional finite volume discretization is realized in
-<code class="docutils literal notranslate"><span class="pre">WavePropagation1d</span></code>, which manages the cell quantities, two ghost
-cells at each boundary, and the time-step update. The update iterates
-over all <span class="math notranslate nohighlight">\(n+1\)</span> edges, invokes the selected Riemann solver, and
-applies the returned net-updates to the neighbouring cells. The solver
-can be switched between Roe and f-wave at runtime via a string
-parameter passed to <code class="docutils literal notranslate"><span class="pre">timeStep</span></code>.</p>
-<p>Three Riemann setups are provided. <code class="docutils literal notranslate"><span class="pre">DamBreak1d</span></code> (Sec. 2.2) supports
-independently configurable water heights and momenta on both sides,
-which covers both the classical dam break and the 2.2.2 evacuation
-scenario with a pre-existing river flow (<code class="docutils literal notranslate"><span class="pre">q_r</span> <span class="pre">=</span> <span class="pre">[3.5,</span> <span class="pre">0.7]</span></code>).
-<code class="docutils literal notranslate"><span class="pre">ShockShock1d</span></code> and <code class="docutils literal notranslate"><span class="pre">RareRare1d</span></code> (Sec. 2.1) are symmetric Riemann
-problems with equal water height on both sides and antisymmetric
-momentum — the two streams move towards each other (shock-shock) or
-away from each other (rare-rare). All setups follow the convention
-<span class="math notranslate nohighlight">\(x \leq x_{\text{dis}}\)</span> for the left state.</p>
-<p>The command-line interface in <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code> selects a setup via <code class="docutils literal notranslate"><span class="pre">-p</span></code>
-with its parameters as positional arguments. For <code class="docutils literal notranslate"><span class="pre">DamBreak</span></code>, the
-momenta on both sides are optional (default zero), so the classical
-dam break and the evacuation scenario (Section 2.2.2) use the same
-setup class. The domain size and simulation end time are configurable
-via <code class="docutils literal notranslate"><span class="pre">-d</span></code> and <code class="docutils literal notranslate"><span class="pre">-t</span></code> respectively, defaulting to <code class="docutils literal notranslate"><span class="pre">10.0</span> <span class="pre">m</span></code> and
-<code class="docutils literal notranslate"><span class="pre">1.25</span> <span class="pre">s</span></code>. Simulation results are written as CSV snapshots at every 0.5% of total time
-steps, each annotated with the current simulation time via a
-<code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">sim_time=...</span></code> comment in the first line.</p>
+<code class="docutils literal notranslate"><span class="pre">WavePropagation1d</span></code>, which manages cell quantities, ghost cells, and
+the time-step update. The solver can be switched between Roe and
+f-wave at runtime.</p>
+<p><code class="docutils literal notranslate"><span class="pre">DamBreak1d</span></code> supports independently configurable heights and momenta
+on both sides, covering both the classical dam break and the 2.2.2
+evacuation scenario. <code class="docutils literal notranslate"><span class="pre">ShockShock1d</span></code> and <code class="docutils literal notranslate"><span class="pre">RareRare1d</span></code> are symmetric
+Riemann setups with antisymmetric momentum. All setups use the
+convention <span class="math notranslate nohighlight">\(x \leq x_{\text{dis}}\)</span> for the left state.</p>
+<p>The CLI in <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code> selects a setup via <code class="docutils literal notranslate"><span class="pre">-p</span></code>; domain size and
+end time are set via <code class="docutils literal notranslate"><span class="pre">-d</span></code> and <code class="docutils literal notranslate"><span class="pre">-t</span></code>. CSV snapshots are written at
+every 0.5% of total time steps, each annotated with a
+<code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">sim_time=...</span></code> header.</p>
 </section>
 <section id="unit-tests">
 <h2>Unit Tests<a class="headerlink" href="#unit-tests" title="Link to this heading"></a></h2>
-<p>Each setup has its own test file tagged with the class name
-(<code class="docutils literal notranslate"><span class="pre">[DamBreak1d]</span></code>, <code class="docutils literal notranslate"><span class="pre">[ShockShock1d]</span></code>, <code class="docutils literal notranslate"><span class="pre">[RareRare1d]</span></code>). The tests
-are organized into Catch2 <code class="docutils literal notranslate"><span class="pre">SECTION</span></code> blocks covering constant height
-on both sides, the expected sign of the momentum on each side,
-antisymmetry across the discontinuity, assignment of the discontinuity
-cell itself to the left state, zero y-momentum, and time-independence
-of the initial state. <code class="docutils literal notranslate"><span class="pre">DamBreak1d</span></code> additionally has a test case for
-the extended signature with non-zero momentum on both sides.</p>
+<p>Each setup has its own test file (<code class="docutils literal notranslate"><span class="pre">[DamBreak1d]</span></code>,
+<code class="docutils literal notranslate"><span class="pre">[ShockShock1d]</span></code>, <code class="docutils literal notranslate"><span class="pre">[RareRare1d]</span></code>) covering constant heights,
+momentum signs, antisymmetry, left-state assignment of the
+discontinuity cell, zero y-momentum, and time-independence of the
+initial state.</p>
+</section>
+<section id="middle-state-sanity-check">
+<h2>Middle-State Sanity Check<a class="headerlink" href="#middle-state-sanity-check" title="Link to this heading"></a></h2>
+<p>A dedicated Catch2 test case (<code class="docutils literal notranslate"><span class="pre">[MiddleStates]</span></code>) reads
+<code class="docutils literal notranslate"><span class="pre">middle_states.csv</span></code>, runs the f-wave solver on each listed Riemann
+problem, and compares the computed middle state height <span class="math notranslate nohighlight">\(h^*\)</span>
+against the reference within a relative tolerance of <span class="math notranslate nohighlight">\(10^{-3}\)</span>.
+The solver passes across the full data set.</p>
 </section>
 <section id="results-visualizations">
 <h2>Results &amp; Visualizations<a class="headerlink" href="#results-visualizations" title="Link to this heading"></a></h2>
 <section id="dambreak-simulation-with-fwave-solver-and-500-cells">
 <h3>Dambreak simulation with FWave solver and 500 cells<a class="headerlink" href="#dambreak-simulation-with-fwave-solver-and-500-cells" title="Link to this heading"></a></h3>
+<p>Setup: <code class="docutils literal notranslate"><span class="pre">./build/tsunami_lab</span> <span class="pre">-n</span> <span class="pre">500</span> <span class="pre">-s</span> <span class="pre">FWave</span> <span class="pre">-p</span> <span class="pre">DamBreak</span> <span class="pre">10</span> <span class="pre">5</span> <span class="pre">5</span></code>.
+The solution splits into a left-going rarefaction and a right-going
+shock.</p>
 <img alt="../_images/dambreak_fwave_500.gif" src="../_images/dambreak_fwave_500.gif" />
 </section>
 <section id="shock-shock-simulation-with-fwave-solver-and-500-cells">
 <h3>Shock Shock simulation with FWave solver and 500 cells<a class="headerlink" href="#shock-shock-simulation-with-fwave-solver-and-500-cells" title="Link to this heading"></a></h3>
+<p>Setup: <code class="docutils literal notranslate"><span class="pre">./build/tsunami_lab</span> <span class="pre">-n</span> <span class="pre">500</span> <span class="pre">-s</span> <span class="pre">FWave</span> <span class="pre">-p</span> <span class="pre">ShockShock</span> <span class="pre">10</span> <span class="pre">5</span> <span class="pre">5</span></code>.
+Two outgoing shocks with a raised middle state.</p>
 <img alt="../_images/shockshock_fwave_500.gif" src="../_images/shockshock_fwave_500.gif" />
 </section>
 <section id="rare-rare-simulation-with-fwave-solver-and-500-cells">
 <h3>Rare Rare simulation with FWave solver and 500 cells<a class="headerlink" href="#rare-rare-simulation-with-fwave-solver-and-500-cells" title="Link to this heading"></a></h3>
+<p>Setup: <code class="docutils literal notranslate"><span class="pre">./build/tsunami_lab</span> <span class="pre">-n</span> <span class="pre">500</span> <span class="pre">-s</span> <span class="pre">FWave</span> <span class="pre">-p</span> <span class="pre">RareRare</span> <span class="pre">10</span> <span class="pre">5</span> <span class="pre">5</span></code>.
+Two outgoing rarefactions with a lowered middle state.</p>
 <img alt="../_images/rarerare_fwave_500.gif" src="../_images/rarerare_fwave_500.gif" />
 </section>
 <section id="village-evacuation-time">
 <h3>Village Evacuation Time<a class="headerlink" href="#village-evacuation-time" title="Link to this heading"></a></h3>
 <section id="setup">
 <h4>Setup:<a class="headerlink" href="#setup" title="Link to this heading"></a></h4>
-<p>Dam at <span class="math notranslate nohighlight">\(x=5000m\)</span> and village at <span class="math notranslate nohighlight">\(x=30000m\)</span> with a distance of <span class="math notranslate nohighlight">\(s_{village} = 25000m\)</span>.
-Initial water heights and momenta are <span class="math notranslate nohighlight">\(h_l = 14m\)</span>, <span class="math notranslate nohighlight">\(h_r = 3.5m\)</span>, <span class="math notranslate nohighlight">\(hu_l = 0\)</span>, <span class="math notranslate nohighlight">\(hu_r = 0.7 m^2/s\)</span>.
-The evacuation time is estimated by the speed of the right-going wave, which is the fastest way to reach the village</p>
+<p>Dam at <span class="math notranslate nohighlight">\(x=5000m\)</span>, village at <span class="math notranslate nohighlight">\(x=30000m\)</span>,
+<span class="math notranslate nohighlight">\(s_{village} = 25000m\)</span>. Initial state: <span class="math notranslate nohighlight">\(h_l = 14m\)</span>,
+<span class="math notranslate nohighlight">\(h_r = 3.5m\)</span>, <span class="math notranslate nohighlight">\(hu_l = 0\)</span>, <span class="math notranslate nohighlight">\(hu_r = 0.7 m^2/s\)</span>.
+Evacuation time is estimated via the speed of the right-going wave.</p>
 </section>
 <section id="theoretical-estimate-2-2-2">
 <h4>Theoretical Estimate (2.2.2):<a class="headerlink" href="#theoretical-estimate-2-2-2" title="Link to this heading"></a></h4>
@@ -167,15 +169,18 @@ t_{evac} &amp;= \frac{s_{village}}{\lambda_r^{Roe}} = \frac{25000m}{9.32994} = 2
 </section>
 <section id="simulation">
 <h4>Simulation:<a class="headerlink" href="#simulation" title="Link to this heading"></a></h4>
-<p>The following graphic shows the plotted simulation data with setup: <code class="docutils literal notranslate"><span class="pre">./build/tsunami_lab</span> <span class="pre">-n</span> <span class="pre">30000</span> <span class="pre">-d</span> <span class="pre">30000</span> <span class="pre">-t</span> <span class="pre">2400</span> <span class="pre">-p</span> <span class="pre">DamBreak</span> <span class="pre">14</span> <span class="pre">3.5</span> <span class="pre">5000</span> <span class="pre">0</span> <span class="pre">0.7</span></code> and the f-wave solver.
-The shock front reaches the village(<span class="math notranslate nohighlight">\(x=30000\)</span>) at <span class="math notranslate nohighlight">\(t \approx 2256 s (\sim 37.6 min)\)</span>.</p>
+<p>Setup: <code class="docutils literal notranslate"><span class="pre">./build/tsunami_lab</span> <span class="pre">-n</span> <span class="pre">30000</span> <span class="pre">-d</span> <span class="pre">30000</span> <span class="pre">-t</span> <span class="pre">2400</span> <span class="pre">-p</span> <span class="pre">DamBreak</span> <span class="pre">14</span> <span class="pre">3.5</span> <span class="pre">5000</span> <span class="pre">0</span> <span class="pre">0.7</span></code>.
+The shock front reaches the village (<span class="math notranslate nohighlight">\(x=30000\)</span>) at
+<span class="math notranslate nohighlight">\(t \approx 2256 s (\sim 37.6 min)\)</span>.</p>
 <img alt="../_images/evacuation_problem.gif" src="../_images/evacuation_problem.gif" />
 </section>
 <section id="results">
 <h4>Results:<a class="headerlink" href="#results" title="Link to this heading"></a></h4>
-<p>The analytical estimate using the Roe eigenvalue <span class="math notranslate nohighlight">\(λ_r^{Roe} = 9.33\frac{m}{s}\)</span> yields an evacuation time of <span class="math notranslate nohighlight">\(\sim 44.66 min\)</span>.
-The numerical simulation shows the shock front reaching the village at <span class="math notranslate nohighlight">\(t \approx 2256 s (\sim37.6 min)\)</span> , which is <span class="math notranslate nohighlight">\(\sim 7 min\)</span> earlier.
-This discrepancy is expected, as <span class="math notranslate nohighlight">\(λ_r^{Roe}\)</span> underestimates the actual shock speed since the shock wave propagates through water that has already been set in motion by the dam break.</p>
+<p>The analytical estimate yields <span class="math notranslate nohighlight">\(\sim 44.66 min\)</span>, while the
+simulation shows the shock arriving <span class="math notranslate nohighlight">\(\sim 7 min\)</span> earlier at
+<span class="math notranslate nohighlight">\(\sim 37.6 min\)</span>. This is expected, as <span class="math notranslate nohighlight">\(\lambda_r^{Roe}\)</span>
+underestimates the true shock speed because the shock propagates
+through water already set in motion by the dam break.</p>
 </section>
 </section>
 </section>
@@ -190,7 +195,12 @@ Extension of <code class="docutils literal notranslate"><span class="pre">DamBre
 scenario with a pre-existing river flow. Added corresponding unit tests and updated
 the command-line interface in <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code> to accept optional <code class="docutils literal notranslate"><span class="pre">huLeft</span></code>/<code class="docutils literal notranslate"><span class="pre">huRight</span></code>
 arguments. Integrated the new setup files into the SCons build configuration.</p></li>
-<li><p><strong>Jan Vogt:</strong></p></li>
+<li><p><strong>Jan Vogt:</strong> Implementation of the middle-state sanity check against
+<code class="docutils literal notranslate"><span class="pre">middle_states.csv</span></code> as a Catch2 test case (<code class="docutils literal notranslate"><span class="pre">[MiddleStates]</span></code>),
+verifying the computed middle state height <span class="math notranslate nohighlight">\(h^*\)</span> within the
+chosen tolerance. Generation of the GIF visualizations for the
+dam-break, shock-shock, rare-rare, and evacuation-problem
+simulations. Writing of this chapter’s documentation.</p></li>
 <li><p><strong>Mika Brückner:</strong> Integration of f-wave solver into <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.h</span></code>, <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.cpp</span></code> and <code class="docutils literal notranslate"><span class="pre">WavePropagation1d.test.cpp</span></code> (<code class="docutils literal notranslate"><span class="pre">[WaveProp1dFWave]</span></code>) for task 2.1.
 Implementation of commandline arguments in <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code>.
 Implementation of <code class="docutils literal notranslate"><span class="pre">visualize_simulation.py</span></code> script for visualizing simulation results from <code class="docutils literal notranslate"><span class="pre">main.cpp</span></code>.
