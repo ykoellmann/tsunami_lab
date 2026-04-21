@@ -234,7 +234,7 @@ int main(int i_argc, char* i_argv[]) {
   std::cout << "  end time:                       " << l_endTime << " s"
             << std::endl;
 
-  // construct solver and initialise cells
+  // construct solver and initialize cells
   tsunami_lab::patches::WavePropagation* l_waveProp =
       new tsunami_lab::patches::WavePropagation1d(l_nx);
 
@@ -279,8 +279,11 @@ int main(int i_argc, char* i_argv[]) {
   auto l_ts = std::chrono::duration_cast<std::chrono::seconds>(
                   std::chrono::system_clock::now().time_since_epoch())
                   .count();
-  std::string l_simDir = l_simBaseDir + l_setupMode + "_" + l_solverMode + "_" +
-                         std::to_string(l_nx) + "_" + std::to_string(l_ts);
+  std::string l_simDir = l_simBaseDir + l_setupMode + "_" +
+                         std::to_string(static_cast<long long>(l_p1)) + "_" +
+                         std::to_string(static_cast<long long>(l_p2)) + "_" +
+                         std::to_string(static_cast<long long>(l_p3)) + "_" +
+                         l_solverMode + "_" + std::to_string(l_ts);
 
   mkdir(l_simBaseDir.c_str(), 0755);
   if (mkdir(l_simDir.c_str(), 0755) != 0 && errno != EEXIST) {
