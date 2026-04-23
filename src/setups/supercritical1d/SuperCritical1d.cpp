@@ -4,7 +4,7 @@
  * @author Mika Brückner (mika.brueckner AT uni-jena.de)
  *
  * @section DESCRIPTION
- * One-dimensional subcritical problem.
+ * One-dimensional supercritical problem.
  **/
 #include "SuperCritical1d.h"
 #include <cmath>

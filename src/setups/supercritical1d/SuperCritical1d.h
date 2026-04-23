@@ -4,11 +4,11 @@
  * @author Mika Brückner (mika.brueckner AT uni-jena.de)
  *
  * @section DESCRIPTION
- * One-dimensional subcritical problem.
+ * One-dimensional supercritical problem.
  **/
 
-#ifndef TSUNAMI_LAB_SUBCRITICAL1D_H
-#define TSUNAMI_LAB_SUBCRITICAL1D_H
+#ifndef TSUNAMI_LAB_SUPERCRITICAL1D_H
+#define TSUNAMI_LAB_SUPERCRITICAL1D_H
 
 #include "../Setup.h"
 
@@ -19,7 +19,7 @@ class SuperCritical1d;
 } // namespace tsunami_lab
 
 /**
- * 1d subcritical setup.
+ * 1d supercritical setup.
  **/
 class tsunami_lab::setups::SuperCritical1d : public Setup {
 
@@ -62,4 +62,4 @@ public:
   t_real getBathymetry(t_real i_x, t_real) const;
 };
 
-#endif // TSUNAMI_LAB_SUBCRITICAL1D_H
+#endif // TSUNAMI_LAB_SUPERCRITICAL1D_H
