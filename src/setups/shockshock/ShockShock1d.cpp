@@ -34,3 +34,8 @@ tsunami_lab::t_real
 tsunami_lab::setups::ShockShock1d::getMomentumY(t_real, t_real) const {
   return 0;
 }
+
+tsunami_lab::t_real
+tsunami_lab::setups::ShockShock1d::getBathymetry(t_real, t_real) const {
+  return 0;
+}
