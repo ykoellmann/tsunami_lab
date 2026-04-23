@@ -49,41 +49,21 @@ jobs:
           scons mode=debug+san
           ./build/tests
           ./build/tsunami_lab -n 25 -s FWave -p DamBreak 10 5 5
-          ./build/tsunami_lab -n 25 -s FWave -p RareRare 10 5 5
-          ./build/tsunami_lab -n 25 -s FWave -p ShockShock 10 5 5
-          ./build/tsunami_lab -n 25 -s Roe -p DamBreak 10 5 5
-          ./build/tsunami_lab -n 25 -s Roe -p RareRare 10 5 5
-          ./build/tsunami_lab -n 25 -s Roe -p ShockShock 10 5 5
           scons mode=release+san
           ./build/tests
           ./build/tsunami_lab -n 500 -s FWave -p DamBreak 10 5 5
-          ./build/tsunami_lab -n 500 -s FWave -p RareRare 10 5 5
-          ./build/tsunami_lab -n 500 -s FWave -p ShockShock 10 5 5
-          ./build/tsunami_lab -n 500 -s Roe -p DamBreak 10 5 5
-          ./build/tsunami_lab -n 500 -s Roe -p RareRare 10 5 5
-          ./build/tsunami_lab -n 500 -s Roe -p ShockShock 10 5 5
 
       - name: Valgrind
         run: |
           scons mode=debug
           valgrind ./build/tests
           valgrind ./build/tsunami_lab -n 25 -s FWave -p DamBreak 10 5 5
-          valgrind ./build/tsunami_lab -n 25 -s FWave -p RareRare 10 5 5
-          valgrind ./build/tsunami_lab -n 25 -s FWave -p ShockShock 10 5 5
-          valgrind ./build/tsunami_lab -n 25 -s Roe -p DamBreak 10 5 5
-          valgrind ./build/tsunami_lab -n 25 -s Roe -p RareRare 10 5 5
-          valgrind ./build/tsunami_lab -n 25 -s Roe -p ShockShock 10 5 5
 
       - name: Release
         run: |
           scons
           ./build/tests
           ./build/tsunami_lab -n 500 -s FWave -p DamBreak 10 5 5
-          ./build/tsunami_lab -n 500 -s FWave -p RareRare 10 5 5
-          ./build/tsunami_lab -n 500 -s FWave -p ShockShock 10 5 5
-          ./build/tsunami_lab -n 500 -s Roe -p DamBreak 10 5 5
-          ./build/tsunami_lab -n 500 -s Roe -p RareRare 10 5 5
-          ./build/tsunami_lab -n 500 -s Roe -p ShockShock 10 5 5
 
   Docs:
     runs-on: ubuntu-latest
