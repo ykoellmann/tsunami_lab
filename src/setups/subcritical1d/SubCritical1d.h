@@ -14,21 +14,21 @@
 
 namespace tsunami_lab {
 namespace setups {
-class Subcritical1d;
+class SubCritical1d;
 }
 } // namespace tsunami_lab
 
 /**
  * 1d subcritical setup.
  **/
-class tsunami_lab::setups::Subcritical1d : public Setup {
+class tsunami_lab::setups::SubCritical1d : public Setup {
 
 public:
   /**
    * Constructor.
    *
    **/
-  Subcritical1d();
+  SubCritical1d();
 
   /**
    * Gets the water height.
