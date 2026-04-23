@@ -98,12 +98,12 @@ $(document).ready(function(){initNavTree('classtsunami__lab_1_1io_1_1Csv.html','
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a9ad4e144fd463c9f828bf41c8465654d" id="r_a9ad4e144fd463c9f828bf41c8465654d"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtsunami__lab_1_1io_1_1Csv.html#a9ad4e144fd463c9f828bf41c8465654d">write</a> (<a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> i_dxy, <a class="el" href="namespacetsunami__lab.html#afd26f38678e954f652489c828656cbca">t_idx</a> i_nx, <a class="el" href="namespacetsunami__lab.html#afd26f38678e954f652489c828656cbca">t_idx</a> i_ny, <a class="el" href="namespacetsunami__lab.html#afd26f38678e954f652489c828656cbca">t_idx</a> i_stride, <a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> const *i_h, <a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> const *i_hu, <a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> const *i_hv, <a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> i_simTime, std::ostream &amp;io_stream)</td></tr>
-<tr class="separator:a9ad4e144fd463c9f828bf41c8465654d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a51060d8e968554ee5d2617447ae515c8" id="r_a51060d8e968554ee5d2617447ae515c8"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtsunami__lab_1_1io_1_1Csv.html#a51060d8e968554ee5d2617447ae515c8">write</a> (<a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> i_dxy, <a class="el" href="namespacetsunami__lab.html#afd26f38678e954f652489c828656cbca">t_idx</a> i_nx, <a class="el" href="namespacetsunami__lab.html#afd26f38678e954f652489c828656cbca">t_idx</a> i_ny, <a class="el" href="namespacetsunami__lab.html#afd26f38678e954f652489c828656cbca">t_idx</a> i_stride, <a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> const *i_h, <a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> const *i_b, <a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> const *i_hu, <a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> const *i_hv, <a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> i_simTime, std::ostream &amp;io_stream)</td></tr>
+<tr class="separator:a51060d8e968554ee5d2617447ae515c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a9ad4e144fd463c9f828bf41c8465654d" name="a9ad4e144fd463c9f828bf41c8465654d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9ad4e144fd463c9f828bf41c8465654d">&#9670;&#160;</a></span>write()</h2>
+<a id="a51060d8e968554ee5d2617447ae515c8" name="a51060d8e968554ee5d2617447ae515c8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a51060d8e968554ee5d2617447ae515c8">&#9670;&#160;</a></span>write()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -140,6 +140,12 @@ Static Public Member Functions</h2></td></tr>
           <td></td>
           <td class="paramtype"><a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> const *&#160;</td>
           <td class="paramname"><em>i_h</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> const *&#160;</td>
+          <td class="paramname"><em>i_b</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -185,6 +191,7 @@ Static Public Member Functions</h2></td></tr>
     <tr><td class="paramname">i_ny</td><td>number of cells in y-direction. </td></tr>
     <tr><td class="paramname">i_stride</td><td>stride of the data arrays in y-direction (x is assumed to be stride-1). </td></tr>
     <tr><td class="paramname">i_h</td><td>water height of the cells; optional: use nullptr if not required. </td></tr>
+    <tr><td class="paramname">i_b</td><td>bathymetry data of the cells; optional: use nullptr if not required. </td></tr>
     <tr><td class="paramname">i_hu</td><td>momentum in x-direction of the cells; optional: use nullptr if not required. </td></tr>
     <tr><td class="paramname">i_hv</td><td>momentum in y-direction of the cells; optional: use nullptr if not required. </td></tr>
     <tr><td class="paramname">io_stream</td><td>stream to which the CSV-data is written. </td></tr>

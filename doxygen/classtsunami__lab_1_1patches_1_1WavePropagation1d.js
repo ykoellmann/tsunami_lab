@@ -7,7 +7,7 @@ var classtsunami__lab_1_1patches_1_1WavePropagation1d =
     [ "getMomentumX", "classtsunami__lab_1_1patches_1_1WavePropagation1d.html#a4f3fc55be8ff55f4810ca3af4acc659c", null ],
     [ "getMomentumY", "classtsunami__lab_1_1patches_1_1WavePropagation1d.html#a25430ddf3acbbb98bce9f801b8913e7d", null ],
     [ "getStride", "classtsunami__lab_1_1patches_1_1WavePropagation1d.html#a5ccb6fa952c6dc7f3f4b42a2a7a0cb27", null ],
-    [ "setBathymetry", "classtsunami__lab_1_1patches_1_1WavePropagation1d.html#ac3c8249bfe84d86baae7a7f5964bcf03", null ],
+    [ "setBathymetry", "classtsunami__lab_1_1patches_1_1WavePropagation1d.html#ab83c062803fd08a8a79108b7c62ec05a", null ],
     [ "setGhost", "classtsunami__lab_1_1patches_1_1WavePropagation1d.html#a7ec1a2d105aa2367e100adcf8e48d1e8", null ],
     [ "setGhostOutflow", "classtsunami__lab_1_1patches_1_1WavePropagation1d.html#a3f78574d12eb29fa6076e23004de2d22", null ],
     [ "setHeight", "classtsunami__lab_1_1patches_1_1WavePropagation1d.html#adf9a1009d96ea10d8944f1b83daf5644", null ],
