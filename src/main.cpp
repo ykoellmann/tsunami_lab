@@ -12,6 +12,7 @@
 #include "setups/dambreak/DamBreak1d.h"
 #include "setups/rarerare/RareRare1d.h"
 #include "setups/shockshock/ShockShock1d.h"
+#include "setups/subcritical1d/SubCritical1d.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -38,6 +39,7 @@ static void printUsage(const char* i_prog) {
             << std::endl;
   std::cerr << "        > ShockShock <height> <momentum> <location>"
             << std::endl;
+  std::cerr << "        > SubCritical" << std::endl;
   std::cerr << std::endl;
   std::cerr << "optional parameters:" << std::endl;
   std::cerr << "  -s         solver:  FWave | Roe (default: FWave)"
@@ -238,6 +240,8 @@ int main(int i_argc, char* i_argv[]) {
 
         l_setup = new tsunami_lab::setups::ShockShock1d(l_p1, l_p2, l_p3);
 
+      } else if (l_setupMode == "subcritical") {
+        l_setup = new tsunami_lab::setups::Subcritical1d();
       } else {
         std::cerr << "error: unknown setup '" << l_setupMode
                   << "' -- use DamBreak, RareRare or ShockShock" << std::endl;
@@ -310,6 +314,7 @@ int main(int i_argc, char* i_argv[]) {
 
       tsunami_lab::t_real l_hu = l_setup->getMomentumX(l_x, l_y);
       tsunami_lab::t_real l_hv = l_setup->getMomentumY(l_x, l_y);
+      tsunami_lab::t_real l_b = l_setup->getBathymetry(l_x, l_y);
 
       // set initial values in wave propagation solver
       l_waveProp->setHeight(l_cx, l_cy, l_h);
@@ -318,7 +323,7 @@ int main(int i_argc, char* i_argv[]) {
 
       l_waveProp->setMomentumY(l_cx, l_cy, l_hv);
 
-      l_waveProp->setBathymetry(l_cx, l_cy, 0);
+      l_waveProp->setBathymetry(l_cx, l_cy, l_b);
     }
   }
 
