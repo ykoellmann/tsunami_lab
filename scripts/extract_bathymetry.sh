@@ -16,21 +16,21 @@
 # skipped only when the .nc file already exists on disk.
 #
 # Usage examples:
-#   # Minimal: just extract the 1D profile CSV
-#   ./extract_bathymetry.sh
+#   # Extract 1D profile CSV for the tohoku simulation
+#   ./extract_bathymetry.sh tohoku
 #
 #   # With map generation
-#   ./extract_bathymetry.sh --map
+#   ./extract_bathymetry.sh tohoku --map
 #
 #   # With map + PDF conversion
-#   ./extract_bathymetry.sh --map --pdf
+#   ./extract_bathymetry.sh tohoku --map --pdf
 #
 #   # Custom region and profile
-#   ./extract_bathymetry.sh \
-#     --region 138/147/35/39 \
-#     --profile-start 141.024949/37.316569 \
-#     --profile-end 146.0/37.316569 \
-#     --sampling 250 \
+#   ./extract_bathymetry.sh nordsee \
+#     --region 6/15/53/56 \
+#     --profile-start 8.7/53.87 \
+#     --profile-end 8.7/56.0 \
+#     --sampling 500 \
 #     --map --pdf
 #
 # Authors: Brückner, Köllmann, Vogt
@@ -54,7 +54,7 @@ GEBCO_NC_GLOB="*.nc"                 # auto-detect .nc filename after unzip
 DATA_DIR="${PROJECT_DIR}/data"
 TMP_DIR="${DATA_DIR}/tmp"
 RESSOURCES_DIR="${PROJECT_DIR}/ressources"
-OUTPUT_DIR="${PROJECT_DIR}/output"
+VIS_BASE_DIR="${PROJECT_DIR}/simulations/visualizations"
 
 REGION_CUT="138/147/35/39"
 
@@ -85,7 +85,11 @@ MAP_DPI=500
 # ------------------------------------------------------------------------------
 print_usage() {
   cat <<EOF
-Usage: $(basename "$0") [OPTIONS]
+Usage: $(basename "$0") <name> [OPTIONS]
+
+The <name> argument is required and determines:
+  - Profile CSV:  ressources/<name>_bathymetry_profile.csv
+  - Map outputs:  simulations/visualizations/<name>/
 
 Options:
   --region R/L/B/T        Region to cut (default: ${REGION_CUT})
@@ -95,14 +99,22 @@ Options:
   --gebco-url URL         URL to download GEBCO zip (default: current GEBCO URL)
   --gebco-zip NAME        Filename of the GEBCO zip (default: ${GEBCO_ZIP_NAME})
   --data-dir PATH         Base data directory (default: ${DATA_DIR})
-  --output-dir PATH       Output directory (default: ${OUTPUT_DIR})
-  --poi-csv PATH          CSV with points of interest (lon,lat,label)
+  --poi-csv PATH          File with points of interest (lon lat label per line)
   --map                   Generate map visualization (.ps)
   --pdf                   Also convert .ps to .pdf (implies --map)
   -h, --help              Show this help
 EOF
   exit 0
 }
+
+# First argument must be the name (non-option)
+if [[ $# -eq 0 ]] || [[ "$1" == -* ]]; then
+  echo "Error: <name> argument is required."
+  echo ""
+  print_usage
+fi
+SIM_NAME="$1"
+shift
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -113,7 +125,6 @@ while [[ $# -gt 0 ]]; do
     --gebco-url)      GEBCO_URL="$2";       shift 2 ;;
     --gebco-zip)      GEBCO_ZIP_NAME="$2";  shift 2 ;;
     --data-dir)       DATA_DIR="$2"; TMP_DIR="${DATA_DIR}/tmp"; shift 2 ;;
-    --output-dir)     OUTPUT_DIR="$2";      shift 2 ;;
     --poi-csv)        POI_CSV="$2";         shift 2 ;;
     --map)            GENERATE_MAP=true;    shift ;;
     --pdf)            GENERATE_PDF=true; GENERATE_MAP=true; shift ;;
@@ -131,9 +142,10 @@ done
 GEBCO_ZIP="${DATA_DIR}/${GEBCO_ZIP_NAME}"
 CUT_NC="${TMP_DIR}/GEBCO_cut.nc"
 PROFILE_RAW="${TMP_DIR}/profile_raw.csv"
-PROFILE_CSV="${RESSOURCES_DIR}/bathymetry_profile.csv"
-MAP_PS="${OUTPUT_DIR}/bathymetry_map.ps"
-MAP_PDF="${OUTPUT_DIR}/bathymetry_map.pdf"
+PROFILE_CSV="${RESSOURCES_DIR}/${SIM_NAME}_bathymetry_profile.csv"
+VIS_DIR="${VIS_BASE_DIR}/${SIM_NAME}"
+MAP_PS="${VIS_DIR}/bathymetry_map.ps"
+MAP_PDF="${VIS_DIR}/bathymetry_map.pdf"
 CPT_FILE="${TMP_DIR}/topo.cpt"
 
 # Build grdtrack -E argument:  lon1/lat1/lon2/lat2+<sampling>e+d
@@ -158,7 +170,7 @@ require_cmd() {
 require_cmd gmt
 require_cmd unzip
 
-mkdir -p "${DATA_DIR}" "${TMP_DIR}" "${RESSOURCES_DIR}" "${OUTPUT_DIR}"
+mkdir -p "${DATA_DIR}" "${TMP_DIR}" "${RESSOURCES_DIR}" "${VIS_DIR}"
 
 # ------------------------------------------------------------------------------
 # Step 1: Download GEBCO grid
