@@ -51,6 +51,15 @@ public:
    * @return momentum in y-direction.
    **/
   virtual t_real getMomentumY(t_real i_x, t_real i_y) const = 0;
+
+  /**
+   * Gets the bathymetry data at a given point.
+   *
+   * @param i_x x-coordinate of the queried point.
+   * @param i_y y-coordinate of the queried point.
+   * @return bathymetry value
+   */
+  virtual t_real getBathymetry(t_real i_x, t_real i_y) const = 0;
 };
 
 #endif
