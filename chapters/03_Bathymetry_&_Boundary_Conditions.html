@@ -57,6 +57,11 @@
 <li class="toctree-l3"><a class="reference internal" href="#results">Results:</a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#hydraulic-jumps-3-3">Hydraulic Jumps (3.3)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#subcritical-flow">Subcritical Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#supercritical-flow-and-hydraulic-jump">Supercritical Flow and Hydraulic Jump</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#individual-contributions">Individual Contributions</a></li>
 </ul>
 </li>
@@ -147,6 +152,70 @@ ein neuer Shock mit erhöhter Wasserhöhe zurück.</p>
 </a>
 </section>
 </section>
+</section>
+<section id="hydraulic-jumps-3-3">
+<h1>Hydraulic Jumps (3.3)<a class="headerlink" href="#hydraulic-jumps-3-3" title="Link to this heading"></a></h1>
+<p><strong>TODO Add visualizations</strong></p>
+<section id="subcritical-flow">
+<h2>Subcritical Flow<a class="headerlink" href="#subcritical-flow" title="Link to this heading"></a></h2>
+<p>The subcritical setup uses a parabolic hump over the interval <span class="math notranslate nohighlight">\(x \in (8, 12)\)</span>
+on the domain <span class="math notranslate nohighlight">\((0, 25)\)</span> with bathymetry</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}b(x) = \begin{cases}
+-1.8 - 0.05 (x-10)^2 &amp; \text{if } x \in (8,12) \\
+-2 &amp; \text{else}
+\end{cases}\end{split}\]</div>
+<p>and initial conditions <span class="math notranslate nohighlight">\(h(x, 0) = -b(x)\)</span>, <span class="math notranslate nohighlight">\(hu(x, 0) = 4.42\)</span>.</p>
+<p><strong>Maximum Froude number at</strong> <span class="math notranslate nohighlight">\(t = 0\)</span></p>
+<p>The Froude number is defined as</p>
+<div class="math notranslate nohighlight">
+\[F(x) := \frac{u}{\sqrt{g h}} = \frac{hu}{h \sqrt{g h}}\]</div>
+<p>Since <span class="math notranslate nohighlight">\(hu = 4.42\)</span> is constant and <span class="math notranslate nohighlight">\(h = -b(x)\)</span>, the Froude number is
+maximized where <span class="math notranslate nohighlight">\(h\)</span> is minimal, i.e., at the hump peak <span class="math notranslate nohighlight">\(x = 10\)</span> where
+<span class="math notranslate nohighlight">\(h(10) = 1.8\)</span>.</p>
+<div class="math notranslate nohighlight">
+\[F_{\max} = \frac{4.42}{1.8 \cdot \sqrt{9.80665 \cdot 1.8}}
+         = \frac{4.42}{1.8 \cdot 4.201}
+         \approx 0.584\]</div>
+<p>Since <span class="math notranslate nohighlight">\(F_{\max} &lt; 1\)</span> everywhere, the flow remains subcritical throughout
+the entire domain at <span class="math notranslate nohighlight">\(t = 0\)</span>.</p>
+<p>In the steady state the f-wave solver converges to a solution where the free
+surface <span class="math notranslate nohighlight">\(\eta = h + b\)</span> is approximately constant and the momentum
+<span class="math notranslate nohighlight">\(hu \approx 4.42\)</span> is preserved across the domain, consistent with
+conservation of mass in a stationary 1D flow.</p>
+</section>
+<section id="supercritical-flow-and-hydraulic-jump">
+<h2>Supercritical Flow and Hydraulic Jump<a class="headerlink" href="#supercritical-flow-and-hydraulic-jump" title="Link to this heading"></a></h2>
+<p>The supercritical setup uses the same domain with bathymetry</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}b(x) = \begin{cases}
+-0.13 - 0.05 (x-10)^2 &amp; \text{if } x \in (8,12) \\
+-0.33 &amp; \text{else}
+\end{cases}\end{split}\]</div>
+<p>and initial conditions <span class="math notranslate nohighlight">\(h(x, 0) = -b(x)\)</span>, <span class="math notranslate nohighlight">\(hu(x, 0) = 0.18\)</span>.</p>
+<p><strong>Maximum Froude number at</strong> <span class="math notranslate nohighlight">\(t = 0\)</span></p>
+<p>At the hump peak <span class="math notranslate nohighlight">\(x = 10\)</span> the water height is <span class="math notranslate nohighlight">\(h(10) = 0.13\)</span>.
+Away from the hump the water height is <span class="math notranslate nohighlight">\(h = 0.33\)</span>. The Froude numbers are:</p>
+<div class="math notranslate nohighlight">
+\[F(10) = \frac{0.18}{0.13 \cdot \sqrt{9.80665 \cdot 0.13}} \approx 1.23
+\qquad
+F_{\text{flat}} = \frac{0.18}{0.33 \cdot \sqrt{9.80665 \cdot 0.33}} \approx 0.30\]</div>
+<p>The flow transitions from subcritical (<span class="math notranslate nohighlight">\(F &lt; 1\)</span>) in the flat regions to
+supercritical (<span class="math notranslate nohighlight">\(F &gt; 1\)</span>) over the hump peak. The location of the maximum
+Froude number is <span class="math notranslate nohighlight">\(x = 10\)</span> with <span class="math notranslate nohighlight">\(F_{\max} \approx 1.23\)</span>.</p>
+<p><strong>Hydraulic jump and failure to converge</strong></p>
+<p>In the supercritical case a stationary shock — a hydraulic jump — forms
+downstream of the hump where the flow transitions back from supercritical to
+subcritical. Analytically, conservation of mass in a stationary 1D flow without
+sources requires <span class="math notranslate nohighlight">\(hu = \text{const} = 0.18\)</span> everywhere.</p>
+<p>The f-wave solver, however, fails to converge to this analytical solution.
+After running the simulation to <span class="math notranslate nohighlight">\(t = 200\)</span> the momentum <span class="math notranslate nohighlight">\(hu\)</span> is not
+constant across the domain: a clear discontinuity persists near the hydraulic
+jump location. Refining the grid does not resolve this discrepancy — the solver
+does not converge to the expected constant momentum, demonstrating a known
+limitation of the standard f-wave approach for supercritical flows with
+hydraulic jumps.</p>
+</section>
 <section id="individual-contributions">
 <h2>Individual Contributions<a class="headerlink" href="#individual-contributions" title="Link to this heading"></a></h2>
 <ul class="simple">
@@ -154,8 +223,10 @@ ein neuer Shock mit erhöhter Wasserhöhe zurück.</p>
 <li><p><strong>Jan Vogt:</strong> Implementation von 3.2.1 (<code class="docutils literal notranslate"><span class="pre">BoundaryCondition</span></code>,
 <code class="docutils literal notranslate"><span class="pre">setGhost</span></code>, CLI-Flags, <code class="docutils literal notranslate"><span class="pre">[WaveProp1dReflecting]</span></code>-Tests),
 Setup und Visualisierungen für 3.2.2, sowie diese Doku.</p></li>
-<li><p><strong>Mika Brückner:</strong></p></li>
+<li><p><strong>Mika Brückner:</strong> Integration of bathymetry support into the project (3.1).</p></li>
 </ul>
+<p>Implementation of subcritical and subcritical flow setups (3.3) and related visualizations.
+Computation of maximum Froude numbers and analysis of hydraulic jump convergence issues (3.3.1 / 3.3.3).</p>
 </section>
 </section>
 
