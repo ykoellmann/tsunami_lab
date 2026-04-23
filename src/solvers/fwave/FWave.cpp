@@ -43,10 +43,25 @@ void tsunami_lab::solvers::FWave::flux(t_real i_h,
   o_flux[1] = i_hu * l_u + 0.5f * m_g * i_h * i_h;
 }
 
+void tsunami_lab::solvers::FWave::deltaXPsi(
+    t_real i_hL, t_real i_hR, t_real i_bL, t_real i_bR, t_real* o_deltaXPsi) {
+
+  // compute delta h
+  t_real l_deltaH = i_hR - i_hL;
+  // compute delta b
+  t_real l_deltaB = i_bR - i_bL;
+
+  // compute  delta x * psi = [0, g * delta b * delta h/2]^T
+  o_deltaXPsi[0] = 0;
+  o_deltaXPsi[1] = -m_g * l_deltaB * l_deltaH * 0.5f;
+}
+
 void tsunami_lab::solvers::FWave::waveStrengths(t_real i_hL,
                                                 t_real i_hR,
                                                 t_real i_huL,
                                                 t_real i_huR,
+                                                t_real i_bL,
+                                                t_real i_bR,
                                                 t_real i_waveSpeedL,
                                                 t_real i_waveSpeedR,
                                                 t_real& o_strengthL,
@@ -66,22 +81,28 @@ void tsunami_lab::solvers::FWave::waveStrengths(t_real i_hL,
   t_real l_fR[2] = {0};
   flux(i_hR, i_huR, l_fR);
 
-  t_real l_diffF[2] = {0};
-  l_diffF[0] = l_fR[0] - l_fL[0];
-  l_diffF[1] = l_fR[1] - l_fL[1];
+  // compute delta x psi
+  t_real l_deltaXPsi[2] = {0};
+  deltaXPsi(i_hL, i_hR, i_bL, i_bR, l_deltaXPsi);
+
+  t_real l_fluxJump[2] = {0};
+  l_fluxJump[0] = l_fR[0] - l_fL[0] - l_deltaXPsi[0];
+  l_fluxJump[1] = l_fR[1] - l_fL[1] - l_deltaXPsi[1];
 
   // compute wave strengths: alpha = R^{-1} * delta_f
-  o_strengthL = l_rInv[0][0] * l_diffF[0];
-  o_strengthL += l_rInv[0][1] * l_diffF[1];
+  o_strengthL = l_rInv[0][0] * l_fluxJump[0];
+  o_strengthL += l_rInv[0][1] * l_fluxJump[1];
 
-  o_strengthR = l_rInv[1][0] * l_diffF[0];
-  o_strengthR += l_rInv[1][1] * l_diffF[1];
+  o_strengthR = l_rInv[1][0] * l_fluxJump[0];
+  o_strengthR += l_rInv[1][1] * l_fluxJump[1];
 }
 
 void tsunami_lab::solvers::FWave::netUpdates(t_real i_hL,
                                              t_real i_hR,
                                              t_real i_huL,
                                              t_real i_huR,
+                                             t_real i_bL,
+                                             t_real i_bR,
                                              t_real o_netUpdateL[2],
                                              t_real o_netUpdateR[2]) {
   // compute velocities: u = hu / h
@@ -100,8 +121,8 @@ void tsunami_lab::solvers::FWave::netUpdates(t_real i_hL,
   t_real l_waveStrengthL = 0;
   t_real l_waveStrengthR = 0;
 
-  waveStrengths(i_hL, i_hR, i_huL, i_huR, l_waveSpeedL, l_waveSpeedR,
-                l_waveStrengthL, l_waveStrengthR);
+  waveStrengths(i_hL, i_hR, i_huL, i_huR, i_bL, i_bR, l_waveSpeedL,
+                l_waveSpeedR, l_waveStrengthL, l_waveStrengthR);
 
   // compute waves:  Z_p = a_p * r_p, with r_p = [1, lambda_p]^T
   t_real l_waveL[2] = {0};
