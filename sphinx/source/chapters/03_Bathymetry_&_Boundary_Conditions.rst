@@ -75,6 +75,96 @@ Beidseitige Reflexion (Wellen bouncen zwischen beiden Wänden):
 .. image:: ../../../simulations/visualizations/bathymetry_boundary_conditions/dam_reflect_both_walls.gif
    :width: 40%
 
+Hydraulic Jumps (3.3)
+====================
+
+**TODO Add visualizations**
+
+Subcritical Flow
+----------------
+
+The subcritical setup uses a parabolic hump over the interval :math:`x \in (8, 12)`
+on the domain :math:`(0, 25)` with bathymetry
+
+.. math::
+
+   b(x) = \begin{cases}
+   -1.8 - 0.05 (x-10)^2 & \text{if } x \in (8,12) \\
+   -2 & \text{else}
+   \end{cases}
+
+and initial conditions :math:`h(x, 0) = -b(x)`, :math:`hu(x, 0) = 4.42`.
+
+**Maximum Froude number at** :math:`t = 0`
+
+The Froude number is defined as
+
+.. math::
+
+   F(x) := \frac{u}{\sqrt{g h}} = \frac{hu}{h \sqrt{g h}}
+
+Since :math:`hu = 4.42` is constant and :math:`h = -b(x)`, the Froude number is
+maximized where :math:`h` is minimal, i.e., at the hump peak :math:`x = 10` where
+:math:`h(10) = 1.8`.
+
+.. math::
+
+   F_{\max} = \frac{4.42}{1.8 \cdot \sqrt{9.80665 \cdot 1.8}}
+            = \frac{4.42}{1.8 \cdot 4.201}
+            \approx 0.584
+
+Since :math:`F_{\max} < 1` everywhere, the flow remains subcritical throughout
+the entire domain at :math:`t = 0`.
+
+In the steady state the f-wave solver converges to a solution where the free
+surface :math:`\eta = h + b` is approximately constant and the momentum
+:math:`hu \approx 4.42` is preserved across the domain, consistent with
+conservation of mass in a stationary 1D flow.
+
+Supercritical Flow and Hydraulic Jump
+--------------------------------------
+
+The supercritical setup uses the same domain with bathymetry
+
+.. math::
+
+   b(x) = \begin{cases}
+   -0.13 - 0.05 (x-10)^2 & \text{if } x \in (8,12) \\
+   -0.33 & \text{else}
+   \end{cases}
+
+and initial conditions :math:`h(x, 0) = -b(x)`, :math:`hu(x, 0) = 0.18`.
+
+**Maximum Froude number at** :math:`t = 0`
+
+At the hump peak :math:`x = 10` the water height is :math:`h(10) = 0.13`.
+Away from the hump the water height is :math:`h = 0.33`. The Froude numbers are:
+
+.. math::
+
+   F(10) = \frac{0.18}{0.13 \cdot \sqrt{9.80665 \cdot 0.13}} \approx 1.23
+   \qquad
+   F_{\text{flat}} = \frac{0.18}{0.33 \cdot \sqrt{9.80665 \cdot 0.33}} \approx 0.30
+
+The flow transitions from subcritical (:math:`F < 1`) in the flat regions to
+supercritical (:math:`F > 1`) over the hump peak. The location of the maximum
+Froude number is :math:`x = 10` with :math:`F_{\max} \approx 1.23`.
+
+**Hydraulic jump and failure to converge**
+
+In the supercritical case a stationary shock — a hydraulic jump — forms
+downstream of the hump where the flow transitions back from supercritical to
+subcritical. Analytically, conservation of mass in a stationary 1D flow without
+sources requires :math:`hu = \text{const} = 0.18` everywhere.
+
+The f-wave solver, however, fails to converge to this analytical solution.
+After running the simulation to :math:`t = 200` the momentum :math:`hu` is not
+constant across the domain: a clear discontinuity persists near the hydraulic
+jump location. Refining the grid does not resolve this discrepancy — the solver
+does not converge to the expected constant momentum, demonstrating a known
+limitation of the standard f-wave approach for supercritical flows with
+hydraulic jumps.
+
 Individual Contributions
 ------------------------
 
@@ -82,4 +172,9 @@ Individual Contributions
 - **Jan Vogt:** Implementation von 3.2.1 (``BoundaryCondition``,
   ``setGhost``, CLI-Flags, ``[WaveProp1dReflecting]``-Tests),
   Setup und Visualisierungen für 3.2.2, sowie diese Doku.
-- **Mika Brückner:**
+- **Mika Brückner:** Integration of bathymetry support into the project (3.1).
+Implementation of subcritical and subcritical flow setups (3.3) and related visualizations.
+Computation of maximum Froude numbers and analysis of hydraulic jump convergence issues (3.3.1 / 3.3.3).
+
+
+
