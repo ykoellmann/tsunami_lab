@@ -78,6 +78,9 @@ void tsunami_lab::patches::WavePropagation1d::timeStep(t_real i_scaling,
                                l_huOld[l_ceR], l_netUpdates[0],
                                l_netUpdates[1]);
     } else if (i_mode == "fwave") {
+      // bathymetry arrays are introduced in task 3.1.2; until then both sides
+      // are flat (b = 0) so deltaXPsi vanishes and FWave reduces to the
+      // bathymetry-free case.
       solvers::FWave::netUpdates(l_hOld[l_ceL], l_hOld[l_ceR], l_huOld[l_ceL],
                                  l_huOld[l_ceR], l_b[l_ceL], l_b[l_ceR],
                                  l_netUpdates[0], l_netUpdates[1]);
@@ -96,17 +99,24 @@ void tsunami_lab::patches::WavePropagation1d::timeStep(t_real i_scaling,
 }
 
 void tsunami_lab::patches::WavePropagation1d::setGhostOutflow() {
+  setGhost(BoundaryCondition::Outflow, BoundaryCondition::Outflow);
+}
+
+void tsunami_lab::patches::WavePropagation1d::setGhost(
+    BoundaryCondition i_left, BoundaryCondition i_right) {
   t_real* l_h = m_h[m_step];
   t_real* l_hu = m_hu[m_step];
   t_real* l_b = m_b;
 
-  // set left boundary
+  // left boundary: copy h, negate hu for reflecting wall (Eq. 3.2.1)
   l_h[0] = l_h[1];
-  l_hu[0] = l_hu[1];
+  l_hu[0] = (i_left == BoundaryCondition::Reflecting) ? -l_hu[1] : l_hu[1];
   l_b[0] = l_b[1];
 
-  // set right boundary
+  // right boundary: copy h, negate hu for reflecting wall (Eq. 3.2.1)
   l_h[m_nCells + 1] = l_h[m_nCells];
-  l_hu[m_nCells + 1] = l_hu[m_nCells];
+  l_hu[m_nCells + 1] = (i_right == BoundaryCondition::Reflecting)
+                           ? -l_hu[m_nCells]
+                           : l_hu[m_nCells];
   l_b[m_nCells + 1] = l_b[m_nCells];
 }

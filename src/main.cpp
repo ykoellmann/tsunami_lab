@@ -40,16 +40,27 @@ static void printUsage(const char* i_prog) {
             << std::endl;
   std::cerr << std::endl;
   std::cerr << "optional parameters:" << std::endl;
-  std::cerr << "  -s   solver:  FWave | Roe (default: FWave)" << std::endl;
-  std::cerr << "  -d   total domain size in meters (default: 10.0)"
+  std::cerr << "  -s         solver:  FWave | Roe (default: FWave)"
             << std::endl;
-  std::cerr << "  -t   simulation end time in seconds (default: 1.25)"
+  std::cerr << "  -d         total domain size in meters (default: 10.0)"
+            << std::endl;
+  std::cerr << "  -t         simulation end time in seconds (default: 1.25)"
+            << std::endl;
+  std::cerr << "  --bc-left  left boundary condition: outflow | reflecting "
+               "(default: outflow)"
+            << std::endl;
+  std::cerr << "  --bc-right right boundary condition: outflow | reflecting "
+               "(default: outflow)"
             << std::endl;
   std::cerr << std::endl;
   std::cerr << "examples:" << std::endl;
   std::cerr << "  " << i_prog << " -n 100 -p DamBreak 10 5 5" << std::endl;
   std::cerr << "  " << i_prog
             << " -n 2500 -s Roe -d 25000 -t 7200 -p DamBreak 14 3.5 12500 0 0.7"
+            << std::endl;
+  std::cerr << "  " << i_prog
+            << " -n 100 -d 10 -t 1.25 --bc-right reflecting -p ShockShock 10 "
+               "5 11"
             << std::endl;
 }
 
@@ -61,9 +72,30 @@ int main(int i_argc, char* i_argv[]) {
   std::string l_solverMode = "fwave";
   std::string l_setupMode;
 
+  // boundary conditions default to outflow on both sides
+  tsunami_lab::patches::BoundaryCondition l_bcLeft =
+      tsunami_lab::patches::BoundaryCondition::Outflow;
+  tsunami_lab::patches::BoundaryCondition l_bcRight =
+      tsunami_lab::patches::BoundaryCondition::Outflow;
+
   tsunami_lab::t_real l_p1 = 0, l_p2 = 0, l_p3 = 0, l_p4 = 0, l_p5 = 0;
 
   tsunami_lab::setups::Setup* l_setup = nullptr;
+
+  auto l_parseBc = [&](const std::string& i_val,
+                       tsunami_lab::patches::BoundaryCondition& o_bc) -> bool {
+    std::string l_v = i_val;
+    std::transform(l_v.begin(), l_v.end(), l_v.begin(), ::tolower);
+    if (l_v == "outflow") {
+      o_bc = tsunami_lab::patches::BoundaryCondition::Outflow;
+      return true;
+    }
+    if (l_v == "reflecting") {
+      o_bc = tsunami_lab::patches::BoundaryCondition::Reflecting;
+      return true;
+    }
+    return false;
+  };
 
   std::cout << "####################################" << std::endl;
   std::cout << "### Tsunami Lab                  ###" << std::endl;
@@ -110,6 +142,22 @@ int main(int i_argc, char* i_argv[]) {
       l_endTime = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
       if (l_endTime <= 0) {
         std::cerr << "error: -t (end time) must be > 0" << std::endl;
+        printUsage(i_argv[0]);
+        return EXIT_FAILURE;
+      }
+
+    } else if (l_arg == "--bc-left" && l_i + 1 < i_argc) {
+      if (!l_parseBc(i_argv[++l_i], l_bcLeft)) {
+        std::cerr << "error: --bc-left must be 'outflow' or 'reflecting'"
+                  << std::endl;
+        printUsage(i_argv[0]);
+        return EXIT_FAILURE;
+      }
+
+    } else if (l_arg == "--bc-right" && l_i + 1 < i_argc) {
+      if (!l_parseBc(i_argv[++l_i], l_bcRight)) {
+        std::cerr << "error: --bc-right must be 'outflow' or 'reflecting'"
+                  << std::endl;
         printUsage(i_argv[0]);
         return EXIT_FAILURE;
       }
@@ -233,6 +281,13 @@ int main(int i_argc, char* i_argv[]) {
   std::cout << "  setup:                          " << l_setupMode << std::endl;
   std::cout << "  end time:                       " << l_endTime << " s"
             << std::endl;
+  auto l_bcName = [](tsunami_lab::patches::BoundaryCondition i_bc) {
+    return i_bc == tsunami_lab::patches::BoundaryCondition::Reflecting
+               ? "reflecting"
+               : "outflow";
+  };
+  std::cout << "  boundary (left / right):        " << l_bcName(l_bcLeft)
+            << " / " << l_bcName(l_bcRight) << std::endl;
 
   // construct solver and initialize cells
   tsunami_lab::patches::WavePropagation* l_waveProp =
@@ -326,7 +381,7 @@ int main(int i_argc, char* i_argv[]) {
       l_nOut++;
     }
 
-    l_waveProp->setGhostOutflow();
+    l_waveProp->setGhost(l_bcLeft, l_bcRight);
     l_waveProp->timeStep(l_scaling, l_solverMode);
 
     l_timeStep++;

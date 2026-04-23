@@ -62,6 +62,14 @@ public:
   void setGhostOutflow();
 
   /**
+   * Sets ghost cells with independent boundary conditions on left and right.
+   *
+   * @param i_left  boundary condition at the left side.
+   * @param i_right boundary condition at the right side.
+   **/
+  void setGhost(BoundaryCondition i_left, BoundaryCondition i_right);
+
+  /**
    * Gets the stride in y-direction. x-direction is stride-1.
    *
    * @return stride in y-direction.
