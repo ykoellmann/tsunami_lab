@@ -11,6 +11,7 @@ void tsunami_lab::io::Csv::write(t_real i_dxy,
                                  t_idx i_ny,
                                  t_idx i_stride,
                                  t_real const* i_h,
+                                 t_real const* i_b,
                                  t_real const* i_hu,
                                  t_real const* i_hv,
                                  t_real i_simTime,
@@ -22,6 +23,8 @@ void tsunami_lab::io::Csv::write(t_real i_dxy,
   io_stream << "x,y";
   if (i_h != nullptr)
     io_stream << ",height";
+  if (i_b != nullptr)
+    io_stream << ",bathymetry";
   if (i_hu != nullptr)
     io_stream << ",momentum_x";
   if (i_hv != nullptr)
@@ -41,6 +44,8 @@ void tsunami_lab::io::Csv::write(t_real i_dxy,
       io_stream << l_posX << "," << l_posY;
       if (i_h != nullptr)
         io_stream << "," << i_h[l_id];
+      if (i_b != nullptr)
+        io_stream << "," << i_b[l_id];
       if (i_hu != nullptr)
         io_stream << "," << i_hu[l_id];
       if (i_hv != nullptr)
