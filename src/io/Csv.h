@@ -29,6 +29,8 @@ public:
    * be stride-1).
    * @param i_h water height of the cells; optional: use nullptr if not
    * required.
+   * @param i_b bathymetry data of the cells; optional: use nullptr if not
+   * required.
    * @param i_hu momentum in x-direction of the cells; optional: use nullptr if
    * not required.
    * @param i_hv momentum in y-direction of the cells; optional: use nullptr if
@@ -41,6 +43,7 @@ public:
                     t_idx i_ny,
                     t_idx i_stride,
                     t_real const* i_h,
+                    t_real const* i_b,
                     t_real const* i_hu,
                     t_real const* i_hv,
                     t_real i_simTime,
