@@ -1,0 +1,192 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3. Bathymetry &amp; Boundary Conditions &mdash; Tsunami Lab  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/full_width.css?v=8223e249" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="2. Finite Volume Discretization" href="02_finite_volume.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Tsunami Lab
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Project Phases:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="01_riemann_solver.html">1. Riemann Solver</a></li>
+<li class="toctree-l1"><a class="reference internal" href="02_finite_volume.html">2. Finite Volume Discretization</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">3. Bathymetry &amp; Boundary Conditions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#implementation">Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#unit-tests">Unit Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#bathymetry-data-extraction">3.4. Bathymetry Data Extraction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#results-visualizations">Results &amp; Visualizations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#observations">Observations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#results">Results:</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#individual-contributions">Individual Contributions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Tsunami Lab</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">3. Bathymetry &amp; Boundary Conditions</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/chapters/03_Bathymetry_&amp;_Boundary_Conditions.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="bathymetry-boundary-conditions">
+<h1>3. Bathymetry &amp; Boundary Conditions<a class="headerlink" href="#bathymetry-boundary-conditions" title="Link to this heading"></a></h1>
+<section id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Link to this heading"></a></h2>
+<p>Für reflektierende Ränder (3.2.1) haben wir einen
+<code class="docutils literal notranslate"><span class="pre">BoundaryCondition</span></code>-Enum (<code class="docutils literal notranslate"><span class="pre">Outflow</span></code> / <code class="docutils literal notranslate"><span class="pre">Reflecting</span></code>) und eine
+neue Methode <code class="docutils literal notranslate"><span class="pre">setGhost(left,</span> <span class="pre">right)</span></code> auf <code class="docutils literal notranslate"><span class="pre">WavePropagation1d</span></code>
+hinzugefügt. Eine reflektierende Ghost-Zelle kopiert <span class="math notranslate nohighlight">\(h\)</span> und
+negiert <span class="math notranslate nohighlight">\(hu\)</span>; eine Outflow-Zelle kopiert beides.
+<code class="docutils literal notranslate"><span class="pre">setGhostOutflow()</span></code> ruft jetzt einfach
+<code class="docutils literal notranslate"><span class="pre">setGhost(Outflow,</span> <span class="pre">Outflow)</span></code>.</p>
+<p>Über die CLI-Flags <code class="docutils literal notranslate"><span class="pre">--bc-left</span></code> / <code class="docutils literal notranslate"><span class="pre">--bc-right</span></code>
+(<code class="docutils literal notranslate"><span class="pre">outflow</span></code> / <code class="docutils literal notranslate"><span class="pre">reflecting</span></code>, Default <code class="docutils literal notranslate"><span class="pre">outflow</span></code>) wird der
+Randtyp pro Seite gewählt.</p>
+<p>Für 3.2.2 reicht ein normales <code class="docutils literal notranslate"><span class="pre">DamBreak</span></code> mit reflektierendem
+rechten Rand — die Reflexion erzeugt das gleiche Verhalten wie ein
+symmetrisches ShockShock-Problem an der Wand.</p>
+</section>
+<section id="unit-tests">
+<h2>Unit Tests<a class="headerlink" href="#unit-tests" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">[WaveProp1dReflecting]</span></code> prüft die drei Randkombinationen
+(<code class="docutils literal notranslate"><span class="pre">Reflecting/Reflecting</span></code>, <code class="docutils literal notranslate"><span class="pre">Outflow/Reflecting</span></code>,
+<code class="docutils literal notranslate"><span class="pre">setGhostOutflow</span></code> ≡ <code class="docutils literal notranslate"><span class="pre">Outflow/Outflow</span></code>) und verifiziert, dass
+<span class="math notranslate nohighlight">\(h\)</span> kopiert und <span class="math notranslate nohighlight">\(hu\)</span> nur auf reflektierenden Seiten
+negiert wird.</p>
+</section>
+<section id="bathymetry-data-extraction">
+<h2>3.4. Bathymetry Data Extraction<a class="headerlink" href="#bathymetry-data-extraction" title="Link to this heading"></a></h2>
+<p>We extract bathymetry data from the GEBCO 2025 Grid using GMT.
+The workflow is automated in <code class="docutils literal notranslate"><span class="pre">scripts/extract_bathymetry.sh</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./scripts/extract_bathymetry.sh<span class="w"> </span>tohoku<span class="w"> </span>--map<span class="w"> </span>--pdf
+</pre></div>
+</div>
+<p>The script downloads the GEBCO data if not present, cuts the specified
+region with <code class="docutils literal notranslate"><span class="pre">gmt</span> <span class="pre">grdcut</span></code>, extracts a 1D profile via <code class="docutils literal notranslate"><span class="pre">gmt</span> <span class="pre">grdtrack</span></code>,
+and converts the output to CSV. Optionally it generates a map with
+coastlines and the profile line overlaid.</p>
+<p>For the domain between <span class="math notranslate nohighlight">\(p_1 = (141.024949, 37.316569)\)</span> and
+<span class="math notranslate nohighlight">\(p_2 = (146.0, 37.316569)\)</span> at 250 m sampling, the extraction
+yields 1903 data points. The profile CSV is stored in <code class="docutils literal notranslate"><span class="pre">ressources/</span></code>,
+map visualizations go to <code class="docutils literal notranslate"><span class="pre">simulations/visualizations/&lt;name&gt;/</span></code>.</p>
+</section>
+<section id="results-visualizations">
+<h2>Results &amp; Visualizations<a class="headerlink" href="#results-visualizations" title="Link to this heading"></a></h2>
+<section id="observations">
+<h3>Observations<a class="headerlink" href="#observations" title="Link to this heading"></a></h3>
+<p>Setup: <code class="docutils literal notranslate"><span class="pre">DamBreak</span> <span class="pre">15</span> <span class="pre">10</span></code> (Dammposition je Szenario).
+Beim Aufprall auf eine Wand kippt das Momentum <strong>nicht</strong> einfach
+um — das Wasser staut sich kurz auf (<span class="math notranslate nohighlight">\(u \to 0\)</span>), dann läuft
+ein neuer Shock mit erhöhter Wasserhöhe zurück.</p>
+</section>
+<section id="results">
+<h3>Results:<a class="headerlink" href="#results" title="Link to this heading"></a></h3>
+<p>Einseitige Reflexion (rechter Rand):</p>
+<a class="reference internal image-reference" href="../_images/dam_reflect.gif"><img alt="../_images/dam_reflect.gif" src="../_images/dam_reflect.gif" style="width: 40%;" />
+</a>
+<p>Beidseitige Reflexion (Wellen bouncen zwischen beiden Wänden):</p>
+<a class="reference internal image-reference" href="../_images/dam_reflect_both_walls.gif"><img alt="../_images/dam_reflect_both_walls.gif" src="../_images/dam_reflect_both_walls.gif" style="width: 40%;" />
+</a>
+</section>
+</section>
+<section id="individual-contributions">
+<h2>Individual Contributions<a class="headerlink" href="#individual-contributions" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Yannik Köllmann:</strong></p></li>
+<li><p><strong>Jan Vogt:</strong> Implementation von 3.2.1 (<code class="docutils literal notranslate"><span class="pre">BoundaryCondition</span></code>,
+<code class="docutils literal notranslate"><span class="pre">setGhost</span></code>, CLI-Flags, <code class="docutils literal notranslate"><span class="pre">[WaveProp1dReflecting]</span></code>-Tests),
+Setup und Visualisierungen für 3.2.2, sowie diese Doku.</p></li>
+<li><p><strong>Mika Brückner:</strong></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="02_finite_volume.html" class="btn btn-neutral float-left" title="2. Finite Volume Discretization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Yannik, Jan, Mika.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
