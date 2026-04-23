@@ -13,8 +13,8 @@
 #
 # Packages the given directory into
 # submission_YY_MM_DD_brueckner_koellmann_vogt.tar.xz,
-# excluding hidden files/directories (.git, .DS_Store, etc.)
-# and the top-level 'submission' folder (contains weekly submission archives).
+# excluding build artifacts, large data, and generated files.
+# Simulation visualizations (.gif) ARE included.
 # The tarball is created in the current working directory.
 #
 
@@ -56,20 +56,32 @@ echo "  Source  : ${PROJECT_PATH}"
 echo "  Tarball : ${TARBALL}"
 echo ""
 
-# Create a clean copy without hidden files in a temp directory
+# Create a clean copy in a temp directory
 TMPDIR="$(mktemp -d)"
 trap 'rm -rf "$TMPDIR"' EXIT
 
-echo "Copying project files (excluding hidden files and top-level submission folder)..."
+echo "Copying project files..."
 rsync -a \
     --exclude='.*' \
-    --exclude='/submission' \
+    --exclude='build' \
+    --exclude='docs/html' \
+    --exclude='docs/latex' \
+    --exclude='sphinx/build' \
+    --exclude='data' \
+    --exclude='output' \
+    --exclude='submission' \
+    --exclude='gmt.history' \
+    --exclude='simulations/*' \
+    --include='simulations/' \
+    --include='simulations/visualizations/' \
+    --include='simulations/visualizations/**' \
     "${PROJECT_PATH}/" "${TMPDIR}/${DIR_NAME}/"
 
 echo "Creating tarball..."
 tar -cvJf "$TARBALL" -C "$TMPDIR" "$DIR_NAME"
 
+SIZE=$(du -h "$TARBALL" | cut -f1)
 echo ""
 echo "=== Done! ==="
-echo "Upload '${TARBALL}' to Moodle."
-echo "Remember: Every team member must upload the file!"
+echo "Tarball : ${TARBALL} (${SIZE})"
+echo "Upload to Moodle. Every team member must upload!"

@@ -11,5 +11,8 @@ pkgs.mkShell {
     scons
     clang-tools
     bear
+    gmt
+    wget
+    tree
   ];
 }

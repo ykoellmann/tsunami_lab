@@ -1,9 +1,36 @@
+# Build artifacts
+build/
 */build/*
-build/*
-/docs/html/*
-/docs/latex/*
-.idea/*
+ 
+# Doxygen generated docs
+docs/html/
+docs/latex/
+ 
+# Sphinx build output
+sphinx/build/
+ 
+# IDE
+.idea/
+ 
+# SCons
 .sconsign.dblite
+ 
+# GEBCO / GMT data (large, re-downloadable)
+data/*.zip
+data/*.nc
+data/*.pdf
+data/tmp/
+
+/ressources/bathymetry_profile.csv
+ 
+# Generated outputs (maps, profiles)
+output/
+ 
+# GMT history file
+gmt.history
+ 
+# Simulation CSVs (large, re-generable)
+# Visualizations (GIFs) are kept
 simulations/*
 !simulations/
 !simulations/visualizations/
