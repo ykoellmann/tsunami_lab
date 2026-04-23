@@ -51,6 +51,8 @@ private:
    * @param i_hR height of the right side.
    * @param i_huL momentum of the left side.
    * @param i_huR momentum of the right side.
+   * @param i_bL bathymetry data of the left side
+   * @param i_bR bathymetry data of the left side
    * @param i_waveSpeedL speed of the wave propagating to the left.
    * @param i_waveSpeedR speed of the wave propagating to the right.
    * @param o_strengthL will be set to the strength of the wave propagating to
@@ -62,6 +64,8 @@ private:
                             t_real i_hR,
                             t_real i_huL,
                             t_real i_huR,
+                            t_real i_bL,
+                            t_real i_bR,
                             t_real i_waveSpeedL,
                             t_real i_waveSpeedR,
                             t_real& o_strengthL,
@@ -71,11 +75,24 @@ private:
    * Computes the flux.
    *
    * @param i_h height of the left/right side.
-   * @param i_huL momentum of the left/right side.
+   * @param i_hu momentum of the left/right side.
    * @param o_flux will be set to the flux function hu, h*u^2 + 1/2*g*h^2.
    **/
 
   static void flux(t_real i_h, t_real i_hu, t_real* o_flux);
+
+  /**
+   * Computes \delta x\psi_{i-1/2}
+   *
+   * @param i_hL height of the left side.
+   * @param i_hR height of the right side.
+   * @param i_bL bathymetry data of the left side
+   * @param i_bR bathymetry data of the left side
+   * @param o_deltaXPsi will be set to the value of \delta x\psi_{i-1/2} =
+   * [0,-g(br-bl) (hr-hl)/2]^T.
+   */
+  static void deltaXPsi(
+      t_real i_hL, t_real i_hR, t_real i_bL, t_real i_bR, t_real* o_deltaXPsi);
 
 public:
   /**
@@ -85,6 +102,8 @@ public:
    * @param i_hR height of the right side.
    * @param i_huL momentum of the left side.
    * @param i_huR momentum of the right side.
+   * @param i_bL bathymetry data of the left side
+   * @param i_bR bathymetry data of the left side
    * @param o_netUpdateL will be set to the net-updates for the left side; 0:
    * height, 1: momentum.
    * @param o_netUpdateR will be set to the net-updates for the right side; 0:
@@ -94,6 +113,8 @@ public:
                          t_real i_hR,
                          t_real i_huL,
                          t_real i_huR,
+                         t_real i_bL,
+                         t_real i_bR,
                          t_real o_netUpdateL[2],
                          t_real o_netUpdateR[2]);
 };
