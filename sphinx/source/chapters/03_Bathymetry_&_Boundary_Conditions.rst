@@ -29,6 +29,28 @@ Unit Tests
 :math:`h` kopiert und :math:`hu` nur auf reflektierenden Seiten
 negiert wird.
 
+3.4. Bathymetry Data Extraction
+--------------------------------
+
+We extract bathymetry data from the GEBCO 2025 Grid using GMT.
+The workflow is automated in ``scripts/extract_bathymetry.sh``:
+
+.. code-block:: bash
+
+   ./scripts/extract_bathymetry.sh tohoku --map --pdf
+
+The script downloads the GEBCO data if not present, cuts the specified
+region with ``gmt grdcut``, extracts a 1D profile via ``gmt grdtrack``,
+and converts the output to CSV. Optionally it generates a map with
+coastlines and the profile line overlaid.
+
+For the domain between :math:`p_1 = (141.024949, 37.316569)` and
+:math:`p_2 = (146.0, 37.316569)` at 250 m sampling, the extraction
+yields 1903 data points. The profile CSV is stored in ``ressources/``,
+map visualizations go to ``simulations/visualizations/<name>/``.
+
+.. TODO: Add bathymetry profile/map figure.
+
 Results & Visualizations
 ------------------------
 
