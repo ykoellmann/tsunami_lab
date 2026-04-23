@@ -132,7 +132,7 @@ public:
    * @param i_iy id of the cell in y-direction
    * @param i_b bathymetry
    */
-  void setBathymetry(t_idx, t_idx, t_real){};
+  void setBathymetry(t_idx i_ix, t_idx, t_real i_b) { m_b[i_ix + 1] = i_b; }
 };
 
 #endif
