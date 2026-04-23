@@ -13,7 +13,7 @@ Documentation and reports for the Tsunami Lab at Friedrich Schiller University J
    Overview <self>
    chapters/01_riemann_solver
    chapters/02_finite_volume
-   chapters/03_bathymetry
+   chapters/03_Bathymetry_&_Boundary_Conditions.rst
    chapters/04_two_dimensional
    chapters/05_data_io
    chapters/06_tsunami_simulations

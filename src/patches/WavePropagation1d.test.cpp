@@ -127,6 +127,49 @@ TEST_CASE("Test the 1d wave propagation solver with f-wave solver.",
   }
 }
 
+TEST_CASE("Reflecting boundary conditions mirror the adjacent cell.",
+          "[WaveProp1dReflecting]") {
+  /*
+   * Domain: 4 interior cells with known (h, hu) values.
+   * Eq. 3.2.1: a reflecting ghost cell copies h and negates hu.
+   * An outflow ghost cell copies both.
+   */
+  tsunami_lab::patches::WavePropagation1d l_waveProp(4);
+  for (tsunami_lab::t_idx l_ce = 0; l_ce < 4; l_ce++) {
+    l_waveProp.setHeight(l_ce, 0, 2 + static_cast<tsunami_lab::t_real>(l_ce));
+    l_waveProp.setMomentumX(l_ce, 0,
+                            3 + static_cast<tsunami_lab::t_real>(l_ce));
+  }
+
+  SECTION("reflecting left + reflecting right") {
+    l_waveProp.setGhost(tsunami_lab::patches::BoundaryCondition::Reflecting,
+                        tsunami_lab::patches::BoundaryCondition::Reflecting);
+    // left ghost mirrors cell 0 (interior index 1): h copied, hu negated
+    REQUIRE(l_waveProp.getHeight()[-1] == Approx(2));
+    REQUIRE(l_waveProp.getMomentumX()[-1] == Approx(-3));
+    // right ghost mirrors cell 3 (interior index 4): h copied, hu negated
+    REQUIRE(l_waveProp.getHeight()[4] == Approx(5));
+    REQUIRE(l_waveProp.getMomentumX()[4] == Approx(-6));
+  }
+
+  SECTION("outflow left + reflecting right") {
+    l_waveProp.setGhost(tsunami_lab::patches::BoundaryCondition::Outflow,
+                        tsunami_lab::patches::BoundaryCondition::Reflecting);
+    REQUIRE(l_waveProp.getHeight()[-1] == Approx(2));
+    REQUIRE(l_waveProp.getMomentumX()[-1] == Approx(3));
+    REQUIRE(l_waveProp.getHeight()[4] == Approx(5));
+    REQUIRE(l_waveProp.getMomentumX()[4] == Approx(-6));
+  }
+
+  SECTION("setGhostOutflow matches setGhost(Outflow, Outflow)") {
+    l_waveProp.setGhostOutflow();
+    REQUIRE(l_waveProp.getHeight()[-1] == Approx(2));
+    REQUIRE(l_waveProp.getMomentumX()[-1] == Approx(3));
+    REQUIRE(l_waveProp.getHeight()[4] == Approx(5));
+    REQUIRE(l_waveProp.getMomentumX()[4] == Approx(6));
+  }
+}
+
 TEST_CASE("Sanity check using middle states for Roe and FWave solvers.",
           "[WaveProp1dMiddleStates]") {
   // gravity constant g = 9.80665 m/s^2

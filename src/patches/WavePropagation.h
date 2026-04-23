@@ -12,7 +12,10 @@
 namespace tsunami_lab {
 namespace patches {
 class WavePropagation;
-}
+
+//! Boundary condition flag passed to setGhost() for the left/right side.
+enum class BoundaryCondition { Outflow, Reflecting };
+} // namespace patches
 } // namespace tsunami_lab
 
 class tsunami_lab::patches::WavePropagation {
@@ -34,6 +37,20 @@ public:
    * conditions.
    **/
   virtual void setGhostOutflow() = 0;
+
+  /**
+   * Sets the ghost cell values using independent boundary conditions on the
+   * left and right side of the domain.
+   *
+   * For a reflecting boundary the ghost cell mirrors the adjacent interior
+   * cell: water height (and bathymetry) are copied while the momentum is
+   * negated so that the particle velocity at the boundary vanishes.
+   *
+   * @param i_left  boundary condition at the left side.
+   * @param i_right boundary condition at the right side.
+   **/
+  virtual void setGhost(BoundaryCondition i_left,
+                        BoundaryCondition i_right) = 0;
 
   /**
    * Gets the stride in y-direction. x-direction is stride-1.
