@@ -46,14 +46,15 @@ void tsunami_lab::solvers::FWave::flux(t_real i_h,
 void tsunami_lab::solvers::FWave::deltaXPsi(
     t_real i_hL, t_real i_hR, t_real i_bL, t_real i_bR, t_real* o_deltaXPsi) {
 
-  // compute delta h
-  t_real l_deltaH = i_hR - i_hL;
   // compute delta b
   t_real l_deltaB = i_bR - i_bL;
 
+  // compute average of h
+  t_real l_avgH = 0.5f * (i_hR + i_hL);
+
   // compute  delta x * psi = [0, g * delta b * delta h/2]^T
   o_deltaXPsi[0] = 0;
-  o_deltaXPsi[1] = -m_g * l_deltaB * l_deltaH * 0.5f;
+  o_deltaXPsi[1] = -m_g * l_deltaB * l_avgH;
 }
 
 void tsunami_lab::solvers::FWave::waveStrengths(t_real i_hL,
