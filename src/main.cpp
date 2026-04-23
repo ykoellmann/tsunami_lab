@@ -13,6 +13,7 @@
 #include "setups/rarerare/RareRare1d.h"
 #include "setups/shockshock/ShockShock1d.h"
 #include "setups/subcritical1d/SubCritical1d.h"
+#include "setups/supercritical1d/SuperCritical1d.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -40,6 +41,7 @@ static void printUsage(const char* i_prog) {
   std::cerr << "        > ShockShock <height> <momentum> <location>"
             << std::endl;
   std::cerr << "        > SubCritical" << std::endl;
+  std::cerr << "        > SuperCritical" << std::endl;
   std::cerr << std::endl;
   std::cerr << "optional parameters:" << std::endl;
   std::cerr << "  -s         solver:  FWave | Roe (default: FWave)"
@@ -242,6 +244,8 @@ int main(int i_argc, char* i_argv[]) {
 
       } else if (l_setupMode == "subcritical") {
         l_setup = new tsunami_lab::setups::SubCritical1d();
+      } else if (l_setupMode == "supercritical") {
+        l_setup = new tsunami_lab::setups::SuperCritical1d();
       } else {
         std::cerr << "error: unknown setup '" << l_setupMode
                   << "' -- use DamBreak, RareRare or ShockShock" << std::endl;
