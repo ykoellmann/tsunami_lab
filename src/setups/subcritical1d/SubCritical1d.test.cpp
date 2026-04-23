@@ -10,7 +10,7 @@
 #include <catch2/catch.hpp>
 
 TEST_CASE("One-dimensional subcritical setup", "[SubCritical1d]") {
-  tsunami_lab::setups::Subcritical1d l_setup;
+  tsunami_lab::setups::SubCritical1d l_setup;
 
   SECTION("height equals negative bathymetry in domain [0, 25]") {
     // outside bump: b = -2, so h = 2

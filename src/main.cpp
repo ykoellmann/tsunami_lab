@@ -241,7 +241,7 @@ int main(int i_argc, char* i_argv[]) {
         l_setup = new tsunami_lab::setups::ShockShock1d(l_p1, l_p2, l_p3);
 
       } else if (l_setupMode == "subcritical") {
-        l_setup = new tsunami_lab::setups::Subcritical1d();
+        l_setup = new tsunami_lab::setups::SubCritical1d();
       } else {
         std::cerr << "error: unknown setup '" << l_setupMode
                   << "' -- use DamBreak, RareRare or ShockShock" << std::endl;
@@ -379,7 +379,8 @@ int main(int i_argc, char* i_argv[]) {
       std::cout << "  writing wave field to " << l_path << std::endl;
 
       std::ofstream l_file(l_path);
-      tsunami_lab::io::Csv::write(l_dxy, l_nx, 1, 1, l_waveProp->getHeight(), l_waveProp ->getBathymetry(),
+      tsunami_lab::io::Csv::write(l_dxy, l_nx, 1, 1, l_waveProp->getHeight(),
+                                  l_waveProp->getBathymetry(),
                                   l_waveProp->getMomentumX(), nullptr,
                                   l_simTime, l_file);
       l_file.close();
