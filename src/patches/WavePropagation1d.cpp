@@ -41,6 +41,7 @@ tsunami_lab::patches::WavePropagation1d::~WavePropagation1d() {
     delete[] m_h[l_st];
     delete[] m_hu[l_st];
   }
+  delete[] m_b;
 }
 
 void tsunami_lab::patches::WavePropagation1d::timeStep(t_real i_scaling,
@@ -57,6 +58,7 @@ void tsunami_lab::patches::WavePropagation1d::timeStep(t_real i_scaling,
   // init new cell quantities
   for (t_idx l_ce = 1; l_ce < m_nCells + 1; l_ce++) {
     l_hNew[l_ce] = l_hOld[l_ce];
+    l_huNew[l_ce] = l_huOld[l_ce];
     l_huNew[l_ce] = l_huOld[l_ce];
   }
 
