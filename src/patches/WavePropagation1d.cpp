@@ -33,6 +33,7 @@ tsunami_lab::patches::WavePropagation1d::WavePropagation1d(t_idx i_nCells) {
       m_hu[l_st][l_ce] = 0;
     }
   }
+  m_b = new t_real[m_nCells + 2]{0};
 }
 
 tsunami_lab::patches::WavePropagation1d::~WavePropagation1d() {
@@ -51,6 +52,7 @@ void tsunami_lab::patches::WavePropagation1d::timeStep(t_real i_scaling,
   m_step = (m_step + 1) % 2;
   t_real* l_hNew = m_h[m_step];
   t_real* l_huNew = m_hu[m_step];
+  t_real* l_b = m_b;
 
   // init new cell quantities
   for (t_idx l_ce = 1; l_ce < m_nCells + 1; l_ce++) {
@@ -77,8 +79,8 @@ void tsunami_lab::patches::WavePropagation1d::timeStep(t_real i_scaling,
                                l_netUpdates[1]);
     } else if (i_mode == "fwave") {
       solvers::FWave::netUpdates(l_hOld[l_ceL], l_hOld[l_ceR], l_huOld[l_ceL],
-                                 l_huOld[l_ceR], l_netUpdates[0],
-                                 l_netUpdates[1]);
+                                 l_huOld[l_ceR], l_b[l_ceL], l_b[l_ceR],
+                                 l_netUpdates[0], l_netUpdates[1]);
     } else {
       std::cerr << "invalid solver mode" << std::endl;
       exit(EXIT_FAILURE);
@@ -96,12 +98,15 @@ void tsunami_lab::patches::WavePropagation1d::timeStep(t_real i_scaling,
 void tsunami_lab::patches::WavePropagation1d::setGhostOutflow() {
   t_real* l_h = m_h[m_step];
   t_real* l_hu = m_hu[m_step];
+  t_real* l_b = m_b;
 
   // set left boundary
   l_h[0] = l_h[1];
   l_hu[0] = l_hu[1];
+  l_b[0] = l_b[1];
 
   // set right boundary
   l_h[m_nCells + 1] = l_h[m_nCells];
   l_hu[m_nCells + 1] = l_hu[m_nCells];
+  l_b[m_nCells + 1] = l_b[m_nCells];
 }
