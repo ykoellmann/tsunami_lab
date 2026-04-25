@@ -1,8 +1,11 @@
 3. Bathymetry & Boundary Conditions
 ====================================
 
+3.2. Reflecting Boundary Conditions
+-------------------------------------
+
 Implementation
---------------
+""""""""""""""
 
 Für reflektierende Ränder (3.2.1) haben wir einen
 ``BoundaryCondition``-Enum (``Outflow`` / ``Reflecting``) und eine
@@ -21,7 +24,7 @@ rechten Rand — die Reflexion erzeugt das gleiche Verhalten wie ein
 symmetrisches ShockShock-Problem an der Wand.
 
 Unit Tests
-----------
+""""""""""
 
 ``[WaveProp1dReflecting]`` prüft die drei Randkombinationen
 (``Reflecting/Reflecting``, ``Outflow/Reflecting``,
@@ -29,41 +32,13 @@ Unit Tests
 :math:`h` kopiert und :math:`hu` nur auf reflektierenden Seiten
 negiert wird.
 
-3.4. Bathymetry Data Extraction
---------------------------------
-
-We extract bathymetry data from the GEBCO 2025 Grid using GMT.
-The workflow is automated in ``scripts/extract_bathymetry.sh``:
-
-.. code-block:: bash
-
-   ./scripts/extract_bathymetry.sh tohoku --map --pdf
-
-The script downloads the GEBCO data if not present, cuts the specified
-region with ``gmt grdcut``, extracts a 1D profile via ``gmt grdtrack``,
-and converts the output to CSV. Optionally it generates a map with
-coastlines and the profile line overlaid.
-
-For the domain between :math:`p_1 = (141.024949, 37.316569)` and
-:math:`p_2 = (146.0, 37.316569)` at 250 m sampling, the extraction
-yields 1903 data points. The profile CSV is stored in ``ressources/``,
-map visualizations go to ``simulations/visualizations/<name>/``.
-
-.. TODO: Add bathymetry profile/map figure.
-
-Results & Visualizations
-------------------------
-
-Observations
-""""""""""""
+Results
+"""""""
 
 Setup: ``DamBreak 15 10`` (Dammposition je Szenario).
 Beim Aufprall auf eine Wand kippt das Momentum **nicht** einfach
 um — das Wasser staut sich kurz auf (:math:`u \to 0`), dann läuft
 ein neuer Shock mit erhöhter Wasserhöhe zurück.
-
-Results:
-""""""""
 
 Einseitige Reflexion (rechter Rand):
 
@@ -75,13 +50,13 @@ Beidseitige Reflexion (Wellen bouncen zwischen beiden Wänden):
 .. image:: ../../../simulations/visualizations/bathymetry_boundary_conditions/dam_reflect_both_walls.gif
    :width: 40%
 
-Hydraulic Jumps (3.3)
-====================
+3.3. Hydraulic Jumps
+---------------------
 
 **TODO Add visualizations**
 
 Subcritical Flow
-----------------
+""""""""""""""""
 
 The subcritical setup uses a parabolic hump over the interval :math:`x \in (8, 12)`
 on the domain :math:`(0, 25)` with bathymetry
@@ -122,7 +97,7 @@ surface :math:`\eta = h + b` is approximately constant and the momentum
 conservation of mass in a stationary 1D flow.
 
 Supercritical Flow and Hydraulic Jump
---------------------------------------
+"""""""""""""""""""""""""""""""""""""
 
 The supercritical setup uses the same domain with bathymetry
 
@@ -165,16 +140,109 @@ does not converge to the expected constant momentum, demonstrating a known
 limitation of the standard f-wave approach for supercritical flows with
 hydraulic jumps.
 
-Individual Contributions
-------------------------
+3.4. 1D Tsunami Simulation
+----------------------------
 
-- **Yannik Köllmann:**
+Bathymetry Data Extraction (3.4.1)
+""""""""""""""""""""""""""""""""""
+
+We extract bathymetry data from the GEBCO 2025 Grid using GMT.
+The workflow is automated in ``scripts/extract_bathymetry.sh``:
+
+.. code-block:: bash
+
+   ./scripts/extract_bathymetry.sh tohoku --map --pdf
+
+The script downloads the GEBCO data if not present, cuts the specified
+region with ``gmt grdcut``, extracts a 1D profile via ``gmt grdtrack``,
+and converts the output to CSV. Optionally it generates a map with
+coastlines and the profile line overlaid.
+
+For the domain between :math:`p_1 = (141.024949, 37.316569)` and
+:math:`p_2 = (146.0, 37.316569)` at 250 m sampling, the extraction
+yields 1903 data points. The profile CSV is stored in ``ressources/``,
+map visualizations go to ``simulations/visualizations/<name>/``.
+
+CSV Reader (3.4.2)
+""""""""""""""""""
+
+We extended ``tsunami_lab::io::Csv`` with a static ``read`` method that parses
+bathymetry CSV files (format: ``longitude,latitude,distance,bathymetry``).
+The reader skips comment lines (``#``) and the header, converts the distance
+column from km to metres, and returns raw arrays for position and bathymetry.
+
+TsunamiEvent1d Setup (3.4.3)
+""""""""""""""""""""""""""""
+
+The new setup ``setups::TsunamiEvent1d`` takes a CSV file path as input and
+initializes the simulation according to Eq. 3.4.1:
+
+.. math::
+
+   h = \max(-b_\text{in},\, \delta), \qquad
+   hu = 0, \qquad
+   b = \min(b_\text{in},\, -\delta) + d(x)
+
+with :math:`\delta = 20\,\text{m}` to ensure a minimum water height everywhere,
+avoiding numerical issues from dry cells. The artificial displacement is:
+
+.. math::
+
+   d(x) = \begin{cases}
+   10 \cdot \sin\!\left(\frac{x - 175000}{37500}\,\pi + \pi\right)
+     & \text{if } 175000 < x < 250000 \\
+   0 & \text{else}
+   \end{cases}
+
+The setup uses linear interpolation between CSV data points for arbitrary
+query positions.
+
+Simulation Results (3.4.4)
+""""""""""""""""""""""""""
+
+We run the simulation with:
+
+.. code-block:: bash
+
+   ./build/tsunami_lab -n 1000 -d 440000 -t 3600 \
+     --bc-left reflecting \
+     -p TsunamiEvent1d ressources/tohoku_bathymetry_profile.csv
+
+With the default displacement amplitude of 10 m, the wave is barely visible in
+the visualization. This is physically expected: in the open ocean (depth
+:math:`\approx 5000\,\text{m}`), a tsunami wave is only a few metres high.
+The wave-to-depth ratio is on the order of :math:`10/5000 = 0.2\%`, making it
+nearly invisible at the scale of the full bathymetry cross-section.
+
+.. image:: ../../../simulations/visualizations/tohoku/tohoku_tsunami_10.gif
+   :width: 60%
+
+Modified Displacement (3.4.5, optional)
+"""""""""""""""""""""""""""""""""""""""
+
+Increasing the displacement amplitude by a factor of 1000
+(i.e., :math:`d_{\max} = 10000\,\text{m}`) produces a clearly visible wave.
+The wave propagates in both directions from the displacement region: the
+rightward wave leaves the domain through the outflow boundary, while the
+leftward wave travels toward shore and reflects off the left boundary
+(reflecting BC).
+
+.. image:: ../../../simulations/visualizations/tohoku/tohoku_tsunami_1000.gif
+   :width: 60%
+
+The higher displacement demonstrates the expected behavior: larger initial
+perturbations produce proportionally stronger waves, and the reflecting
+boundary correctly prevents water from leaving the domain at the coast.
+
+Individual Contributions
+-------------------------
+
+- **Yannik Köllmann:** Implementation of 3.4 (bathymetry extraction script,
+  CSV reader, ``TsunamiEvent1d`` setup, simulation runs and visualizations).
 - **Jan Vogt:** Implementation von 3.2.1 (``BoundaryCondition``,
   ``setGhost``, CLI-Flags, ``[WaveProp1dReflecting]``-Tests),
   Setup und Visualisierungen für 3.2.2, sowie diese Doku.
 - **Mika Brückner:** Integration of bathymetry support into the project (3.1).
-Implementation of subcritical and subcritical flow setups (3.3) and related visualizations.
-Computation of maximum Froude numbers and analysis of hydraulic jump convergence issues (3.3.1 / 3.3.3).
-
-
-
+  Implementation of subcritical and supercritical flow setups (3.3) and related
+  visualizations. Computation of maximum Froude numbers and analysis of hydraulic
+  jump convergence issues (3.3.1 / 3.3.3).
