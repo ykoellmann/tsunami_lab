@@ -21,7 +21,8 @@ data/*.nc
 data/*.pdf
 data/tmp/
 
-/ressources/bathymetry_profile.csv
+/ressources/*_bathymetry_profile.csv
+!/ressources/tohoku_bathymetry_profile.csv
  
 # Generated outputs (maps, profiles)
 output/

@@ -11,6 +11,36 @@
 #include "Csv.h"
 #undef public
 
+TEST_CASE("Test the CSV-reader for bathymetry data.", "[CsvRead]") {
+  std::stringstream l_stream;
+  l_stream << "longitude,latitude,distance,bathymetry\n";
+  l_stream << "141.024949,37.316569,0,14.6328872651\n";
+  l_stream << "141.02756,37.316624,0.231656660144,-6.9276614277\n";
+  l_stream << "# this is a comment\n";
+  l_stream << "141.03018,37.316678,0.463313319336,-6.77041524482\n";
+
+  tsunami_lab::t_idx l_nRows = 0;
+  tsunami_lab::t_real* l_x = nullptr;
+  tsunami_lab::t_real* l_b = nullptr;
+
+  tsunami_lab::io::Csv::read(l_stream, l_nRows, l_x, l_b);
+
+  REQUIRE(l_nRows == 3);
+
+  // distance in km * 1000 = metres
+  REQUIRE(l_x[0] == Approx(0.0f));
+  REQUIRE(l_x[1] == Approx(231.656660144f));
+  REQUIRE(l_x[2] == Approx(463.313319336f));
+
+  // bathymetry values
+  REQUIRE(l_b[0] == Approx(14.6328872651f));
+  REQUIRE(l_b[1] == Approx(-6.9276614277f));
+  REQUIRE(l_b[2] == Approx(-6.77041524482f));
+
+  delete[] l_x;
+  delete[] l_b;
+}
+
 TEST_CASE("Test the CSV-writer for 1D settings.", "[CsvWrite1d]") {
   // define a simple example
   tsunami_lab::t_real l_h[7] = {0, 1, 2, 3, 4, 5, 6};
