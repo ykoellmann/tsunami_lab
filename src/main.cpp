@@ -14,6 +14,7 @@
 #include "setups/shockshock/ShockShock1d.h"
 #include "setups/subcritical1d/SubCritical1d.h"
 #include "setups/supercritical1d/SuperCritical1d.h"
+#include "setups/tsunamievent1d/TsunamiEvent1d.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -42,6 +43,7 @@ static void printUsage(const char* i_prog) {
             << std::endl;
   std::cerr << "        > SubCritical" << std::endl;
   std::cerr << "        > SuperCritical" << std::endl;
+  std::cerr << "        > TsunamiEvent <bathymetry.csv>" << std::endl;
   std::cerr << std::endl;
   std::cerr << "optional parameters:" << std::endl;
   std::cerr << "  -s         solver:  FWave | Roe (default: FWave)"
@@ -246,6 +248,16 @@ int main(int i_argc, char* i_argv[]) {
         l_setup = new tsunami_lab::setups::SubCritical1d();
       } else if (l_setupMode == "supercritical") {
         l_setup = new tsunami_lab::setups::SuperCritical1d();
+      } else if (l_setupMode == "tsunamievent") {
+        if (l_i + 1 >= i_argc) {
+          std::cerr << "error: TsunamiEvent requires 1 parameter: "
+                       "<bathymetry.csv>"
+                    << std::endl;
+          printUsage(i_argv[0]);
+          return EXIT_FAILURE;
+        }
+        const char* l_csvPath = i_argv[++l_i];
+        l_setup = new tsunami_lab::setups::TsunamiEvent1d(l_csvPath);
       } else {
         std::cerr << "error: unknown setup '" << l_setupMode
                   << "' -- use DamBreak, RareRare or ShockShock" << std::endl;

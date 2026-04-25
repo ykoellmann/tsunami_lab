@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """
 Visualize wave propagation simulation output from tsunami_lab.
 
