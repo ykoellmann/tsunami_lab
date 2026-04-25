@@ -8,7 +8,8 @@ var hierarchy =
       [ "tsunami_lab::setups::RareRare1d", "classtsunami__lab_1_1setups_1_1RareRare1d.html", null ],
       [ "tsunami_lab::setups::ShockShock1d", "classtsunami__lab_1_1setups_1_1ShockShock1d.html", null ],
       [ "tsunami_lab::setups::SubCritical1d", "classtsunami__lab_1_1setups_1_1SubCritical1d.html", null ],
-      [ "tsunami_lab::setups::SuperCritical1d", "classtsunami__lab_1_1setups_1_1SuperCritical1d.html", null ]
+      [ "tsunami_lab::setups::SuperCritical1d", "classtsunami__lab_1_1setups_1_1SuperCritical1d.html", null ],
+      [ "tsunami_lab::setups::TsunamiEvent1d", "classtsunami__lab_1_1setups_1_1TsunamiEvent1d.html", null ]
     ] ],
     [ "tsunami_lab::patches::WavePropagation", "classtsunami__lab_1_1patches_1_1WavePropagation.html", [
       [ "tsunami_lab::patches::WavePropagation1d", "classtsunami__lab_1_1patches_1_1WavePropagation1d.html", null ]

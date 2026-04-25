@@ -14,7 +14,8 @@ var annotated_dup =
         [ "Setup", "classtsunami__lab_1_1setups_1_1Setup.html", "classtsunami__lab_1_1setups_1_1Setup" ],
         [ "ShockShock1d", "classtsunami__lab_1_1setups_1_1ShockShock1d.html", "classtsunami__lab_1_1setups_1_1ShockShock1d" ],
         [ "SubCritical1d", "classtsunami__lab_1_1setups_1_1SubCritical1d.html", "classtsunami__lab_1_1setups_1_1SubCritical1d" ],
-        [ "SuperCritical1d", "classtsunami__lab_1_1setups_1_1SuperCritical1d.html", "classtsunami__lab_1_1setups_1_1SuperCritical1d" ]
+        [ "SuperCritical1d", "classtsunami__lab_1_1setups_1_1SuperCritical1d.html", "classtsunami__lab_1_1setups_1_1SuperCritical1d" ],
+        [ "TsunamiEvent1d", "classtsunami__lab_1_1setups_1_1TsunamiEvent1d.html", "classtsunami__lab_1_1setups_1_1TsunamiEvent1d" ]
       ] ],
       [ "solvers", null, [
         [ "FWave", "classtsunami__lab_1_1solvers_1_1FWave.html", null ],

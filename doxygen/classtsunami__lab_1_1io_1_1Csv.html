@@ -98,10 +98,80 @@ $(document).ready(function(){initNavTree('classtsunami__lab_1_1io_1_1Csv.html','
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
+<tr class="memitem:af37434e35d7a36bde00c742653c92a49" id="r_af37434e35d7a36bde00c742653c92a49"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtsunami__lab_1_1io_1_1Csv.html#af37434e35d7a36bde00c742653c92a49">read</a> (std::istream &amp;i_stream, <a class="el" href="namespacetsunami__lab.html#afd26f38678e954f652489c828656cbca">t_idx</a> &amp;o_nRows, <a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> *&amp;o_x, <a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> *&amp;o_b)</td></tr>
+<tr class="separator:af37434e35d7a36bde00c742653c92a49"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a51060d8e968554ee5d2617447ae515c8" id="r_a51060d8e968554ee5d2617447ae515c8"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtsunami__lab_1_1io_1_1Csv.html#a51060d8e968554ee5d2617447ae515c8">write</a> (<a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> i_dxy, <a class="el" href="namespacetsunami__lab.html#afd26f38678e954f652489c828656cbca">t_idx</a> i_nx, <a class="el" href="namespacetsunami__lab.html#afd26f38678e954f652489c828656cbca">t_idx</a> i_ny, <a class="el" href="namespacetsunami__lab.html#afd26f38678e954f652489c828656cbca">t_idx</a> i_stride, <a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> const *i_h, <a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> const *i_b, <a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> const *i_hu, <a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> const *i_hv, <a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> i_simTime, std::ostream &amp;io_stream)</td></tr>
 <tr class="separator:a51060d8e968554ee5d2617447ae515c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="af37434e35d7a36bde00c742653c92a49" name="af37434e35d7a36bde00c742653c92a49"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af37434e35d7a36bde00c742653c92a49">&#9670;&#160;</a></span>read()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void tsunami_lab::io::Csv::read </td>
+          <td>(</td>
+          <td class="paramtype">std::istream &amp;&#160;</td>
+          <td class="paramname"><em>i_stream</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacetsunami__lab.html#afd26f38678e954f652489c828656cbca">t_idx</a> &amp;&#160;</td>
+          <td class="paramname"><em>o_nRows</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> *&amp;&#160;</td>
+          <td class="paramname"><em>o_x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacetsunami__lab.html#a2db0f215df0d48460ce6a8c1e7bfe5a9">t_real</a> *&amp;&#160;</td>
+          <td class="paramname"><em>o_b</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Writes the data as CSV to the given stream.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">i_dxy</td><td>cell width in x- and y-direction. </td></tr>
+    <tr><td class="paramname">i_nx</td><td>number of cells in x-direction. </td></tr>
+    <tr><td class="paramname">i_ny</td><td>number of cells in y-direction. </td></tr>
+    <tr><td class="paramname">i_stride</td><td>stride of the data arrays in y-direction (x is assumed to be stride-1). </td></tr>
+    <tr><td class="paramname">i_h</td><td>water height of the cells; optional: use nullptr if not required. </td></tr>
+    <tr><td class="paramname">i_b</td><td>bathymetry data of the cells; optional: use nullptr if not required. </td></tr>
+    <tr><td class="paramname">i_hu</td><td>momentum in x-direction of the cells; optional: use nullptr if not required. </td></tr>
+    <tr><td class="paramname">i_hv</td><td>momentum in y-direction of the cells; optional: use nullptr if not required. </td></tr>
+    <tr><td class="paramname">io_stream</td><td>stream to which the CSV-data is written. </td></tr>
+    <tr><td class="paramname">i_simTime</td><td>current simulation time in seconds. Reads bathymetry data from a CSV stream. Expected format: longitude,latitude,distance,bathymetry (with header). Lines starting with '#' and empty lines are skipped. The distance column (km) is converted to metres.</td></tr>
+    <tr><td class="paramname">i_stream</td><td>input stream to read from. </td></tr>
+    <tr><td class="paramname">o_nRows</td><td>number of data rows read. </td></tr>
+    <tr><td class="paramname">o_x</td><td>array of distance values in metres (caller must delete[]). </td></tr>
+    <tr><td class="paramname">o_b</td><td>array of bathymetry values (caller must delete[]). </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a51060d8e968554ee5d2617447ae515c8" name="a51060d8e968554ee5d2617447ae515c8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a51060d8e968554ee5d2617447ae515c8">&#9670;&#160;</a></span>write()</h2>
 
@@ -195,14 +265,10 @@ Static Public Member Functions</h2></td></tr>
     <tr><td class="paramname">i_hu</td><td>momentum in x-direction of the cells; optional: use nullptr if not required. </td></tr>
     <tr><td class="paramname">i_hv</td><td>momentum in y-direction of the cells; optional: use nullptr if not required. </td></tr>
     <tr><td class="paramname">io_stream</td><td>stream to which the CSV-data is written. </td></tr>
-    <tr><td class="paramname">i_simTime</td><td>current simulation time in seconds.</td></tr>
+    <tr><td class="paramname">i_simTime</td><td>current simulation time in seconds. </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section author"><dt>Author</dt><dd>Alexander Breuer (alex.breuer AT uni-jena.de)</dd></dl>
-<h1><a class="anchor" id="DESCRIPTION"></a>
-DESCRIPTION</h1>
-<p>IO-routines for writing a snapshot as Comma Separated Values (CSV). </p>
 
 </div>
 </div>
