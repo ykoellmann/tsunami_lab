@@ -10,7 +10,7 @@
 #include <catch2/catch.hpp>
 
 TEST_CASE("One-dimensional shock-shock setup", "[ShockShock1d]") {
-  tsunami_lab::setups::ShockShock1d l_setup(25, 7, 3);
+  tsunami_lab::setups::ShockShock1d l_setup(25, 7, 3, 0, 0, 0);
 
   SECTION("height is constant on both sides") {
     REQUIRE(l_setup.getHeight(2, 0) == Approx(25));
