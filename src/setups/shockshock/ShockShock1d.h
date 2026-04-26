@@ -4,7 +4,7 @@
  * @author Mika Brückner (mika.brueckner AT uni-jena.de)
  *
  * @section DESCRIPTION
- * One-dimensional shock-shock problem.
+ * One-dimensional shock-shock problem (with optional bathymetry variant).
  **/
 #ifndef TSUNAMI_LAB_SETUPS_SHOCK_SHOCK_1D_H
 #define TSUNAMI_LAB_SETUPS_SHOCK_SHOCK_1D_H
@@ -18,7 +18,7 @@ class ShockShock1d;
 } // namespace tsunami_lab
 
 /**
- * 1d shock-shock setup.
+ * 1d shock-shock setup (flat bathymetry).
  **/
 class tsunami_lab::setups::ShockShock1d : public Setup {
 private:
@@ -32,6 +32,15 @@ private:
   //! location of the initial discontinuity
   t_real m_locationDis = 0;
 
+  //! amplitude of the bathymetric feature (positive = hump, negative = valley)
+  t_real m_bathymetryAmplitude = 0;
+
+  //! center location of the bathymetric feature
+  t_real m_bathymetryCenterX = 0;
+
+  //! width (standard deviation) of the bathymetric feature
+  t_real m_bathymetryWidth = 0;
+
 public:
   /**
    * Constructor.
@@ -39,9 +48,19 @@ public:
    * @param i_height water height on both sides of the discontinuity.
    * @param i_momentum magnitude of initial momentum; left uses +, right uses -.
    * @param i_locationDis location (x-coordinate) of the initial discontinuity.
+   * @param i_bathymetryAmplitude amplitude of bathymetric feature (default: 0
+   * for flat).
+   * @param i_bathymetryCenterX x-coordinate of bathymetry center (default: 0
+   * for flat).
+   * @param i_bathymetryWidth width of bathymetric feature (Gaussian std dev,
+   * default: 0 for flat).
    **/
-  ShockShock1d(t_real i_height, t_real i_momentum, t_real i_locationDis);
-
+  ShockShock1d(t_real i_height,
+               t_real i_momentum,
+               t_real i_locationDis,
+               t_real i_bathymetryAmplitude,
+               t_real i_bathymetryCenterX,
+               t_real i_bathymetryWidth);
   /**
    * Gets the water height at a given point.
    *
