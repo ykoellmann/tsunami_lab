@@ -34,16 +34,20 @@ static void printUsage(const char* i_prog) {
   std::cerr << "mandatory parameters:" << std::endl;
   std::cerr << "  -n   number of cells in x-direction (>= 1)" << std::endl;
   std::cerr << "  -p   setup with configuration:" << std::endl;
-  std::cerr << "        > DamBreak   <hLeft> <hRight> <location> [huLeft=0] "
-               "[huRight=0]"
+  std::cerr
+      << "        > DamBreak         <hLeft> <hRight> <location> [huLeft=0] "
+         "[huRight=0]"
+      << std::endl;
+  std::cerr << "        > RareRare         <height> <momentum> <location>"
             << std::endl;
-  std::cerr << "        > RareRare   <height> <momentum> <location>"
+  std::cerr << "        > ShockShock       <height> <momentum> <location> "
+               "[amplitude=0] [center=0] [width=0]"
             << std::endl;
-  std::cerr << "        > ShockShock <height> <momentum> <location>"
+  std::cerr << "        >   (use amplitude!=0 for bathymetry variant)"
             << std::endl;
   std::cerr << "        > SubCritical" << std::endl;
   std::cerr << "        > SuperCritical" << std::endl;
-  std::cerr << "        > TsunamiEvent <bathymetry.csv>" << std::endl;
+  std::cerr << "        > TsunamiEvent    <bathymetry.csv>" << std::endl;
   std::cerr << std::endl;
   std::cerr << "optional parameters:" << std::endl;
   std::cerr << "  -s         solver:  FWave | Roe (default: FWave)"
@@ -68,6 +72,11 @@ static void printUsage(const char* i_prog) {
             << " -n 100 -d 10 -t 1.25 --bc-right reflecting -p ShockShock 10 "
                "5 11"
             << std::endl;
+  std::cerr << "  " << i_prog
+            << " -n 100 -d 25 -t 200 -p ShockShock 25 7 12.5 0.5" << std::endl;
+  std::cerr << "        (ShockShock with bathymetric hump: amplitude=0.5, "
+               "center=12.5, width=2.5)"
+            << std::endl;
 }
 
 int main(int i_argc, char* i_argv[]) {
@@ -84,7 +93,8 @@ int main(int i_argc, char* i_argv[]) {
   tsunami_lab::patches::BoundaryCondition l_bcRight =
       tsunami_lab::patches::BoundaryCondition::Outflow;
 
-  tsunami_lab::t_real l_p1 = 0, l_p2 = 0, l_p3 = 0, l_p4 = 0, l_p5 = 0;
+  tsunami_lab::t_real l_p1 = 0, l_p2 = 0, l_p3 = 0, l_p4 = 0, l_p5 = 0,
+                      l_p6 = 0;
 
   tsunami_lab::setups::Setup* l_setup = nullptr;
 
@@ -242,7 +252,23 @@ int main(int i_argc, char* i_argv[]) {
           return EXIT_FAILURE;
         }
 
-        l_setup = new tsunami_lab::setups::ShockShock1d(l_p1, l_p2, l_p3);
+        // amplitude (optional)
+        if (l_i + 1 < i_argc && i_argv[l_i + 1][0] != '-') {
+          l_p4 = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
+        }
+
+        // center (optional, only if amplitude was provided)
+        if (l_i + 1 < i_argc && i_argv[l_i + 1][0] != '-') {
+          l_p5 = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
+        }
+
+        // width (optional, only if amplitude was provided)
+        if (l_i + 1 < i_argc && i_argv[l_i + 1][0] != '-') {
+          l_p6 = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
+        }
+
+        l_setup = new tsunami_lab::setups::ShockShock1d(l_p1, l_p2, l_p3, l_p4,
+                                                        l_p5, l_p6);
 
       } else if (l_setupMode == "subcritical") {
         l_setup = new tsunami_lab::setups::SubCritical1d();
@@ -260,7 +286,9 @@ int main(int i_argc, char* i_argv[]) {
         l_setup = new tsunami_lab::setups::TsunamiEvent1d(l_csvPath);
       } else {
         std::cerr << "error: unknown setup '" << l_setupMode
-                  << "' -- use DamBreak, RareRare or ShockShock" << std::endl;
+                  << "' -- use DamBreak, RareRare, ShockShock, SubCritical, "
+                     "SuperCritical, or TsunamiEvent"
+                  << std::endl;
         printUsage(i_argv[0]);
         return EXIT_FAILURE;
       }
