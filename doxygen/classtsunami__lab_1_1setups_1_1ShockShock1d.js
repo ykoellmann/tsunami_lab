@@ -1,6 +1,6 @@
 var classtsunami__lab_1_1setups_1_1ShockShock1d =
 [
-    [ "ShockShock1d", "classtsunami__lab_1_1setups_1_1ShockShock1d.html#a325dee9dab11edd6d995ffdadfabcff1", null ],
+    [ "ShockShock1d", "classtsunami__lab_1_1setups_1_1ShockShock1d.html#a9960b63f3f0b918f684a5d4e2b7863cf", null ],
     [ "getBathymetry", "classtsunami__lab_1_1setups_1_1ShockShock1d.html#a10f5bc7537c21373c482b99e086ae5b5", null ],
     [ "getHeight", "classtsunami__lab_1_1setups_1_1ShockShock1d.html#abbdf2e3f9d12e075ba9e01a41b1cb21a", null ],
     [ "getMomentumX", "classtsunami__lab_1_1setups_1_1ShockShock1d.html#a1f3632c71eae3abbf846759bfb991897", null ],
