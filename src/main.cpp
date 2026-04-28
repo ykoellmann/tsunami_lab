@@ -73,9 +73,9 @@ static void printUsage(const char* i_prog) {
                "5 11"
             << std::endl;
   std::cerr << "  " << i_prog
-            << " -n 100 -d 25 -t 200 -p ShockShock 25 7 12.5 0.5" << std::endl;
-  std::cerr << "        (ShockShock with bathymetric hump: amplitude=0.5, "
-               "center=12.5, width=2.5)"
+            << " -n 100 -d 25 -t 200 -p ShockShock 10 5 10 3 5 1" << std::endl;
+  std::cerr << "        (ShockShock with bathymetric hump: amplitude=3, "
+               "center=5, width=1)"
             << std::endl;
 }
 
