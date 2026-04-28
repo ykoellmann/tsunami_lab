@@ -206,15 +206,7 @@ TsunamiEvent1d Setup (3.4.3)
 """"""""""""""""""""""""""""
 
 The new setup ``setups::TsunamiEvent1d`` takes a CSV file path as input and
-initializes the simulation according to Eq. 3.4.1:
-
-.. math::
-
-   h = \max(-b_\text{in},\, \delta), \qquad
-   hu = 0, \qquad
-   b = \min(b_\text{in},\, -\delta) + d(x)
-
-with :math:`\delta = 20\,\text{m}` to ensure a minimum water height everywhere,
+initializes the simulation with :math:`\delta = 20\,\text{m}` to ensure a minimum water height everywhere,
 avoiding numerical issues from dry cells. The artificial displacement is:
 
 .. math::
