@@ -35,6 +35,35 @@ negiert wird.
 Results
 """""""
 
+3.1 Non-zero Source Term
+-------------------------
+
+Example with non-zero source term (3.1.2)
+""""""""""""""""""""""""""""""""""""""""""""""""
+**Setup**
+To illustrate the effect of bathymetry, the :class:``ShockShock1d`` setup was
+extended with an optional Gaussian bathymetric feature of the form
+:math:`b(x) = A \cdot \exp\!\left(-\frac{(x-x_0)^2}{2\sigma^2}\right)`,
+controlled by amplitude :math:`A`, center :math:`x_0`, and width :math:`\sigma`.
+Setting :math:`A = 0` recovers the original flat-bottom shock-shock problem.
+
+
+|ss| |ssb| |ssbnc|
+
+.. |ss| image:: ../../../simulations/visualizations/non_zero_source_term/shockshock.gif
+   :width: 30%
+
+.. |ssb| image:: ../../../simulations/visualizations/non_zero_source_term/shockshock_bathy.gif
+   :width: 30%
+
+.. |ssbnc| image:: ../../../simulations/visualizations/non_zero_source_term/shockshock_bathy_nc.gif
+   :width: 30%
+
+
+
+
+
+
 Setup: ``DamBreak 15 10`` (Dammposition je Szenario).
 Beim Aufprall auf eine Wand kippt das Momentum **nicht** einfach
 um — das Wasser staut sich kurz auf (:math:`u \to 0`), dann läuft
@@ -53,10 +82,8 @@ Beidseitige Reflexion (Wellen bouncen zwischen beiden Wänden):
 3.3. Hydraulic Jumps
 ---------------------
 
-**TODO Add visualizations**
-
-Subcritical Flow
-""""""""""""""""
+Subcritical Flow (3.3.1/3.3.2)
+""""""""""""""""""""""""""""""
 
 The subcritical setup uses a parabolic hump over the interval :math:`x \in (8, 12)`
 on the domain :math:`(0, 25)` with bathymetry
@@ -70,7 +97,10 @@ on the domain :math:`(0, 25)` with bathymetry
 
 and initial conditions :math:`h(x, 0) = -b(x)`, :math:`hu(x, 0) = 4.42`.
 
-**Maximum Froude number at** :math:`t = 0`
+.. image:: ../../../simulations/visualizations/hydraulic_pumps/subcritical.gif
+   :width: 60%
+
+**Maximum Froude number at t = 0**
 
 The Froude number is defined as
 
@@ -91,13 +121,8 @@ maximized where :math:`h` is minimal, i.e., at the hump peak :math:`x = 10` wher
 Since :math:`F_{\max} < 1` everywhere, the flow remains subcritical throughout
 the entire domain at :math:`t = 0`.
 
-In the steady state the f-wave solver converges to a solution where the free
-surface :math:`\eta = h + b` is approximately constant and the momentum
-:math:`hu \approx 4.42` is preserved across the domain, consistent with
-conservation of mass in a stationary 1D flow.
-
-Supercritical Flow and Hydraulic Jump
-"""""""""""""""""""""""""""""""""""""
+Supercritical Flow (3.3.1/3.3.2)
+""""""""""""""""""""""""""""""""
 
 The supercritical setup uses the same domain with bathymetry
 
@@ -109,6 +134,10 @@ The supercritical setup uses the same domain with bathymetry
    \end{cases}
 
 and initial conditions :math:`h(x, 0) = -b(x)`, :math:`hu(x, 0) = 0.18`.
+
+
+.. image:: ../../../simulations/visualizations/hydraulic_pumps/supercritical.gif
+   :width: 60%
 
 **Maximum Froude number at** :math:`t = 0`
 
@@ -133,12 +162,14 @@ subcritical. Analytically, conservation of mass in a stationary 1D flow without
 sources requires :math:`hu = \text{const} = 0.18` everywhere.
 
 The f-wave solver, however, fails to converge to this analytical solution.
-After running the simulation to :math:`t = 200` the momentum :math:`hu` is not
-constant across the domain: a clear discontinuity persists near the hydraulic
-jump location. Refining the grid does not resolve this discrepancy — the solver
-does not converge to the expected constant momentum, demonstrating a known
-limitation of the standard f-wave approach for supercritical flows with
-hydraulic jumps.
+At :math:`t \approx 20`, the domain has settled into a spurious steady state:
+the momentum :math:`hu` takes the value :math:`\approx 0.1248` left of the
+hump, jumps to :math:`\approx 0.148` at the hydraulic jump located near
+:math:`x \approx 11.5`, and returns to :math:`\approx 0.1248` right of the
+hump — instead of the analytically expected constant value of :math:`0.18`
+everywhere. This discrepancy persists regardless of grid refinement,
+demonstrating a known limitation of the standard f-wave approach for
+supercritical flows with hydraulic jumps.
 
 3.4. 1D Tsunami Simulation
 ----------------------------
@@ -243,6 +274,7 @@ Individual Contributions
   ``setGhost``, CLI-Flags, ``[WaveProp1dReflecting]``-Tests),
   Setup und Visualisierungen für 3.2.2, sowie diese Doku.
 - **Mika Brückner:** Integration of bathymetry support into the project (3.1).
+   Integration of optional bathymetry data into the ``ShockShock1d`` setup (3.1.2) and generation of corresponding visualizations.
   Implementation of subcritical and supercritical flow setups (3.3) and related
   visualizations. Computation of maximum Froude numbers and analysis of hydraulic
   jump convergence issues (3.3.1 / 3.3.3).
