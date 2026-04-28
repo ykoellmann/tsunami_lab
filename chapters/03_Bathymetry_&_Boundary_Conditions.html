@@ -249,12 +249,7 @@ column from km to metres, and returns raw arrays for position and bathymetry.</p
 <section id="tsunamievent1d-setup-3-4-3">
 <h3>TsunamiEvent1d Setup (3.4.3)<a class="headerlink" href="#tsunamievent1d-setup-3-4-3" title="Link to this heading"></a></h3>
 <p>The new setup <code class="docutils literal notranslate"><span class="pre">setups::TsunamiEvent1d</span></code> takes a CSV file path as input and
-initializes the simulation according to Eq. 3.4.1:</p>
-<div class="math notranslate nohighlight">
-\[h = \max(-b_\text{in},\, \delta), \qquad
-hu = 0, \qquad
-b = \min(b_\text{in},\, -\delta) + d(x)\]</div>
-<p>with <span class="math notranslate nohighlight">\(\delta = 20\,\text{m}\)</span> to ensure a minimum water height everywhere,
+initializes the simulation with <span class="math notranslate nohighlight">\(\delta = 20\,\text{m}\)</span> to ensure a minimum water height everywhere,
 avoiding numerical issues from dry cells. The artificial displacement is:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}d(x) = \begin{cases}
