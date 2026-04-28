@@ -55,9 +55,13 @@
 <li class="toctree-l3"><a class="reference internal" href="#results">Results</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#non-zero-source-term">3.1 Non-zero Source Term</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example-with-non-zero-source-term-3-1-2">Example with non-zero source term (3.1.2)</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#hydraulic-jumps">3.3. Hydraulic Jumps</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#subcritical-flow">Subcritical Flow</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#supercritical-flow-and-hydraulic-jump">Supercritical Flow and Hydraulic Jump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#subcritical-flow-3-3-1-3-3-2">Subcritical Flow (3.3.1/3.3.2)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#supercritical-flow-3-3-1-3-3-2">Supercritical Flow (3.3.1/3.3.2)</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#d-tsunami-simulation">3.4. 1D Tsunami Simulation</a><ul>
@@ -127,6 +131,19 @@ negiert wird.</p>
 </section>
 <section id="results">
 <h3>Results<a class="headerlink" href="#results" title="Link to this heading"></a></h3>
+</section>
+</section>
+<section id="non-zero-source-term">
+<h2>3.1 Non-zero Source Term<a class="headerlink" href="#non-zero-source-term" title="Link to this heading"></a></h2>
+<section id="example-with-non-zero-source-term-3-1-2">
+<h3>Example with non-zero source term (3.1.2)<a class="headerlink" href="#example-with-non-zero-source-term-3-1-2" title="Link to this heading"></a></h3>
+<p><strong>Setup</strong>
+To illustrate the effect of bathymetry, the :class:<code class="docutils literal notranslate"><span class="pre">ShockShock1d</span></code> setup was
+extended with an optional Gaussian bathymetric feature of the form
+<span class="math notranslate nohighlight">\(b(x) = A \cdot \exp\!\left(-\frac{(x-x_0)^2}{2\sigma^2}\right)\)</span>,
+controlled by amplitude <span class="math notranslate nohighlight">\(A\)</span>, center <span class="math notranslate nohighlight">\(x_0\)</span>, and width <span class="math notranslate nohighlight">\(\sigma\)</span>.
+Setting <span class="math notranslate nohighlight">\(A = 0\)</span> recovers the original flat-bottom shock-shock problem.</p>
+<p><a class="reference internal" href="../_images/shockshock.gif"><img alt="ss" src="../_images/shockshock.gif" style="width: 30%;" /></a> <a class="reference internal" href="../_images/shockshock_bathy.gif"><img alt="ssb" src="../_images/shockshock_bathy.gif" style="width: 30%;" /></a> <a class="reference internal" href="../_images/shockshock_bathy_nc.gif"><img alt="ssbnc" src="../_images/shockshock_bathy_nc.gif" style="width: 30%;" /></a></p>
 <p>Setup: <code class="docutils literal notranslate"><span class="pre">DamBreak</span> <span class="pre">15</span> <span class="pre">10</span></code> (Dammposition je Szenario).
 Beim Aufprall auf eine Wand kippt das Momentum <strong>nicht</strong> einfach
 um — das Wasser staut sich kurz auf (<span class="math notranslate nohighlight">\(u \to 0\)</span>), dann läuft
@@ -141,9 +158,8 @@ ein neuer Shock mit erhöhter Wasserhöhe zurück.</p>
 </section>
 <section id="hydraulic-jumps">
 <h2>3.3. Hydraulic Jumps<a class="headerlink" href="#hydraulic-jumps" title="Link to this heading"></a></h2>
-<p><strong>TODO Add visualizations</strong></p>
-<section id="subcritical-flow">
-<h3>Subcritical Flow<a class="headerlink" href="#subcritical-flow" title="Link to this heading"></a></h3>
+<section id="subcritical-flow-3-3-1-3-3-2">
+<h3>Subcritical Flow (3.3.1/3.3.2)<a class="headerlink" href="#subcritical-flow-3-3-1-3-3-2" title="Link to this heading"></a></h3>
 <p>The subcritical setup uses a parabolic hump over the interval <span class="math notranslate nohighlight">\(x \in (8, 12)\)</span>
 on the domain <span class="math notranslate nohighlight">\((0, 25)\)</span> with bathymetry</p>
 <div class="math notranslate nohighlight">
@@ -152,7 +168,9 @@ on the domain <span class="math notranslate nohighlight">\((0, 25)\)</span> with
 -2 &amp; \text{else}
 \end{cases}\end{split}\]</div>
 <p>and initial conditions <span class="math notranslate nohighlight">\(h(x, 0) = -b(x)\)</span>, <span class="math notranslate nohighlight">\(hu(x, 0) = 4.42\)</span>.</p>
-<p><strong>Maximum Froude number at</strong> <span class="math notranslate nohighlight">\(t = 0\)</span></p>
+<a class="reference internal image-reference" href="../_images/subcritical.gif"><img alt="../_images/subcritical.gif" src="../_images/subcritical.gif" style="width: 60%;" />
+</a>
+<p><strong>Maximum Froude number at t = 0</strong></p>
 <p>The Froude number is defined as</p>
 <div class="math notranslate nohighlight">
 \[F(x) := \frac{u}{\sqrt{g h}} = \frac{hu}{h \sqrt{g h}}\]</div>
@@ -165,13 +183,9 @@ maximized where <span class="math notranslate nohighlight">\(h\)</span> is minim
          \approx 0.584\]</div>
 <p>Since <span class="math notranslate nohighlight">\(F_{\max} &lt; 1\)</span> everywhere, the flow remains subcritical throughout
 the entire domain at <span class="math notranslate nohighlight">\(t = 0\)</span>.</p>
-<p>In the steady state the f-wave solver converges to a solution where the free
-surface <span class="math notranslate nohighlight">\(\eta = h + b\)</span> is approximately constant and the momentum
-<span class="math notranslate nohighlight">\(hu \approx 4.42\)</span> is preserved across the domain, consistent with
-conservation of mass in a stationary 1D flow.</p>
 </section>
-<section id="supercritical-flow-and-hydraulic-jump">
-<h3>Supercritical Flow and Hydraulic Jump<a class="headerlink" href="#supercritical-flow-and-hydraulic-jump" title="Link to this heading"></a></h3>
+<section id="supercritical-flow-3-3-1-3-3-2">
+<h3>Supercritical Flow (3.3.1/3.3.2)<a class="headerlink" href="#supercritical-flow-3-3-1-3-3-2" title="Link to this heading"></a></h3>
 <p>The supercritical setup uses the same domain with bathymetry</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}b(x) = \begin{cases}
@@ -179,6 +193,8 @@ conservation of mass in a stationary 1D flow.</p>
 -0.33 &amp; \text{else}
 \end{cases}\end{split}\]</div>
 <p>and initial conditions <span class="math notranslate nohighlight">\(h(x, 0) = -b(x)\)</span>, <span class="math notranslate nohighlight">\(hu(x, 0) = 0.18\)</span>.</p>
+<a class="reference internal image-reference" href="../_images/supercritical.gif"><img alt="../_images/supercritical.gif" src="../_images/supercritical.gif" style="width: 60%;" />
+</a>
 <p><strong>Maximum Froude number at</strong> <span class="math notranslate nohighlight">\(t = 0\)</span></p>
 <p>At the hump peak <span class="math notranslate nohighlight">\(x = 10\)</span> the water height is <span class="math notranslate nohighlight">\(h(10) = 0.13\)</span>.
 Away from the hump the water height is <span class="math notranslate nohighlight">\(h = 0.33\)</span>. The Froude numbers are:</p>
@@ -195,12 +211,14 @@ downstream of the hump where the flow transitions back from supercritical to
 subcritical. Analytically, conservation of mass in a stationary 1D flow without
 sources requires <span class="math notranslate nohighlight">\(hu = \text{const} = 0.18\)</span> everywhere.</p>
 <p>The f-wave solver, however, fails to converge to this analytical solution.
-After running the simulation to <span class="math notranslate nohighlight">\(t = 200\)</span> the momentum <span class="math notranslate nohighlight">\(hu\)</span> is not
-constant across the domain: a clear discontinuity persists near the hydraulic
-jump location. Refining the grid does not resolve this discrepancy — the solver
-does not converge to the expected constant momentum, demonstrating a known
-limitation of the standard f-wave approach for supercritical flows with
-hydraulic jumps.</p>
+At <span class="math notranslate nohighlight">\(t \approx 20\)</span>, the domain has settled into a spurious steady state:
+the momentum <span class="math notranslate nohighlight">\(hu\)</span> takes the value <span class="math notranslate nohighlight">\(\approx 0.1248\)</span> left of the
+hump, jumps to <span class="math notranslate nohighlight">\(\approx 0.148\)</span> at the hydraulic jump located near
+<span class="math notranslate nohighlight">\(x \approx 11.5\)</span>, and returns to <span class="math notranslate nohighlight">\(\approx 0.1248\)</span> right of the
+hump — instead of the analytically expected constant value of <span class="math notranslate nohighlight">\(0.18\)</span>
+everywhere. This discrepancy persists regardless of grid refinement,
+demonstrating a known limitation of the standard f-wave approach for
+supercritical flows with hydraulic jumps.</p>
 </section>
 </section>
 <section id="d-tsunami-simulation">
@@ -280,16 +298,20 @@ boundary correctly prevents water from leaving the domain at the coast.</p>
 </section>
 <section id="individual-contributions">
 <h2>Individual Contributions<a class="headerlink" href="#individual-contributions" title="Link to this heading"></a></h2>
-<ul class="simple">
+<ul>
 <li><p><strong>Yannik Köllmann:</strong> Implementation of 3.4 (bathymetry extraction script,
 CSV reader, <code class="docutils literal notranslate"><span class="pre">TsunamiEvent1d</span></code> setup, simulation runs and visualizations).</p></li>
 <li><p><strong>Jan Vogt:</strong> Implementation von 3.2.1 (<code class="docutils literal notranslate"><span class="pre">BoundaryCondition</span></code>,
 <code class="docutils literal notranslate"><span class="pre">setGhost</span></code>, CLI-Flags, <code class="docutils literal notranslate"><span class="pre">[WaveProp1dReflecting]</span></code>-Tests),
 Setup und Visualisierungen für 3.2.2, sowie diese Doku.</p></li>
-<li><p><strong>Mika Brückner:</strong> Integration of bathymetry support into the project (3.1).
-Implementation of subcritical and supercritical flow setups (3.3) and related
+<li><dl class="simple">
+<dt><strong>Mika Brückner:</strong> Integration of bathymetry support into the project (3.1).</dt><dd><p>Integration of optional bathymetry data into the <code class="docutils literal notranslate"><span class="pre">ShockShock1d</span></code> setup (3.1.2) and generation of corresponding visualizations.</p>
+</dd>
+</dl>
+<p>Implementation of subcritical and supercritical flow setups (3.3) and related
 visualizations. Computation of maximum Froude numbers and analysis of hydraulic
-jump convergence issues (3.3.1 / 3.3.3).</p></li>
+jump convergence issues (3.3.1 / 3.3.3).</p>
+</li>
 </ul>
 </section>
 </section>
