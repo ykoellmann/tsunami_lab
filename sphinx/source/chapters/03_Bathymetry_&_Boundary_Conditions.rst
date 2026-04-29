@@ -7,30 +7,27 @@
 Implementation
 """"""""""""""
 
-Für reflektierende Ränder (3.2.1) haben wir einen
-``BoundaryCondition``-Enum (``Outflow`` / ``Reflecting``) und eine
-neue Methode ``setGhost(left, right)`` auf ``WavePropagation1d``
-hinzugefügt. Eine reflektierende Ghost-Zelle kopiert :math:`h` und
-negiert :math:`hu`; eine Outflow-Zelle kopiert beides.
-``setGhostOutflow()`` ruft jetzt einfach
+For reflecting boundaries (3.2.1) we added a
+``BoundaryCondition`` enum (``Outflow`` / ``Reflecting``) and a
+new method ``setGhost(left, right)`` on ``WavePropagation1d``.
+A reflecting ghost cell copies :math:`h` and negates :math:`hu`;
+an outflow cell copies both.
+``setGhostOutflow()`` now simply calls
 ``setGhost(Outflow, Outflow)``.
 
-Über die CLI-Flags ``--bc-left`` / ``--bc-right``
-(``outflow`` / ``reflecting``, Default ``outflow``) wird der
-Randtyp pro Seite gewählt.
+The boundary type per side is selected via the CLI flags ``--bc-left`` / ``--bc-right``
+(``outflow`` / ``reflecting``, default ``outflow``).
 
-Für 3.2.2 reicht ein normales ``DamBreak`` mit reflektierendem
-rechten Rand — die Reflexion erzeugt das gleiche Verhalten wie ein
-symmetrisches ShockShock-Problem an der Wand.
+For 3.2.2 a standard ``DamBreak`` with a reflecting right boundary is sufficient —
+the reflection produces the same behaviour as a symmetric ShockShock problem at the wall.
 
 Unit Tests
 """"""""""
 
-``[WaveProp1dReflecting]`` prüft die drei Randkombinationen
+``[WaveProp1dReflecting]`` checks the three boundary combinations
 (``Reflecting/Reflecting``, ``Outflow/Reflecting``,
-``setGhostOutflow`` ≡ ``Outflow/Outflow``) und verifiziert, dass
-:math:`h` kopiert und :math:`hu` nur auf reflektierenden Seiten
-negiert wird.
+``setGhostOutflow`` ≡ ``Outflow/Outflow``) and verifies that
+:math:`h` is copied and :math:`hu` is negated only on reflecting sides.
 
 Results
 """""""
@@ -60,21 +57,17 @@ Setting :math:`A = 0` recovers the original flat-bottom shock-shock problem.
    :width: 30%
 
 
+Setup: ``DamBreak 15 10`` (dam position per scenario).
+Upon impact with a wall the momentum does **not** simply reverse —
+the water briefly backs up (:math:`u \to 0`), then a new shock with
+increased water height travels back.
 
-
-
-
-Setup: ``DamBreak 15 10`` (Dammposition je Szenario).
-Beim Aufprall auf eine Wand kippt das Momentum **nicht** einfach
-um — das Wasser staut sich kurz auf (:math:`u \to 0`), dann läuft
-ein neuer Shock mit erhöhter Wasserhöhe zurück.
-
-Einseitige Reflexion (rechter Rand):
+One-sided reflection (right boundary):
 
 .. image:: ../../../simulations/visualizations/bathymetry_boundary_conditions/dam_reflect.gif
    :width: 40%
 
-Beidseitige Reflexion (Wellen bouncen zwischen beiden Wänden):
+Two-sided reflection (waves bouncing between both walls):
 
 .. image:: ../../../simulations/visualizations/bathymetry_boundary_conditions/dam_reflect_both_walls.gif
    :width: 40%
@@ -262,11 +255,11 @@ Individual Contributions
 
 - **Yannik Köllmann:** Implementation of 3.4 (bathymetry extraction script,
   CSV reader, ``TsunamiEvent1d`` setup, simulation runs and visualizations).
-- **Jan Vogt:** Implementation von 3.2.1 (``BoundaryCondition``,
-  ``setGhost``, CLI-Flags, ``[WaveProp1dReflecting]``-Tests),
-  Setup und Visualisierungen für 3.2.2, sowie diese Doku.
+- **Jan Vogt:** Implementation of 3.2.1 (``BoundaryCondition``,
+  ``setGhost``, CLI flags, ``[WaveProp1dReflecting]`` tests), reflection
+  setup and visualizations for 3.2.2, as well as this documentation.
 - **Mika Brückner:** Integration of bathymetry support into the project (3.1).
-   Integration of optional bathymetry data into the ``ShockShock1d`` setup (3.1.2) and generation of corresponding visualizations.
+  Integration of optional bathymetry data into the ``ShockShock1d`` setup (3.1.2) and generation of corresponding visualizations.
   Implementation of subcritical and supercritical flow setups (3.3) and related
   visualizations. Computation of maximum Froude numbers and analysis of hydraulic
   jump convergence issues (3.3.1 / 3.3.3).
