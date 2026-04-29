@@ -162,7 +162,7 @@ subcritical. Analytically, conservation of mass in a stationary 1D flow without
 sources requires :math:`hu = \text{const} = 0.18` everywhere.
 
 The f-wave solver, however, fails to converge to this analytical solution.
-At :math:`t \approx 20`, the domain has settled into a spurious steady state:
+At :math:`t \approx 10`, the domain has settled into a spurious steady state:
 the momentum :math:`hu` takes the value :math:`\approx 0.1248` left of the
 hump, jumps to :math:`\approx 0.148` at the hydraulic jump located near
 :math:`x \approx 11.5`, and returns to :math:`\approx 0.1248` right of the
