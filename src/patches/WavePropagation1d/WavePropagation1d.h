@@ -9,7 +9,7 @@
 
 #include <string>
 
-#include "WavePropagation.h"
+#include "../WavePropagation.h"
 
 namespace tsunami_lab {
 namespace patches {
@@ -100,7 +100,7 @@ public:
    *
    * @return bathymetry
    */
-  t_real const* getBathymetry() { return m_b; }
+  t_real const* getBathymetry() { return m_b + 1; }
 
   /**
    * Sets the height of the cell to the given value.
