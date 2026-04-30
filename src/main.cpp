@@ -8,7 +8,7 @@
  * Entry-point for simulations.
  **/
 #include "io/Csv.h"
-#include "patches/WavePropagation1d.h"
+#include "patches/WavePropagation1d/WavePropagation1d.h"
 #include "setups/dambreak/DamBreak1d.h"
 #include "setups/rarerare/RareRare1d.h"
 #include "setups/shockshock/ShockShock1d.h"
