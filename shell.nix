@@ -16,5 +16,6 @@ pkgs.mkShell {
     gmt
     wget
     tree
+    paraview
   ];
 }
