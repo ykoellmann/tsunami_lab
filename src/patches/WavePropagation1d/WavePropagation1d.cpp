@@ -14,8 +14,8 @@
 #include <ostream>
 #include <string>
 
-#include "../solvers/fwave/FWave.h"
-#include "../solvers/roe/Roe.h"
+#include "../../solvers/fwave/FWave.h"
+#include "../../solvers/roe/Roe.h"
 
 tsunami_lab::patches::WavePropagation1d::WavePropagation1d(t_idx i_nCells) {
   m_nCells = i_nCells;

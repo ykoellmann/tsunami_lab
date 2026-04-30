@@ -9,7 +9,7 @@
 
 #include <string>
 
-#include "WavePropagation.h"
+#include "../WavePropagation.h"
 
 namespace tsunami_lab {
 namespace patches {
