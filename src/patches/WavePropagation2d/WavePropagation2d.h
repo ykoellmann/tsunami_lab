@@ -44,7 +44,8 @@ private:
   t_real* m_b = nullptr;
 
   /**
-   * Get the 2d Coordinates of the 1d array (x-y grid is being made flat into one line)
+   * Get the 2d Coordinates of the 1d array (x-y grid is being made flat into
+   * one line)
    *
    * @param i_x x-coordinate
    * @param i_y y-coordinate
@@ -62,8 +63,7 @@ public:
    * @param i_nCells_x number of cells in x-direction.
    * @param i_nCells_y number of cells in y-direction.
    **/
-  WavePropagation2d(t_idx i_nCells_x,
-                    t_idx i_nCells_y);
+  WavePropagation2d(t_idx i_nCells_x, t_idx i_nCells_y);
 
   /**
    * Destructor that frees all allocated memory.
@@ -96,9 +96,9 @@ public:
    * @param i_upper boundary condition at the upper side.
    * @param i_lower boundary condition at the lower side.
    **/
-  void setGhost(BoundaryCondition i_left,
-                BoundaryCondition i_right) {
-    setGhost(i_left, i_right, BoundaryCondition::Outflow, BoundaryCondition::Outflow);
+  void setGhost(BoundaryCondition i_left, BoundaryCondition i_right) {
+    setGhost(i_left, i_right, BoundaryCondition::Outflow,
+             BoundaryCondition::Outflow);
   }
 
   void setGhost(BoundaryCondition i_left,
@@ -190,7 +190,6 @@ public:
   void setBathymetry(t_idx i_ix, t_idx i_iy, t_real i_b) {
     m_b[getCoordinates(i_ix + 1, i_iy + 1)] = i_b;
   }
-
 };
 
 #endif
