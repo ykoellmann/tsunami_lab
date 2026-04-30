@@ -227,6 +227,14 @@ The workflow is automated in <code class="docutils literal notranslate"><span cl
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./scripts/extract_bathymetry.sh<span class="w"> </span>tohoku<span class="w"> </span>--map<span class="w"> </span>--pdf
 </pre></div>
 </div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./extract_bathymetry.sh<span class="w"> </span>nordsee<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>--region<span class="w"> </span><span class="m">6</span>/15/53/56<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>--profile-start<span class="w"> </span><span class="m">8</span>.7/53.87<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>--profile-end<span class="w"> </span><span class="m">8</span>.7/56.0<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>--sampling<span class="w"> </span><span class="m">500</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>--map<span class="w"> </span>--pdf
+</pre></div>
+</div>
 <p>The script downloads the GEBCO data if not present, cuts the specified
 region with <code class="docutils literal notranslate"><span class="pre">gmt</span> <span class="pre">grdcut</span></code>, extracts a 1D profile via <code class="docutils literal notranslate"><span class="pre">gmt</span> <span class="pre">grdtrack</span></code>,
 and converts the output to CSV. Optionally it generates a map with
@@ -262,7 +270,7 @@ query positions.</p>
 <p>We run the simulation with:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./build/tsunami_lab<span class="w"> </span>-n<span class="w"> </span><span class="m">1000</span><span class="w"> </span>-d<span class="w"> </span><span class="m">440000</span><span class="w"> </span>-t<span class="w"> </span><span class="m">3600</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--bc-left<span class="w"> </span>reflecting<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-p<span class="w"> </span>TsunamiEvent1d<span class="w"> </span>ressources/tohoku_bathymetry_profile.csv
+<span class="w">  </span>-p<span class="w"> </span>TsunamiEvent<span class="w"> </span>ressources/tohoku_bathymetry_profile.csv
 </pre></div>
 </div>
 <p>With the default displacement amplitude of 10 m, the wave is barely visible in
