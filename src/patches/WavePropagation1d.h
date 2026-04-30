@@ -100,7 +100,7 @@ public:
    *
    * @return bathymetry
    */
-  t_real const* getBathymetry() { return m_b; }
+  t_real const* getBathymetry() { return m_b + 1; }
 
   /**
    * Sets the height of the cell to the given value.
