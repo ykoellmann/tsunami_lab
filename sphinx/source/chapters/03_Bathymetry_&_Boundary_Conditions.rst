@@ -177,6 +177,15 @@ The workflow is automated in ``scripts/extract_bathymetry.sh``:
 
    ./scripts/extract_bathymetry.sh tohoku --map --pdf
 
+.. code-block:: bash
+
+   ./extract_bathymetry.sh nordsee \
+        --region 6/15/53/56 \
+        --profile-start 8.7/53.87 \
+        --profile-end 8.7/56.0 \
+        --sampling 500 \
+        --map --pdf
+
 The script downloads the GEBCO data if not present, cuts the specified
 region with ``gmt grdcut``, extracts a 1D profile via ``gmt grdtrack``,
 and converts the output to CSV. Optionally it generates a map with
