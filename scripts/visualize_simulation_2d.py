@@ -1,3 +1,5 @@
+#!/usr/bin/env pvpython
+
 from paraview.simple import *
 import sys
 import xml.etree.ElementTree as ET
