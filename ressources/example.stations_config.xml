@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+
+    <stations output_frequency="0.5">
+        <station name="center"    x="0.0"  y="0.0"  />
+        <station name="radius_10" x="10.0" y="0.0"  />
+        <station name="corner"    x="40.0" y="40.0" />
+    </stations>
+
+</config>
