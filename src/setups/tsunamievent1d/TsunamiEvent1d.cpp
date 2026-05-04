@@ -7,7 +7,7 @@
  * One-dimensional tsunami event setup using bathymetry data from CSV.
  **/
 #include "TsunamiEvent1d.h"
-#include "../../io/csv/Csv.h"
+#include "../../io/csv//Csv.h"
 #include <algorithm>
 #include <cmath>
 #include <fstream>
