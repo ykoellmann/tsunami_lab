@@ -7,7 +7,7 @@
  * @section DESCRIPTION
  * Entry-point for simulations.
  **/
-#include "io/Csv.h"
+#include "io/csv/Csv.h"
 #include "patches/WavePropagation1d/WavePropagation1d.h"
 #include "patches/WavePropagation2d/WavePropagation2d.h"
 #include "setups/dambreak/CircularDamBreak2d.h"
