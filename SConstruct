@@ -67,6 +67,10 @@ else:
 # add Catch2
 env.Append( CXXFLAGS = [ '-isystem', 'submodules/Catch2/single_include' ] )
 
+#add pugixml
+env.Append(CPPPATH=['#submodules/pugixml/src'])
+l_pugixml = env.Object('submodules/pugixml/src/pugixml.cpp')
+
 # get source files
 VariantDir( variant_dir = 'build/src',
             src_dir     = 'src' )
@@ -79,7 +83,7 @@ SConscript( 'build/src/SConscript' )
 Import('env')
 
 env.Program( target = 'build/tsunami_lab',
-             source = env.sources + env.standalone )
+             source = env.sources + env.standalone + l_pugixml )
 
 env.Program( target = 'build/tests',
-             source = env.sources + env.tests )
+             source = env.sources + env.tests + l_pugixml )
