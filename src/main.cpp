@@ -29,12 +29,12 @@
 
 static void printUsage(const char* i_prog) {
   std::cerr << "usage: " << i_prog
-            << " -n N_CELLS_X -s SOLVER -p SETUP [PARAMS...] [-d DOMAIN_SIZE] "
+            << " -n N_CELLS -s SOLVER -p SETUP [PARAMS...] [-d DOMAIN_SIZE] "
                "[-t END_TIME]"
             << std::endl;
   std::cerr << std::endl;
   std::cerr << "mandatory parameters:" << std::endl;
-  std::cerr << "  -n   number of cells in x-direction (>= 1)" << std::endl;
+  std::cerr << "  -n   number of cells in each-direction (>= 1)" << std::endl;
   std::cerr << "  -p   setup with configuration:" << std::endl;
   std::cerr
       << "        > DamBreak         <hLeft> <hRight> <location> [huLeft=0] "
