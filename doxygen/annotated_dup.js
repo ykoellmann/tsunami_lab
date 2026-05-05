@@ -2,7 +2,8 @@ var annotated_dup =
 [
     [ "tsunami_lab", "namespacetsunami__lab.html", [
       [ "io", null, [
-        [ "Csv", "classtsunami__lab_1_1io_1_1Csv.html", null ]
+        [ "Csv", "classtsunami__lab_1_1io_1_1Csv.html", null ],
+        [ "Stations", "classtsunami__lab_1_1io_1_1Stations.html", "classtsunami__lab_1_1io_1_1Stations" ]
       ] ],
       [ "patches", null, [
         [ "WavePropagation", "classtsunami__lab_1_1patches_1_1WavePropagation.html", "classtsunami__lab_1_1patches_1_1WavePropagation" ],

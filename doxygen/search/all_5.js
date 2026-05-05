@@ -1,6 +1,4 @@
 var searchData=
 [
-  ['rarerare1d_0',['rarerare1d',['../classtsunami__lab_1_1setups_1_1RareRare1d.html',1,'tsunami_lab::setups::RareRare1d'],['../classtsunami__lab_1_1setups_1_1RareRare1d.html#a8391c32b43b9aac5a17714e7e1d6c23c',1,'tsunami_lab::setups::RareRare1d::RareRare1d()']]],
-  ['read_1',['read',['../classtsunami__lab_1_1io_1_1Csv.html#af37434e35d7a36bde00c742653c92a49',1,'tsunami_lab::io::Csv']]],
-  ['roe_2',['Roe',['../classtsunami__lab_1_1solvers_1_1Roe.html',1,'tsunami_lab::solvers']]]
+  ['netupdates_0',['netupdates',['../classtsunami__lab_1_1solvers_1_1FWave.html#aa586e2cf9996f2a0b5c690d9dd25a3d6',1,'tsunami_lab::solvers::FWave::netUpdates()'],['../classtsunami__lab_1_1solvers_1_1Roe.html#a411d792e8c27c47c6bfb143404d39e5f',1,'tsunami_lab::solvers::Roe::netUpdates()']]]
 ];

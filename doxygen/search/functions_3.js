@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['netupdates_0',['netupdates',['../classtsunami__lab_1_1solvers_1_1FWave.html#aa586e2cf9996f2a0b5c690d9dd25a3d6',1,'tsunami_lab::solvers::FWave::netUpdates()'],['../classtsunami__lab_1_1solvers_1_1Roe.html#a411d792e8c27c47c6bfb143404d39e5f',1,'tsunami_lab::solvers::Roe::netUpdates()']]]
+  ['fromxml_0',['fromXml',['../classtsunami__lab_1_1io_1_1Stations.html#a34d5cd08d6d06c23f6ee1f2384614250',1,'tsunami_lab::io::Stations']]]
 ];

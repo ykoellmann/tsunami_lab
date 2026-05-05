@@ -1,0 +1,278 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4. Two-Dimensional Solver &mdash; Tsunami Lab  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/full_width.css?v=8223e249" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="3. Bathymetry &amp; Boundary Conditions" href="03_Bathymetry_%26_Boundary_Conditions.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Tsunami Lab
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Project Phases:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="01_riemann_solver.html">1. Riemann Solver</a></li>
+<li class="toctree-l1"><a class="reference internal" href="02_finite_volume.html">2. Finite Volume Discretization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="03_Bathymetry_%26_Boundary_Conditions.html">3. Bathymetry &amp; Boundary Conditions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. Two-Dimensional Solver</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#implementation">Implementation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#two-dimensional-wave-propagation-wavepropagation2d">Two-Dimensional Wave Propagation (<code class="docutils literal notranslate"><span class="pre">WavePropagation2d</span></code>)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#station-output-io-stations">Station Output (<code class="docutils literal notranslate"><span class="pre">io::Stations</span></code>)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#unit-tests">Unit Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#results-visualizations">Results &amp; Visualizations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#individual-contributions">Individual Contributions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Tsunami Lab</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">4. Two-Dimensional Solver</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/chapters/04_two_dimensional.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="two-dimensional-solver">
+<h1>4. Two-Dimensional Solver<a class="headerlink" href="#two-dimensional-solver" title="Link to this heading"></a></h1>
+<section id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Link to this heading"></a></h2>
+<section id="two-dimensional-wave-propagation-wavepropagation2d">
+<h3>Two-Dimensional Wave Propagation (<code class="docutils literal notranslate"><span class="pre">WavePropagation2d</span></code>)<a class="headerlink" href="#two-dimensional-wave-propagation-wavepropagation2d" title="Link to this heading"></a></h3>
+<p>We extended the solver to two spatial dimensions by implementing the class
+<code class="docutils literal notranslate"><span class="pre">patches::WavePropagation2d</span></code> (<code class="docutils literal notranslate"><span class="pre">src/patches/WavePropagation2d/</span></code>), which
+applies the <strong>unsplit method</strong> to the two-dimensional shallow water equations.</p>
+<p><strong>Memory layout.</strong>
+The patch allocates two flat 1-D buffers (double-buffering for time-stepping)
+of size <span class="math notranslate nohighlight">\((n_x + 2)(n_y + 2)\)</span> for each of the three conserved quantities
+<span class="math notranslate nohighlight">\(h\)</span>, <span class="math notranslate nohighlight">\(hu\)</span>, <span class="math notranslate nohighlight">\(hv\)</span>, and a single flat buffer of the same size
+for the bathymetry <span class="math notranslate nohighlight">\(b\)</span>.
+A 2-D cell <span class="math notranslate nohighlight">\((i_x, i_y)\)</span> maps to the 1-D index</p>
+<div class="math notranslate nohighlight">
+\[\text{idx}(i_x, i_y) = i_x + i_y \cdot (n_y + 2).\]</div>
+<p>The extra two cells in each direction are the ghost cells.</p>
+<p><strong>Unsplit time step.</strong>
+Each call to <code class="docutils literal notranslate"><span class="pre">timeStep(i_scaling)</span></code> performs two sweeps over the interior cells
+using the existing f-wave solver:</p>
+<ol class="arabic simple">
+<li><p><strong>X-sweep</strong> — iterates over all vertical edges <span class="math notranslate nohighlight">\((i_x + \tfrac{1}{2},\, i_y)\)</span>.
+For each edge the f-wave solver is called with the left/right states
+<span class="math notranslate nohighlight">\((h, hu, b)\)</span>, and the net updates <span class="math notranslate nohighlight">\(A^\pm \Delta Q\)</span> are
+distributed to the adjacent cells in the <span class="math notranslate nohighlight">\(x\)</span>-direction.</p></li>
+<li><p><strong>Y-sweep</strong> — iterates over all horizontal edges <span class="math notranslate nohighlight">\((i_x,\, i_y + \tfrac{1}{2})\)</span>.
+The f-wave solver is called with the bottom/top states
+<span class="math notranslate nohighlight">\((h, hv, b)\)</span> (the <span class="math notranslate nohighlight">\(y\)</span>-momentum takes the role of the
+<span class="math notranslate nohighlight">\(x\)</span>-momentum of the 1-D solver), and the net updates
+<span class="math notranslate nohighlight">\(B^\pm \Delta Q\)</span> are distributed in the <span class="math notranslate nohighlight">\(y\)</span>-direction.</p></li>
+</ol>
+<p>Both sweeps update a fresh copy of the state arrays (the <em>next</em> buffer) that
+was pre-filled with the <em>current</em> values at the beginning of the step.</p>
+<p><strong>Boundary conditions.</strong>
+The method <code class="docutils literal notranslate"><span class="pre">setGhost</span></code> accepts independent conditions (outflow or reflecting)
+for each of the four sides.
+Reflecting boundaries negate the normal momentum component in the ghost cells
+while copying height and bathymetry, so the particle velocity vanishes at the
+wall.  <code class="docutils literal notranslate"><span class="pre">setGhostOutflow</span></code> is a convenience wrapper that applies outflow on
+all four sides.</p>
+<p><strong>Circular dam break setup (``CircularDamBreak2d``).</strong>
+The setup <code class="docutils literal notranslate"><span class="pre">setups::CircularDamBreak2d</span></code>
+(<code class="docutils literal notranslate"><span class="pre">src/setups/dambreak/CircularDamBreak2d.cpp</span></code>) implements the following
+initial condition on <span class="math notranslate nohighlight">\([-50, 50]^2\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}[h, hu, hv]^T =
+\begin{cases}
+  [10, 0, 0]^T &amp; \text{if } \sqrt{(x - x_c)^2 + (y - y_c)^2} &lt; r, \\
+  [5,  0, 0]^T &amp; \text{else.}
+\end{cases}\end{split}\]</div>
+<p>Default parameters are <span class="math notranslate nohighlight">\(x_c = y_c = 0\)</span>, <span class="math notranslate nohighlight">\(r = 10\,\text{m}\)</span>, on the domain <span class="math notranslate nohighlight">\([-50, 50]^2\)</span>.
+All momenta are initialised to zero; the problem is symmetric under
+rotations around the origin.</p>
+<p><strong>Bathymetric obstacle.</strong>
+To illustrate two-dimensional bathymetry support, <code class="docutils literal notranslate"><span class="pre">CircularDamBreak2d</span></code>
+accepts an optional isotropic Gaussian obstacle:</p>
+<div class="math notranslate nohighlight">
+\[b(x, y) = A \exp\!\left( -\frac{(x - x_o)^2 + (y - y_o)^2}{2\sigma^2} \right),\]</div>
+<p>controlled by the amplitude <span class="math notranslate nohighlight">\(A\)</span>, centre <span class="math notranslate nohighlight">\((x_o, y_o)\)</span>, and width
+<span class="math notranslate nohighlight">\(\sigma\)</span>.  Setting <span class="math notranslate nohighlight">\(A = 0\)</span> (the default) yields flat bathymetry.
+The obstacle perturbs the otherwise radially symmetric wave pattern and
+demonstrates that the f-wave bathymetry source-term treatment works correctly
+in two dimensions.</p>
+</section>
+<section id="station-output-io-stations">
+<h3>Station Output (<code class="docutils literal notranslate"><span class="pre">io::Stations</span></code>)<a class="headerlink" href="#station-output-io-stations" title="Link to this heading"></a></h3>
+<p>The class <code class="docutils literal notranslate"><span class="pre">io::Stations</span></code> (<code class="docutils literal notranslate"><span class="pre">src/io/stations/</span></code>) collects user-defined
+observation points and writes time-series output to individual ASCII-CSV
+files.</p>
+<p><strong>Data stored per station:</strong></p>
+<ul class="simple">
+<li><p>name (used as the CSV filename stem),</p></li>
+<li><p>continuous coordinates <span class="math notranslate nohighlight">\((x, y)\)</span>,</p></li>
+<li><p>corresponding 0-based cell indices <span class="math notranslate nohighlight">\((i_x, i_y)\)</span> computed from the
+domain origin and cell sizes at construction time.</p></li>
+</ul>
+<p><strong>Output frequency.</strong>
+<code class="docutils literal notranslate"><span class="pre">write(i_simTime,</span> <span class="pre">h,</span> <span class="pre">hu,</span> <span class="pre">hv,</span> <span class="pre">b,</span> <span class="pre">stride)</span></code> is designed to be called once per
+time step.  It compares the current simulation time to the time of the last
+write; output is only produced when the configured interval
+<code class="docutils literal notranslate"><span class="pre">output_frequency</span></code> (in seconds) has elapsed.  This makes the output
+frequency independent of the (possibly variable) numerical time step.</p>
+<p>Each CSV row contains the columns <code class="docutils literal notranslate"><span class="pre">time</span></code>, <code class="docutils literal notranslate"><span class="pre">h</span></code>, <code class="docutils literal notranslate"><span class="pre">hu</span></code>, <code class="docutils literal notranslate"><span class="pre">hv</span></code>, <code class="docutils literal notranslate"><span class="pre">b</span></code>
+read from the flat 2-D arrays at the cell that contains the station.</p>
+<p><strong>XML configuration via pugixml.</strong>
+Stations are configured at runtime through an XML file parsed with the
+<a class="reference external" href="https://pugixml.org/">pugixml</a> library.
+The factory method <code class="docutils literal notranslate"><span class="pre">Stations::fromXml</span></code> reads a <code class="docutils literal notranslate"><span class="pre">&lt;stations&gt;</span></code> node of the
+form:</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;config&gt;</span>
+<span class="w">  </span><span class="nt">&lt;stations</span><span class="w"> </span><span class="na">output_frequency=</span><span class="s">&quot;0.5&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;station</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;center&quot;</span><span class="w">    </span><span class="na">x=</span><span class="s">&quot;0.0&quot;</span><span class="w">  </span><span class="na">y=</span><span class="s">&quot;0.0&quot;</span><span class="w">  </span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;station</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;radius_10&quot;</span><span class="w"> </span><span class="na">x=</span><span class="s">&quot;10.0&quot;</span><span class="w"> </span><span class="na">y=</span><span class="s">&quot;0.0&quot;</span><span class="w">  </span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;station</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;corner&quot;</span><span class="w">    </span><span class="na">x=</span><span class="s">&quot;40.0&quot;</span><span class="w"> </span><span class="na">y=</span><span class="s">&quot;40.0&quot;</span><span class="w"> </span><span class="nt">/&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/stations&gt;</span>
+<span class="nt">&lt;/config&gt;</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">output_frequency</span></code> attribute (in seconds) is shared by all stations in
+the block.  Each <code class="docutils literal notranslate"><span class="pre">&lt;station&gt;</span></code> element carries a <code class="docutils literal notranslate"><span class="pre">name</span></code>, an <code class="docutils literal notranslate"><span class="pre">x</span></code>-, and a
+<code class="docutils literal notranslate"><span class="pre">y</span></code>-coordinate.  The XML schema is intentionally extensible: additional
+top-level sections (e.g. <code class="docutils literal notranslate"><span class="pre">&lt;solver&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;setup&gt;</span></code>) can be added to the same
+configuration file in later parts of the project without breaking the stations
+parser.</p>
+<p><strong>Runtime integration.</strong>
+The solver accepts the optional flag <code class="docutils literal notranslate"><span class="pre">-c</span> <span class="pre">&lt;config.xml&gt;</span></code> (or <code class="docutils literal notranslate"><span class="pre">--config</span></code>).
+When provided, <code class="docutils literal notranslate"><span class="pre">main</span></code> loads the XML file with pugixml, locates the
+<code class="docutils literal notranslate"><span class="pre">&lt;config&gt;&lt;stations&gt;</span></code> node, and constructs a <code class="docutils literal notranslate"><span class="pre">Stations</span></code> object via
+<code class="docutils literal notranslate"><span class="pre">fromXml</span></code>.  Station CSV files are written into a <code class="docutils literal notranslate"><span class="pre">stations/</span></code> sub-directory
+inside the run’s output directory.  <code class="docutils literal notranslate"><span class="pre">Stations::write</span></code> is called once per
+time step; the internal frequency guard ensures output is produced only at the
+configured interval, independent of the numerical time step size.  A typical
+invocation looks like:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./tsunami_lab<span class="w"> </span>-n<span class="w"> </span><span class="m">200</span><span class="w"> </span>-t<span class="w"> </span><span class="m">5</span><span class="w"> </span>-p<span class="w"> </span>DamBreak2d<span class="w"> </span>-c<span class="w"> </span>ressources/example.stations_config.xml
+</pre></div>
+</div>
+</section>
+</section>
+<section id="unit-tests">
+<h2>Unit Tests<a class="headerlink" href="#unit-tests" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">WavePropagation2d</span></code> tests (<code class="docutils literal notranslate"><span class="pre">src/patches/WavePropagation2d/WavePropagation2d.test.cpp</span></code>):</p>
+<ul class="simple">
+<li><p>verify that a 1-D dam-break run on a single-row 2-D grid reproduces the
+same water heights as <code class="docutils literal notranslate"><span class="pre">WavePropagation1d</span></code> after several time steps,</p></li>
+<li><p>check that outflow ghost cells are filled correctly on all four sides,</p></li>
+<li><p>confirm that reflecting ghost cells negate the normal momentum component.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">CircularDamBreak2d</span></code> tests (<code class="docutils literal notranslate"><span class="pre">src/setups/dambreak/CircularDamBreak2d.test.cpp</span></code>):</p>
+<ul class="simple">
+<li><p>confirm that the height equals 10 m inside the circle and 5 m outside,</p></li>
+<li><p>check that both momentum components are zero everywhere,</p></li>
+<li><p>verify that the Gaussian obstacle produces a non-zero, positive bathymetry
+value at the obstacle centre and vanishes far away.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">Stations</span></code> tests (<code class="docutils literal notranslate"><span class="pre">src/io/stations/Stations.test.cpp</span></code>):</p>
+<ul class="simple">
+<li><p>construct a <code class="docutils literal notranslate"><span class="pre">Stations</span></code> object via <code class="docutils literal notranslate"><span class="pre">fromXml</span></code> from a minimal XML string,</p></li>
+<li><p>verify that the correct number of stations is registered,</p></li>
+<li><p>call <code class="docutils literal notranslate"><span class="pre">write</span></code> twice with a time gap smaller than <code class="docutils literal notranslate"><span class="pre">output_frequency</span></code> and
+confirm that only one row is written,</p></li>
+<li><p>call <code class="docutils literal notranslate"><span class="pre">write</span></code> again after a sufficient time gap and confirm that a second
+row appears.</p></li>
+</ul>
+</section>
+<section id="results-visualizations">
+<h2>Results &amp; Visualizations<a class="headerlink" href="#results-visualizations" title="Link to this heading"></a></h2>
+</section>
+<section id="individual-contributions">
+<h2>Individual Contributions<a class="headerlink" href="#individual-contributions" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Yannik Köllmann:</strong></p></li>
+<li><p><strong>Jan Vogt:</strong> Implementation of the <code class="docutils literal notranslate"><span class="pre">CircularDamBreak2d</span></code> setup including Unit-tests.</p></li>
+<li><p><strong>Mika Brückner:</strong> Implementation and integration of the <code class="docutils literal notranslate"><span class="pre">WavePropagation2d</span></code> class including Unit-tests.
+Implementation and integration of the <code class="docutils literal notranslate"><span class="pre">Stations</span></code> class including Unit-tests.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="03_Bathymetry_%26_Boundary_Conditions.html" class="btn btn-neutral float-left" title="3. Bathymetry &amp; Boundary Conditions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Yannik, Jan, Mika.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['circulardambreak2d_0',['CircularDamBreak2d',['../classtsunami__lab_1_1setups_1_1CircularDamBreak2d.html#a578cfb5ca20d4742f110301accee5712',1,'tsunami_lab::setups::CircularDamBreak2d']]]
+  ['addstation_0',['addStation',['../classtsunami__lab_1_1io_1_1Stations.html#a3254b61a03edcb9527c99035e884ce28',1,'tsunami_lab::io::Stations']]]
 ];
