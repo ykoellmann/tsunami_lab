@@ -67,9 +67,14 @@ else:
 # add Catch2
 env.Append( CXXFLAGS = [ '-isystem', 'submodules/Catch2/single_include' ] )
 
-#add pugixml
-env.Append(CPPPATH=['#submodules/pugixml/src'])
-l_pugixml = env.Object('submodules/pugixml/src/pugixml.cpp')
+# add pugixml include path
+env.Append( CPPPATH = [ '#submodules/pugixml/src' ] )
+
+# compile pugixml with warnings suppressed (third-party code)
+pugi_env = env.Clone()
+pugi_env.Append( CXXFLAGS = [ '-w' ] )
+l_pugixml = pugi_env.Object( target = 'build/pugixml',
+                              source = 'submodules/pugixml/src/pugixml.cpp' )
 
 # get source files
 VariantDir( variant_dir = 'build/src',
