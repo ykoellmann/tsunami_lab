@@ -177,5 +177,6 @@ Individual Contributions
 -------------------------
 
 - **Yannik Köllmann:**
-- **Jan Vogt:**
-- **Mika Brückner:**
+- **Jan Vogt:** Implementation of the ``CircularDamBreak2d`` setup including Unit-tests.
+- **Mika Brückner:** Implementation and integration of the ``WavePropagation2d`` class including Unit-tests.
+  Implementation and integration of the ``Stations`` class including Unit-tests.
