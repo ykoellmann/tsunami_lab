@@ -15,14 +15,5 @@ pkgs.mkShell {
     bear
     gmt
     wget
-    tree
-    paraview
-    mesa
-    mesa.drivers
-    xvfb-run
   ];
-
-  shellHook = ''
-    export LD_LIBRARY_PATH=${pkgs.mesa.drivers}/lib:${pkgs.mesa}/lib:${pkgs.libGL}/lib:$LD_LIBRARY_PATH
-  '';
 }
