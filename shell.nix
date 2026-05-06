@@ -15,7 +15,5 @@ pkgs.mkShell {
     bear
     gmt
     wget
-    tree
-    paraview
   ];
 }
