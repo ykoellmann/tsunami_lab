@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <!-- Stations along the positive x-axis (radial direction from origin).
+         Physical coordinates: domain is [-50,50]^2, center at (0,0).
+         r=10 is the dam boundary; stations are outside it. -->
+    <stations output_frequency="0.1">
+        <station name="r15" x="15.0" y="0.0" />
+        <station name="r25" x="25.0" y="0.0" />
+        <station name="r35" x="35.0" y="0.0" />
+    </stations>
+</config>
