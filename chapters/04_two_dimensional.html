@@ -56,7 +56,12 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#unit-tests">Unit Tests</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#results-visualizations">Results &amp; Visualizations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#results-visualizations">Results &amp; Visualizations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#circular-dam-break-flat-bathymetry">Circular Dam Break (flat bathymetry)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#circular-dam-break-with-bathymetric-obstacle">Circular Dam Break with Bathymetric Obstacle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#comparison-of-1d-and-2d-solvers-at-stations">Comparison of 1D and 2D Solvers at Stations</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#individual-contributions">Individual Contributions</a></li>
 </ul>
 </li>
@@ -233,11 +238,85 @@ row appears.</p></li>
 </section>
 <section id="results-visualizations">
 <h2>Results &amp; Visualizations<a class="headerlink" href="#results-visualizations" title="Link to this heading"></a></h2>
+<section id="circular-dam-break-flat-bathymetry">
+<h3>Circular Dam Break (flat bathymetry)<a class="headerlink" href="#circular-dam-break-flat-bathymetry" title="Link to this heading"></a></h3>
+<p>We ran the circular dam break on the domain <span class="math notranslate nohighlight">\([-50, 50]^2\)</span> with
+<span class="math notranslate nohighlight">\(200 \times 200\)</span> cells (<span class="math notranslate nohighlight">\(\Delta x = \Delta y = 0.5\,\text{m}\)</span>),
+end time <span class="math notranslate nohighlight">\(t = 5\,\text{s}\)</span>, and outflow boundaries on all four sides.
+The initial condition places <span class="math notranslate nohighlight">\(h = 10\,\text{m}\)</span> inside the circle of
+radius <span class="math notranslate nohighlight">\(r = 10\,\text{m}\)</span> centred at the origin and <span class="math notranslate nohighlight">\(h = 5\,\text{m}\)</span>
+outside it.</p>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="../_images/dambreak2d_animation.gif"><img alt="../_images/dambreak2d_animation.gif" src="../_images/dambreak2d_animation.gif" style="width: 70%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Animation of the water surface <span class="math notranslate nohighlight">\(\eta = h + b\)</span> for the circular dam
+break (flat bathymetry, <span class="math notranslate nohighlight">\(t = 0\)</span> to <span class="math notranslate nohighlight">\(4.4\,\text{s}\)</span>).
+The wave front expands radially outward with nearly perfect circular
+symmetry, confirming that the unsplit method correctly handles both the
+<span class="math notranslate nohighlight">\(x\)</span>- and <span class="math notranslate nohighlight">\(y\)</span>-sweeps.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="circular-dam-break-with-bathymetric-obstacle">
+<h3>Circular Dam Break with Bathymetric Obstacle<a class="headerlink" href="#circular-dam-break-with-bathymetric-obstacle" title="Link to this heading"></a></h3>
+<p>To demonstrate two-dimensional bathymetry support we added an isotropic
+Gaussian hump of amplitude <span class="math notranslate nohighlight">\(A = 3\,\text{m}\)</span> centred at
+<span class="math notranslate nohighlight">\((x_o, y_o) = (15, 0)\,\text{m}\)</span> with width <span class="math notranslate nohighlight">\(\sigma = 5\,\text{m}\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[b(x,y) = 3 \exp\!\left( -\frac{(x-15)^2 + y^2}{50} \right).\]</div>
+<figure class="align-center" id="id2">
+<a class="reference internal image-reference" href="../_images/dambreak2d_obstacle.png"><img alt="../_images/dambreak2d_obstacle.png" src="../_images/dambreak2d_obstacle.png" style="width: 90%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Water surface <span class="math notranslate nohighlight">\(\eta\)</span> (left) and bathymetry <span class="math notranslate nohighlight">\(b\)</span> (right) at
+<span class="math notranslate nohighlight">\(t \approx 2.5\,\text{s}\)</span> with the Gaussian obstacle at
+<span class="math notranslate nohighlight">\((15, 0)\,\text{m}\)</span>.
+The obstacle breaks the circular symmetry: the wave is partially reflected
+backward and the transmitted wave is locally elevated, consistent with
+the f-wave bathymetry source-term treatment.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="comparison-of-1d-and-2d-solvers-at-stations">
+<h3>Comparison of 1D and 2D Solvers at Stations<a class="headerlink" href="#comparison-of-1d-and-2d-solvers-at-stations" title="Link to this heading"></a></h3>
+<p>To validate the two-dimensional solver we exploit the radial symmetry of the
+circular dam break.  Along the positive <span class="math notranslate nohighlight">\(x\)</span>-axis the problem reduces to
+a one-dimensional dam break whose outward-propagating wave should match the
+2D solution at the same radial distance.</p>
+<p>We place three stations at <span class="math notranslate nohighlight">\(r \in \{15, 25, 35\}\,\text{m}\)</span> from the
+origin along <span class="math notranslate nohighlight">\(y = 0\)</span> and run:</p>
+<ul class="simple">
+<li><p><strong>2D</strong> — circular dam break as described above, with station output every
+<span class="math notranslate nohighlight">\(0.1\,\text{s}\)</span> (via <code class="docutils literal notranslate"><span class="pre">ressources/comparison_stations.xml</span></code>).</p></li>
+<li><p><strong>1D</strong> — <code class="docutils literal notranslate"><span class="pre">DamBreak</span></code> with <span class="math notranslate nohighlight">\(h_L = 10\,\text{m}\)</span>, <span class="math notranslate nohighlight">\(h_R = 5\,\text{m}\)</span>,
+dam at <span class="math notranslate nohighlight">\(x = 10\,\text{m}\)</span> (the circle boundary), domain
+<span class="math notranslate nohighlight">\([0, 100]\,\text{m}\)</span>, <span class="math notranslate nohighlight">\(\Delta x = 0.5\,\text{m}\)</span>.
+The 1D solution is sampled at <span class="math notranslate nohighlight">\(x \in \{15, 25, 35\}\,\text{m}\)</span> from
+the snapshots.</p></li>
+</ul>
+<figure class="align-center" id="id3">
+<a class="reference internal image-reference" href="../_images/compare_1d_2d.png"><img alt="../_images/compare_1d_2d.png" src="../_images/compare_1d_2d.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Water surface <span class="math notranslate nohighlight">\(\eta(t)\)</span> at stations <span class="math notranslate nohighlight">\(r = 15, 25, 35\,\text{m}\)</span>
+from the dam centre.  The 2D circular solver (solid) and the 1D solver
+(dashed, sampled from snapshots) agree on the arrival time and initial
+wave height at all stations.  The 2D amplitude decreases more rapidly
+with distance because circular waves spread energy over an ever-growing
+circumference (<span class="math notranslate nohighlight">\(\sim 1/\sqrt{r}\)</span>), while the 1D wave maintains its
+amplitude.  This behaviour is the expected physical difference between a
+planar and a circular dam break.</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
 </section>
 <section id="individual-contributions">
 <h2>Individual Contributions<a class="headerlink" href="#individual-contributions" title="Link to this heading"></a></h2>
 <ul class="simple">
-<li><p><strong>Yannik Köllmann:</strong></p></li>
+<li><p><strong>Yannik Köllmann:</strong> Implementation of the ParaView-based 2D visualization
+script, matplotlib scripts for the animation, obstacle snapshot, and 1D vs 2D station-comparison figures
+Simulation runs for the circular dam break</p></li>
 <li><p><strong>Jan Vogt:</strong> Implementation of the <code class="docutils literal notranslate"><span class="pre">CircularDamBreak2d</span></code> setup including Unit-tests.</p></li>
 <li><p><strong>Mika Brückner:</strong> Implementation and integration of the <code class="docutils literal notranslate"><span class="pre">WavePropagation2d</span></code> class including Unit-tests.
 Implementation and integration of the <code class="docutils literal notranslate"><span class="pre">Stations</span></code> class including Unit-tests.</p></li>
