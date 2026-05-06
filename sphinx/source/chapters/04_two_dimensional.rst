@@ -172,11 +172,86 @@ Unit Tests
 Results & Visualizations
 -------------------------
 
+Circular Dam Break (flat bathymetry)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We ran the circular dam break on the domain :math:`[-50, 50]^2` with
+:math:`200 \times 200` cells (:math:`\Delta x = \Delta y = 0.5\,\text{m}`),
+end time :math:`t = 5\,\text{s}`, and outflow boundaries on all four sides.
+The initial condition places :math:`h = 10\,\text{m}` inside the circle of
+radius :math:`r = 10\,\text{m}` centred at the origin and :math:`h = 5\,\text{m}`
+outside it.
+
+.. figure:: ../_images/dambreak2d_animation.gif
+   :align: center
+   :width: 70%
+
+   Animation of the water surface :math:`\eta = h + b` for the circular dam
+   break (flat bathymetry, :math:`t = 0` to :math:`4.4\,\text{s}`).
+   The wave front expands radially outward with nearly perfect circular
+   symmetry, confirming that the unsplit method correctly handles both the
+   :math:`x`- and :math:`y`-sweeps.
+
+Circular Dam Break with Bathymetric Obstacle
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To demonstrate two-dimensional bathymetry support we added an isotropic
+Gaussian hump of amplitude :math:`A = 3\,\text{m}` centred at
+:math:`(x_o, y_o) = (15, 0)\,\text{m}` with width :math:`\sigma = 5\,\text{m}`:
+
+.. math::
+
+   b(x,y) = 3 \exp\!\left( -\frac{(x-15)^2 + y^2}{50} \right).
+
+.. figure:: ../_images/dambreak2d_obstacle.png
+   :align: center
+   :width: 90%
+
+   Water surface :math:`\eta` (left) and bathymetry :math:`b` (right) at
+   :math:`t \approx 2.5\,\text{s}` with the Gaussian obstacle at
+   :math:`(15, 0)\,\text{m}`.
+   The obstacle breaks the circular symmetry: the wave is partially reflected
+   backward and the transmitted wave is locally elevated, consistent with
+   the f-wave bathymetry source-term treatment.
+
+Comparison of 1D and 2D Solvers at Stations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To validate the two-dimensional solver we exploit the radial symmetry of the
+circular dam break.  Along the positive :math:`x`-axis the problem reduces to
+a one-dimensional dam break whose outward-propagating wave should match the
+2D solution at the same radial distance.
+
+We place three stations at :math:`r \in \{15, 25, 35\}\,\text{m}` from the
+origin along :math:`y = 0` and run:
+
+* **2D** — circular dam break as described above, with station output every
+  :math:`0.1\,\text{s}` (via ``ressources/comparison_stations.xml``).
+* **1D** — ``DamBreak`` with :math:`h_L = 10\,\text{m}`, :math:`h_R = 5\,\text{m}`,
+  dam at :math:`x = 10\,\text{m}` (the circle boundary), domain
+  :math:`[0, 100]\,\text{m}`, :math:`\Delta x = 0.5\,\text{m}`.
+  The 1D solution is sampled at :math:`x \in \{15, 25, 35\}\,\text{m}` from
+  the snapshots.
+
+.. figure:: ../_images/compare_1d_2d.png
+   :align: center
+   :width: 100%
+
+   Water surface :math:`\eta(t)` at stations :math:`r = 15, 25, 35\,\text{m}`
+   from the dam centre.  The 2D circular solver (solid) and the 1D solver
+   (dashed, sampled from snapshots) agree on the arrival time and initial
+   wave height at all stations.  The 2D amplitude decreases more rapidly
+   with distance because circular waves spread energy over an ever-growing
+   circumference (:math:`\sim 1/\sqrt{r}`), while the 1D wave maintains its
+   amplitude.  This behaviour is the expected physical difference between a
+   planar and a circular dam break.
 
 Individual Contributions
 -------------------------
 
-- **Yannik Köllmann:**
+- **Yannik Köllmann:** Implementation of the ParaView-based 2D visualization
+  script, matplotlib scripts for the animation, obstacle snapshot, and 1D vs 2D station-comparison figures
+  Simulation runs for the circular dam break
 - **Jan Vogt:** Implementation of the ``CircularDamBreak2d`` setup including Unit-tests.
 - **Mika Brückner:** Implementation and integration of the ``WavePropagation2d`` class including Unit-tests.
   Implementation and integration of the ``Stations`` class including Unit-tests.
