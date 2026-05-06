@@ -7,8 +7,11 @@
  * @section DESCRIPTION
  * Entry-point for simulations.
  **/
-#include "io/Csv.h"
+#include "io/csv/Csv.h"
+#include "io/stations/Stations.h"
 #include "patches/WavePropagation1d/WavePropagation1d.h"
+#include "patches/WavePropagation2d/WavePropagation2d.h"
+#include "setups/dambreak/CircularDamBreak2d.h"
 #include "setups/dambreak/DamBreak1d.h"
 #include "setups/rarerare/RareRare1d.h"
 #include "setups/shockshock/ShockShock1d.h"
@@ -27,12 +30,12 @@
 
 static void printUsage(const char* i_prog) {
   std::cerr << "usage: " << i_prog
-            << " -n N_CELLS_X -s SOLVER -p SETUP [PARAMS...] [-d DOMAIN_SIZE] "
+            << " -n N_CELLS -s SOLVER -p SETUP [PARAMS...] [-d DOMAIN_SIZE] "
                "[-t END_TIME]"
             << std::endl;
   std::cerr << std::endl;
   std::cerr << "mandatory parameters:" << std::endl;
-  std::cerr << "  -n   number of cells in x-direction (>= 1)" << std::endl;
+  std::cerr << "  -n   number of cells in each-direction (>= 1)" << std::endl;
   std::cerr << "  -p   setup with configuration:" << std::endl;
   std::cerr
       << "        > DamBreak         <hLeft> <hRight> <location> [huLeft=0] "
@@ -48,9 +51,17 @@ static void printUsage(const char* i_prog) {
   std::cerr << "        > SubCritical" << std::endl;
   std::cerr << "        > SuperCritical" << std::endl;
   std::cerr << "        > TsunamiEvent    <bathymetry.csv>" << std::endl;
+  std::cerr << "        > DamBreak2d      [hInner=10] [hOuter=5] [centerX=5] "
+               "[centerY=5] [radius=2]"
+            << std::endl;
+  std::cerr << "        >                 [obstacleAmp=0] [obstacleCX=0] "
+               "[obstacleCY=0] [obstacleW=0]"
+            << std::endl;
   std::cerr << std::endl;
   std::cerr << "optional parameters:" << std::endl;
   std::cerr << "  -s         solver:  FWave | Roe (default: FWave)"
+            << std::endl;
+  std::cerr << "  -c         path to XML config file (optional, for stations)"
             << std::endl;
   std::cerr << "  -d         total domain size in meters (default: 10.0)"
             << std::endl;
@@ -65,6 +76,7 @@ static void printUsage(const char* i_prog) {
   std::cerr << std::endl;
   std::cerr << "examples:" << std::endl;
   std::cerr << "  " << i_prog << " -n 100 -p DamBreak 10 5 5" << std::endl;
+  std::cerr << "  " << i_prog << " -n 100 -t 5 -p DamBreak2d" << std::endl;
   std::cerr << "  " << i_prog
             << " -n 2500 -s Roe -d 25000 -t 7200 -p DamBreak 14 3.5 12500 0 0.7"
             << std::endl;
@@ -82,10 +94,14 @@ static void printUsage(const char* i_prog) {
 int main(int i_argc, char* i_argv[]) {
   tsunami_lab::t_idx l_nx = 0;
   tsunami_lab::t_idx l_ny = 1;
+  bool l_is2d = false;
   tsunami_lab::t_real l_domainSize = 10.0;
+  bool l_domainSizeSet = false;
+  tsunami_lab::t_real l_domainOrigin = 0.0; // left/bottom boundary coordinate
   tsunami_lab::t_real l_endTime = 1.25;
   std::string l_solverMode = "fwave";
   std::string l_setupMode;
+  std::string l_configPath;
 
   // boundary conditions default to outflow on both sides
   tsunami_lab::patches::BoundaryCondition l_bcLeft =
@@ -134,6 +150,7 @@ int main(int i_argc, char* i_argv[]) {
         return EXIT_FAILURE;
       }
       l_nx = static_cast<tsunami_lab::t_idx>(l_val);
+      l_ny = static_cast<tsunami_lab::t_idx>(l_val);
 
     } else if ((l_arg == "-s" || l_arg == "--solver") && l_i + 1 < i_argc) {
       l_solverMode = i_argv[++l_i];
@@ -146,8 +163,12 @@ int main(int i_argc, char* i_argv[]) {
         return EXIT_FAILURE;
       }
 
+    } else if ((l_arg == "-c" || l_arg == "--config") && l_i + 1 < i_argc) {
+      l_configPath = i_argv[++l_i];
+
     } else if ((l_arg == "-d" || l_arg == "--domain") && l_i + 1 < i_argc) {
       l_domainSize = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
+      l_domainSizeSet = true;
       if (l_domainSize <= 0) {
         std::cerr << "error: -d (domain size) must be > 0" << std::endl;
         printUsage(i_argv[0]);
@@ -212,6 +233,39 @@ int main(int i_argc, char* i_argv[]) {
         }
         l_setup =
             new tsunami_lab::setups::DamBreak1d(l_p1, l_p4, l_p2, l_p5, l_p3);
+
+      } else if (l_setupMode == "dambreak2d") {
+        l_is2d = true;
+        // optional params: hInner hOuter centerX centerY radius obstacleAmp
+        // obstacleCX obstacleCY obstacleW
+        tsunami_lab::t_real l_hInner = 10.0f, l_hOuter = 5.0f;
+        tsunami_lab::t_real l_cx = 0.0f, l_cy = 0.0f, l_r = 10.0f;
+        if (!l_domainSizeSet) {
+          l_domainSize = 100.0f;
+        }
+        l_domainOrigin = -50.0f;
+        tsunami_lab::t_real l_oAmp = 0.0f, l_oCx = 0.0f, l_oCy = 0.0f,
+                            l_oW = 0.0f;
+        if (l_i + 1 < i_argc && i_argv[l_i + 1][0] != '-')
+          l_hInner = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
+        if (l_i + 1 < i_argc && i_argv[l_i + 1][0] != '-')
+          l_hOuter = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
+        if (l_i + 1 < i_argc && i_argv[l_i + 1][0] != '-')
+          l_cx = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
+        if (l_i + 1 < i_argc && i_argv[l_i + 1][0] != '-')
+          l_cy = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
+        if (l_i + 1 < i_argc && i_argv[l_i + 1][0] != '-')
+          l_r = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
+        if (l_i + 1 < i_argc && i_argv[l_i + 1][0] != '-')
+          l_oAmp = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
+        if (l_i + 1 < i_argc && i_argv[l_i + 1][0] != '-')
+          l_oCx = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
+        if (l_i + 1 < i_argc && i_argv[l_i + 1][0] != '-')
+          l_oCy = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
+        if (l_i + 1 < i_argc && i_argv[l_i + 1][0] != '-')
+          l_oW = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
+        l_setup = new tsunami_lab::setups::CircularDamBreak2d(
+            l_hInner, l_hOuter, l_cx, l_cy, l_r, l_oAmp, l_oCx, l_oCy, l_oW);
 
       } else if (l_setupMode == "rarerare") {
         if (l_i + 3 >= i_argc) {
@@ -338,8 +392,13 @@ int main(int i_argc, char* i_argv[]) {
             << " / " << l_bcName(l_bcRight) << std::endl;
 
   // construct solver and initialize cells
+  if (!l_is2d)
+    l_ny = 1;
   tsunami_lab::patches::WavePropagation* l_waveProp =
-      new tsunami_lab::patches::WavePropagation1d(l_nx);
+      l_is2d ? static_cast<tsunami_lab::patches::WavePropagation*>(
+                   new tsunami_lab::patches::WavePropagation2d(l_nx, l_ny))
+             : static_cast<tsunami_lab::patches::WavePropagation*>(
+                   new tsunami_lab::patches::WavePropagation1d(l_nx));
 
   // maximum observed height in the setup
   tsunami_lab::t_real l_hMax =
@@ -347,10 +406,10 @@ int main(int i_argc, char* i_argv[]) {
 
   // set up solver
   for (tsunami_lab::t_idx l_cy = 0; l_cy < l_ny; l_cy++) {
-    tsunami_lab::t_real l_y = l_cy * l_dxy;
+    tsunami_lab::t_real l_y = l_domainOrigin + l_cy * l_dxy;
 
     for (tsunami_lab::t_idx l_cx = 0; l_cx < l_nx; l_cx++) {
-      tsunami_lab::t_real l_x = l_cx * l_dxy;
+      tsunami_lab::t_real l_x = l_domainOrigin + l_cx * l_dxy;
 
       // get initial values of the setup
       tsunami_lab::t_real l_h = l_setup->getHeight(l_x, l_y);
@@ -400,6 +459,28 @@ int main(int i_argc, char* i_argv[]) {
     return EXIT_FAILURE;
   }
 
+  // stations — optional, loaded from XML config
+  tsunami_lab::io::Stations* l_stations = nullptr;
+  if (!l_configPath.empty()) {
+    pugi::xml_document l_doc;
+    pugi::xml_parse_result l_result = l_doc.load_file(l_configPath.c_str());
+    if (!l_result) {
+      std::cerr << "warning: could not parse config file '" << l_configPath
+                << "': " << l_result.description() << std::endl;
+    } else {
+      pugi::xml_node l_stationsNode = l_doc.child("config").child("stations");
+      if (l_stationsNode) {
+        std::string l_stationsDir = l_simDir + "/stations";
+        l_stations =
+            new tsunami_lab::io::Stations(tsunami_lab::io::Stations::fromXml(
+                l_stationsNode, l_domainOrigin, l_domainOrigin, l_dxy, l_dxy,
+                l_stationsDir));
+        std::cout << "  stations config loaded from: " << l_configPath
+                  << std::endl;
+      }
+    }
+  }
+
   // time loop
   tsunami_lab::t_idx l_timeStep = 0;
   tsunami_lab::t_idx l_nOut = 0;
@@ -418,18 +499,27 @@ int main(int i_argc, char* i_argv[]) {
       std::cout << "  simulation time / #time steps: " << l_simTime << " s / "
                 << l_timeStep << std::endl;
 
-      std::string l_path = l_simDir + "/solution_" +
-                     std::string(4 - std::min(4, (int)std::to_string(l_nOut).length()), '0') +
-                     std::to_string(l_nOut) + ".csv";
+      std::string l_path =
+          l_simDir + "/solution_" +
+          std::string(4 - std::min(4, (int)std::to_string(l_nOut).length()),
+                      '0') +
+          std::to_string(l_nOut) + ".csv";
       std::cout << "  writing wave field to " << l_path << std::endl;
 
       std::ofstream l_file(l_path);
-      tsunami_lab::io::Csv::write(l_dxy, l_nx, 1, 1, l_waveProp->getHeight(),
-                                  l_waveProp->getBathymetry(),
-                                  l_waveProp->getMomentumX(), nullptr,
-                                  l_simTime, l_file);
+      tsunami_lab::io::Csv::write(
+          l_dxy, l_nx, l_ny, l_is2d ? l_waveProp->getStride() : 1,
+          l_waveProp->getHeight(), l_waveProp->getBathymetry(),
+          l_waveProp->getMomentumX(), nullptr, l_simTime, l_file);
       l_file.close();
       l_nOut++;
+    }
+
+    if (l_stations != nullptr) {
+      l_stations->write(l_simTime, l_waveProp->getHeight(),
+                        l_waveProp->getMomentumX(), l_waveProp->getMomentumY(),
+                        l_waveProp->getBathymetry(),
+                        l_is2d ? l_waveProp->getStride() : 1);
     }
 
     l_waveProp->setGhost(l_bcLeft, l_bcRight);
@@ -443,6 +533,7 @@ int main(int i_argc, char* i_argv[]) {
 
   // free memory
   std::cout << "freeing memory" << std::endl;
+  delete l_stations;
   delete l_setup;
   delete l_waveProp;
 
