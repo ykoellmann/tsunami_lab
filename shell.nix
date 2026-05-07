@@ -15,5 +15,9 @@ pkgs.mkShell {
     bear
     gmt
     wget
+    tree
+    netcdf
+    hdf5
+    zlib
   ];
 }
