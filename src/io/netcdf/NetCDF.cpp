@@ -8,8 +8,17 @@
 #include "NetCDF.h"
 
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <vector>
+
+namespace {
+inline int
+putAttStr(int i_ncId, int i_varId, const char* i_name, const char* i_value) {
+  return nc_put_att_text(i_ncId, i_varId, i_name, std::strlen(i_value),
+                         i_value);
+}
+} // namespace
 
 namespace tsunami_lab {
 namespace io {
@@ -44,34 +53,32 @@ NetCDF::NetCDF(t_idx i_nx,
   checkErr(nc_def_var(m_ncId, "y", NC_FLOAT, 1, &m_dimY, &m_varY));
 
   // COARDS attributes for coordinate variables
-  checkErr(nc_put_att_text(m_ncId, m_varTime, "units", 29,
-                           "seconds since earthquake event"));
-  checkErr(nc_put_att_text(m_ncId, m_varX, "units", 6, "meters"));
-  checkErr(nc_put_att_text(m_ncId, m_varX, "axis", 1, "X"));
-  checkErr(nc_put_att_text(m_ncId, m_varY, "units", 6, "meters"));
-  checkErr(nc_put_att_text(m_ncId, m_varY, "axis", 1, "Y"));
+  checkErr(
+      putAttStr(m_ncId, m_varTime, "units", "seconds since earthquake event"));
+  checkErr(putAttStr(m_ncId, m_varX, "units", "meters"));
+  checkErr(putAttStr(m_ncId, m_varX, "axis", "X"));
+  checkErr(putAttStr(m_ncId, m_varY, "units", "meters"));
+  checkErr(putAttStr(m_ncId, m_varY, "axis", "Y"));
 
   // data variables: [time, x, y]
   int l_dimsTxy[3] = {m_dimTime, m_dimX, m_dimY};
   int l_dimsXy[2] = {m_dimX, m_dimY};
 
   checkErr(nc_def_var(m_ncId, "h", NC_FLOAT, 3, l_dimsTxy, &m_varH));
-  checkErr(nc_put_att_text(m_ncId, m_varH, "units", 6, "meters"));
-  checkErr(nc_put_att_text(m_ncId, m_varH, "long_name", 12, "water height"));
+  checkErr(putAttStr(m_ncId, m_varH, "units", "meters"));
+  checkErr(putAttStr(m_ncId, m_varH, "long_name", "water height"));
 
   checkErr(nc_def_var(m_ncId, "hu", NC_FLOAT, 3, l_dimsTxy, &m_varHu));
-  checkErr(nc_put_att_text(m_ncId, m_varHu, "units", 14, "meters^2/second"));
-  checkErr(
-      nc_put_att_text(m_ncId, m_varHu, "long_name", 19, "x-momentum (h * u)"));
+  checkErr(putAttStr(m_ncId, m_varHu, "units", "meters^2/second"));
+  checkErr(putAttStr(m_ncId, m_varHu, "long_name", "x-momentum (h * u)"));
 
   checkErr(nc_def_var(m_ncId, "hv", NC_FLOAT, 3, l_dimsTxy, &m_varHv));
-  checkErr(nc_put_att_text(m_ncId, m_varHv, "units", 14, "meters^2/second"));
-  checkErr(
-      nc_put_att_text(m_ncId, m_varHv, "long_name", 19, "y-momentum (h * v)"));
+  checkErr(putAttStr(m_ncId, m_varHv, "units", "meters^2/second"));
+  checkErr(putAttStr(m_ncId, m_varHv, "long_name", "y-momentum (h * v)"));
 
   checkErr(nc_def_var(m_ncId, "b", NC_FLOAT, 2, l_dimsXy, &m_varB));
-  checkErr(nc_put_att_text(m_ncId, m_varB, "units", 6, "meters"));
-  checkErr(nc_put_att_text(m_ncId, m_varB, "long_name", 10, "bathymetry"));
+  checkErr(putAttStr(m_ncId, m_varB, "units", "meters"));
+  checkErr(putAttStr(m_ncId, m_varB, "long_name", "bathymetry"));
 
   checkErr(nc_enddef(m_ncId));
 
@@ -134,6 +141,87 @@ void NetCDF::write(t_real i_simTime,
   }
 
   m_timeStep++;
+}
+
+void NetCDF::read(const char* i_path,
+                  const char* i_varName,
+                  t_idx& o_nx,
+                  t_idx& o_ny,
+                  t_real*& o_x,
+                  t_real*& o_y,
+                  t_real*& o_z) {
+  int l_ncId = -1;
+  checkErr(nc_open(i_path, NC_NOWRITE, &l_ncId));
+
+  // dimension ids and lengths
+  int l_dimXId = -1, l_dimYId = -1;
+  checkErr(nc_inq_dimid(l_ncId, "x", &l_dimXId));
+  checkErr(nc_inq_dimid(l_ncId, "y", &l_dimYId));
+
+  size_t l_lenX = 0, l_lenY = 0;
+  checkErr(nc_inq_dimlen(l_ncId, l_dimXId, &l_lenX));
+  checkErr(nc_inq_dimlen(l_ncId, l_dimYId, &l_lenY));
+  o_nx = static_cast<t_idx>(l_lenX);
+  o_ny = static_cast<t_idx>(l_lenY);
+
+  // coordinate variables
+  int l_varX = -1, l_varY = -1;
+  checkErr(nc_inq_varid(l_ncId, "x", &l_varX));
+  checkErr(nc_inq_varid(l_ncId, "y", &l_varY));
+
+  std::vector<float> l_xBuf(l_lenX), l_yBuf(l_lenY);
+  checkErr(nc_get_var_float(l_ncId, l_varX, l_xBuf.data()));
+  checkErr(nc_get_var_float(l_ncId, l_varY, l_yBuf.data()));
+
+  o_x = new t_real[l_lenX];
+  o_y = new t_real[l_lenY];
+  for (size_t l_i = 0; l_i < l_lenX; l_i++)
+    o_x[l_i] = static_cast<t_real>(l_xBuf[l_i]);
+  for (size_t l_j = 0; l_j < l_lenY; l_j++)
+    o_y[l_j] = static_cast<t_real>(l_yBuf[l_j]);
+
+  // data variable
+  int l_varZ = -1;
+  checkErr(nc_inq_varid(l_ncId, i_varName, &l_varZ));
+
+  int l_nDims = 0;
+  checkErr(nc_inq_varndims(l_ncId, l_varZ, &l_nDims));
+  if (l_nDims != 2) {
+    std::cerr << "NetCDF read: variable '" << i_varName
+              << "' is not 2D (ndims=" << l_nDims << ")" << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+
+  int l_zDimIds[2] = {-1, -1};
+  checkErr(nc_inq_vardimid(l_ncId, l_varZ, l_zDimIds));
+
+  // load raw data
+  std::vector<float> l_zBuf(l_lenX * l_lenY);
+  checkErr(nc_get_var_float(l_ncId, l_varZ, l_zBuf.data()));
+
+  o_z = new t_real[l_lenX * l_lenY];
+
+  // determine layout: (y, x) is the COARDS-typical order; (x, y) is also
+  // accepted. In both cases we emit row-major (y, x) in the output array.
+  if (l_zDimIds[0] == l_dimYId && l_zDimIds[1] == l_dimXId) {
+    // (y, x) -> already row-major (y, x)
+    for (size_t l_iy = 0; l_iy < l_lenY; l_iy++)
+      for (size_t l_ix = 0; l_ix < l_lenX; l_ix++)
+        o_z[l_iy * l_lenX + l_ix] =
+            static_cast<t_real>(l_zBuf[l_iy * l_lenX + l_ix]);
+  } else if (l_zDimIds[0] == l_dimXId && l_zDimIds[1] == l_dimYId) {
+    // (x, y) -> transpose to (y, x)
+    for (size_t l_ix = 0; l_ix < l_lenX; l_ix++)
+      for (size_t l_iy = 0; l_iy < l_lenY; l_iy++)
+        o_z[l_iy * l_lenX + l_ix] =
+            static_cast<t_real>(l_zBuf[l_ix * l_lenY + l_iy]);
+  } else {
+    std::cerr << "NetCDF read: variable '" << i_varName
+              << "' has dimensions other than (x, y) or (y, x)" << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+
+  checkErr(nc_close(l_ncId));
 }
 
 } // namespace io

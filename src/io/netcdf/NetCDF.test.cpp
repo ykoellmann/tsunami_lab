@@ -78,3 +78,142 @@ TEST_CASE("NetCDF write produces readable output", "[NetCDF]") {
 
   nc_close(l_ncId);
 }
+
+namespace {
+// Helper: create a small netCDF file with x, y coords and a 2D variable z
+// whose dimension order is (y, x) — the COARDS-typical layout.
+void writeGridFileYX(const char* i_path,
+                     size_t i_nx,
+                     size_t i_ny,
+                     const float* i_x,
+                     const float* i_y,
+                     const float* i_z) {
+  int l_ncId = -1;
+  REQUIRE(nc_create(i_path, NC_CLOBBER | NC_NETCDF4, &l_ncId) == NC_NOERR);
+
+  int l_dimX, l_dimY;
+  REQUIRE(nc_def_dim(l_ncId, "x", i_nx, &l_dimX) == NC_NOERR);
+  REQUIRE(nc_def_dim(l_ncId, "y", i_ny, &l_dimY) == NC_NOERR);
+
+  int l_varX, l_varY, l_varZ;
+  REQUIRE(nc_def_var(l_ncId, "x", NC_FLOAT, 1, &l_dimX, &l_varX) == NC_NOERR);
+  REQUIRE(nc_def_var(l_ncId, "y", NC_FLOAT, 1, &l_dimY, &l_varY) == NC_NOERR);
+  int l_dimsYX[2] = {l_dimY, l_dimX};
+  REQUIRE(nc_def_var(l_ncId, "z", NC_FLOAT, 2, l_dimsYX, &l_varZ) == NC_NOERR);
+
+  REQUIRE(nc_enddef(l_ncId) == NC_NOERR);
+
+  REQUIRE(nc_put_var_float(l_ncId, l_varX, i_x) == NC_NOERR);
+  REQUIRE(nc_put_var_float(l_ncId, l_varY, i_y) == NC_NOERR);
+  REQUIRE(nc_put_var_float(l_ncId, l_varZ, i_z) == NC_NOERR);
+
+  nc_close(l_ncId);
+}
+
+// Same as above but data variable has dimensions in (x, y) order — the
+// reader must transpose to row-major (y, x).
+void writeGridFileXY(const char* i_path,
+                     size_t i_nx,
+                     size_t i_ny,
+                     const float* i_x,
+                     const float* i_y,
+                     const float* i_zXy) {
+  int l_ncId = -1;
+  REQUIRE(nc_create(i_path, NC_CLOBBER | NC_NETCDF4, &l_ncId) == NC_NOERR);
+
+  int l_dimX, l_dimY;
+  REQUIRE(nc_def_dim(l_ncId, "x", i_nx, &l_dimX) == NC_NOERR);
+  REQUIRE(nc_def_dim(l_ncId, "y", i_ny, &l_dimY) == NC_NOERR);
+
+  int l_varX, l_varY, l_varZ;
+  REQUIRE(nc_def_var(l_ncId, "x", NC_FLOAT, 1, &l_dimX, &l_varX) == NC_NOERR);
+  REQUIRE(nc_def_var(l_ncId, "y", NC_FLOAT, 1, &l_dimY, &l_varY) == NC_NOERR);
+  int l_dimsXY[2] = {l_dimX, l_dimY};
+  REQUIRE(nc_def_var(l_ncId, "z", NC_FLOAT, 2, l_dimsXY, &l_varZ) == NC_NOERR);
+
+  REQUIRE(nc_enddef(l_ncId) == NC_NOERR);
+
+  REQUIRE(nc_put_var_float(l_ncId, l_varX, i_x) == NC_NOERR);
+  REQUIRE(nc_put_var_float(l_ncId, l_varY, i_y) == NC_NOERR);
+  REQUIRE(nc_put_var_float(l_ncId, l_varZ, i_zXy) == NC_NOERR);
+
+  nc_close(l_ncId);
+}
+} // namespace
+
+TEST_CASE("NetCDF read parses (y, x) layout", "[NetCDF]") {
+  const size_t l_nx = 4;
+  const size_t l_ny = 3;
+  const char* l_path = "/tmp/test_netcdf_read_yx.nc";
+
+  float l_x[l_nx] = {0.0f, 10.0f, 20.0f, 30.0f};
+  float l_y[l_ny] = {-5.0f, 0.0f, 5.0f};
+  // z[iy * nx + ix] = ix * 100 + iy
+  float l_z[l_nx * l_ny];
+  for (size_t l_iy = 0; l_iy < l_ny; l_iy++)
+    for (size_t l_ix = 0; l_ix < l_nx; l_ix++)
+      l_z[l_iy * l_nx + l_ix] =
+          static_cast<float>(l_ix) * 100.0f + static_cast<float>(l_iy);
+
+  writeGridFileYX(l_path, l_nx, l_ny, l_x, l_y, l_z);
+
+  tsunami_lab::t_idx l_outNx = 0, l_outNy = 0;
+  tsunami_lab::t_real* l_outX = nullptr;
+  tsunami_lab::t_real* l_outY = nullptr;
+  tsunami_lab::t_real* l_outZ = nullptr;
+  tsunami_lab::io::NetCDF::read(l_path, "z", l_outNx, l_outNy, l_outX, l_outY,
+                                l_outZ);
+
+  REQUIRE(l_outNx == l_nx);
+  REQUIRE(l_outNy == l_ny);
+
+  for (size_t l_i = 0; l_i < l_nx; l_i++)
+    REQUIRE(l_outX[l_i] == Approx(l_x[l_i]));
+  for (size_t l_j = 0; l_j < l_ny; l_j++)
+    REQUIRE(l_outY[l_j] == Approx(l_y[l_j]));
+
+  // values should round-trip exactly
+  for (size_t l_iy = 0; l_iy < l_ny; l_iy++)
+    for (size_t l_ix = 0; l_ix < l_nx; l_ix++)
+      REQUIRE(l_outZ[l_iy * l_nx + l_ix] == Approx(l_z[l_iy * l_nx + l_ix]));
+
+  delete[] l_outX;
+  delete[] l_outY;
+  delete[] l_outZ;
+}
+
+TEST_CASE("NetCDF read transposes (x, y) layout", "[NetCDF]") {
+  const size_t l_nx = 3;
+  const size_t l_ny = 4;
+  const char* l_path = "/tmp/test_netcdf_read_xy.nc";
+
+  float l_x[l_nx] = {1.0f, 2.0f, 3.0f};
+  float l_y[l_ny] = {0.0f, 1.0f, 2.0f, 3.0f};
+  // file stores data in (x, y) order: zXy[ix * ny + iy] = ix * 10 + iy
+  float l_zXy[l_nx * l_ny];
+  for (size_t l_ix = 0; l_ix < l_nx; l_ix++)
+    for (size_t l_iy = 0; l_iy < l_ny; l_iy++)
+      l_zXy[l_ix * l_ny + l_iy] =
+          static_cast<float>(l_ix) * 10.0f + static_cast<float>(l_iy);
+
+  writeGridFileXY(l_path, l_nx, l_ny, l_x, l_y, l_zXy);
+
+  tsunami_lab::t_idx l_outNx = 0, l_outNy = 0;
+  tsunami_lab::t_real* l_outX = nullptr;
+  tsunami_lab::t_real* l_outY = nullptr;
+  tsunami_lab::t_real* l_outZ = nullptr;
+  tsunami_lab::io::NetCDF::read(l_path, "z", l_outNx, l_outNy, l_outX, l_outY,
+                                l_outZ);
+
+  REQUIRE(l_outNx == l_nx);
+  REQUIRE(l_outNy == l_ny);
+
+  // output is row-major (y, x): out[iy * nx + ix] == zXy[ix * ny + iy]
+  for (size_t l_iy = 0; l_iy < l_ny; l_iy++)
+    for (size_t l_ix = 0; l_ix < l_nx; l_ix++)
+      REQUIRE(l_outZ[l_iy * l_nx + l_ix] == Approx(l_zXy[l_ix * l_ny + l_iy]));
+
+  delete[] l_outX;
+  delete[] l_outY;
+  delete[] l_outZ;
+}
