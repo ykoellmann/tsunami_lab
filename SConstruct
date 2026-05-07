@@ -70,6 +70,16 @@ env.Append( CXXFLAGS = [ '-isystem', 'submodules/Catch2/single_include' ] )
 # add pugixml include path
 env.Append( CPPPATH = [ '#submodules/pugixml/src' ] )
 
+# link netCDF (must be available via nix-shell or system package)
+import subprocess, os
+try:
+  netcdf_prefix = subprocess.check_output(['nc-config', '--prefix'], text=True).strip()
+  env.Append( CPPPATH = [ netcdf_prefix + '/include' ] )
+  env.Append( LIBPATH = [ netcdf_prefix + '/lib' ] )
+except Exception:
+  pass
+env.Append( LIBS = [ 'netcdf' ] )
+
 # compile pugixml with warnings suppressed (third-party code)
 pugi_env = env.Clone()
 pugi_env.Append( CXXFLAGS = [ '-w' ] )
