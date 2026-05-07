@@ -12,6 +12,7 @@
 #include "io/stations/Stations.h"
 #include "patches/WavePropagation1d/WavePropagation1d.h"
 #include "patches/WavePropagation2d/WavePropagation2d.h"
+#include "setups/artificialtsunami2d/ArtificialTsunami2d.h"
 #include "setups/dambreak/CircularDamBreak2d.h"
 #include "setups/dambreak/DamBreak1d.h"
 #include "setups/rarerare/RareRare1d.h"
@@ -19,6 +20,7 @@
 #include "setups/subcritical1d/SubCritical1d.h"
 #include "setups/supercritical1d/SuperCritical1d.h"
 #include "setups/tsunamievent1d/TsunamiEvent1d.h"
+#include "setups/tsunamievent2d/TsunamiEvent2d.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -57,6 +59,12 @@ static void printUsage(const char* i_prog) {
             << std::endl;
   std::cerr << "        >                 [obstacleAmp=0] [obstacleCX=0] "
                "[obstacleCY=0] [obstacleW=0]"
+            << std::endl;
+  std::cerr << "        > ArtificialTsunami2d  (no params; 100m pool + "
+               "Gaussian displacement)"
+            << std::endl;
+  std::cerr << "        > TsunamiEvent2d  <bath.nc> <displ.nc>  (domain "
+               "derived from bathymetry file)"
             << std::endl;
   std::cerr << std::endl;
   std::cerr << "optional parameters:" << std::endl;
@@ -114,6 +122,7 @@ int main(int i_argc, char* i_argv[]) {
                       l_p6 = 0;
 
   tsunami_lab::setups::Setup* l_setup = nullptr;
+  tsunami_lab::setups::TsunamiEvent2d* l_tsunamiEvent2d = nullptr;
 
   auto l_parseBc = [&](const std::string& i_val,
                        tsunami_lab::patches::BoundaryCondition& o_bc) -> bool {
@@ -339,10 +348,31 @@ int main(int i_argc, char* i_argv[]) {
         }
         const char* l_csvPath = i_argv[++l_i];
         l_setup = new tsunami_lab::setups::TsunamiEvent1d(l_csvPath);
+      } else if (l_setupMode == "artificialtsunami2d") {
+        l_is2d = true;
+        if (!l_domainSizeSet)
+          l_domainSize = 200000.0f; // 200 km default
+        l_domainOrigin = -l_domainSize / 2.0f;
+        l_setup = new tsunami_lab::setups::ArtificialTsunami2d();
+      } else if (l_setupMode == "tsunamievent2d") {
+        if (l_i + 2 >= i_argc) {
+          std::cerr << "error: TsunamiEvent2d requires 2 parameters: "
+                       "<bath.nc> <displ.nc>"
+                    << std::endl;
+          printUsage(i_argv[0]);
+          return EXIT_FAILURE;
+        }
+        const char* l_bathPath = i_argv[++l_i];
+        const char* l_displPath = i_argv[++l_i];
+        l_is2d = true;
+        l_tsunamiEvent2d =
+            new tsunami_lab::setups::TsunamiEvent2d(l_bathPath, l_displPath);
+        l_setup = l_tsunamiEvent2d;
       } else {
         std::cerr << "error: unknown setup '" << l_setupMode
                   << "' -- use DamBreak, RareRare, ShockShock, SubCritical, "
-                     "SuperCritical, or TsunamiEvent"
+                     "SuperCritical, TsunamiEvent, ArtificialTsunami2d, or "
+                     "TsunamiEvent2d"
                   << std::endl;
         printUsage(i_argv[0]);
         return EXIT_FAILURE;
@@ -366,6 +396,19 @@ int main(int i_argc, char* i_argv[]) {
     std::cerr << "error: missing required argument -p" << std::endl;
     printUsage(i_argv[0]);
     return EXIT_FAILURE;
+  }
+
+  // for TsunamiEvent2d: derive domain from bathymetry file if not overridden
+  if (l_tsunamiEvent2d != nullptr && !l_domainSizeSet) {
+    l_domainOrigin = l_tsunamiEvent2d->getDomainOriginX();
+    l_domainSize = l_tsunamiEvent2d->getDomainSizeX();
+    // compute ny so cells stay square (dx = dy)
+    tsunami_lab::t_real l_dxy0 =
+        l_domainSize / static_cast<tsunami_lab::t_real>(l_nx);
+    l_ny = static_cast<tsunami_lab::t_idx>(
+        l_tsunamiEvent2d->getDomainSizeY() / l_dxy0 + 0.5f);
+    if (l_ny < 1)
+      l_ny = 1;
   }
 
   // derived quantities — computed after all args are parsed
