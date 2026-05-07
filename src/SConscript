@@ -22,6 +22,7 @@ l_sources = [ 'solvers/roe/Roe.cpp',
               'setups/supercritical1d/SuperCritical1d.cpp',
               'setups/tsunamievent1d/TsunamiEvent1d.cpp',
               'setups/artificialtsunami2d/ArtificialTsunami2d.cpp',
+              'setups/tsunamievent2d/TsunamiEvent2d.cpp',
               'io/netcdf/NetCDF.cpp',
               'io/csv/Csv.cpp',
               'io/stations/Stations.cpp' ]
@@ -46,6 +47,7 @@ l_tests = [ 'tests.cpp',
             'setups/supercritical1d/SuperCritical1d.test.cpp',
             'setups/tsunamievent1d/TsunamiEvent1d.test.cpp',
             'setups/artificialtsunami2d/ArtificialTsunami2d.test.cpp',
+            'setups/tsunamievent2d/TsunamiEvent2d.test.cpp',
             'io/stations/Stations.test.cpp',
             'io/netcdf/NetCDF.test.cpp']
 
