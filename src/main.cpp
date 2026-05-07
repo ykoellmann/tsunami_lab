@@ -12,13 +12,13 @@
 #include "io/stations/Stations.h"
 #include "patches/WavePropagation1d/WavePropagation1d.h"
 #include "patches/WavePropagation2d/WavePropagation2d.h"
+#include "setups/artificialtsunami2d/ArtificialTsunami2d.h"
 #include "setups/dambreak/CircularDamBreak2d.h"
 #include "setups/dambreak/DamBreak1d.h"
 #include "setups/rarerare/RareRare1d.h"
 #include "setups/shockshock/ShockShock1d.h"
 #include "setups/subcritical1d/SubCritical1d.h"
 #include "setups/supercritical1d/SuperCritical1d.h"
-#include "setups/artificialtsunami2d/ArtificialTsunami2d.h"
 #include "setups/tsunamievent1d/TsunamiEvent1d.h"
 #include "setups/tsunamievent2d/TsunamiEvent2d.h"
 #include <algorithm>
@@ -362,7 +362,7 @@ int main(int i_argc, char* i_argv[]) {
           printUsage(i_argv[0]);
           return EXIT_FAILURE;
         }
-        const char* l_bathPath  = i_argv[++l_i];
+        const char* l_bathPath = i_argv[++l_i];
         const char* l_displPath = i_argv[++l_i];
         l_is2d = true;
         l_tsunamiEvent2d =
@@ -371,7 +371,8 @@ int main(int i_argc, char* i_argv[]) {
       } else {
         std::cerr << "error: unknown setup '" << l_setupMode
                   << "' -- use DamBreak, RareRare, ShockShock, SubCritical, "
-                     "SuperCritical, TsunamiEvent, ArtificialTsunami2d, or TsunamiEvent2d"
+                     "SuperCritical, TsunamiEvent, ArtificialTsunami2d, or "
+                     "TsunamiEvent2d"
                   << std::endl;
         printUsage(i_argv[0]);
         return EXIT_FAILURE;
@@ -400,7 +401,7 @@ int main(int i_argc, char* i_argv[]) {
   // for TsunamiEvent2d: derive domain from bathymetry file if not overridden
   if (l_tsunamiEvent2d != nullptr && !l_domainSizeSet) {
     l_domainOrigin = l_tsunamiEvent2d->getDomainOriginX();
-    l_domainSize   = l_tsunamiEvent2d->getDomainSizeX();
+    l_domainSize = l_tsunamiEvent2d->getDomainSizeX();
     // compute ny so cells stay square (dx = dy)
     tsunami_lab::t_real l_dxy0 =
         l_domainSize / static_cast<tsunami_lab::t_real>(l_nx);
