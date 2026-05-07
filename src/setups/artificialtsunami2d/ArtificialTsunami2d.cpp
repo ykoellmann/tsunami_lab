@@ -15,23 +15,25 @@ tsunami_lab::setups::ArtificialTsunami2d::ArtificialTsunami2d(t_real i_delta)
 
 tsunami_lab::t_real
 tsunami_lab::setups::ArtificialTsunami2d::getBathymetryRaw(t_real,
-                                                            t_real) const {
+                                                           t_real) const {
   return -100.0f;
 }
 
 tsunami_lab::t_real
 tsunami_lab::setups::ArtificialTsunami2d::getDisplacement(t_real i_x,
-                                                           t_real i_y) const {
-  // Gaussian: amplitude 5 m, sigma = 25 km
-  constexpr t_real l_amp = 5.0f;
-  constexpr t_real l_sigma = 25000.0f;
-  return l_amp *
-         std::exp(-(i_x * i_x + i_y * i_y) / (2.0f * l_sigma * l_sigma));
+                                                          t_real i_y) const {
+  // Eq. 5.2.1: d(x,y) = 5 * f(x) * g(y) on [-500, 500]^2, else 0.
+  if (i_x < -500 || i_x > 500 || i_y < -500 || i_y > 500)
+    return 0;
+  constexpr t_real l_pi = static_cast<t_real>(3.14159265358979323846);
+  t_real l_f = std::sin((i_x / 500.0f + 1.0f) * l_pi);
+  t_real l_g = -(i_y / 500.0f) * (i_y / 500.0f) + 1.0f;
+  return 5.0f * l_f * l_g;
 }
 
 tsunami_lab::t_real
 tsunami_lab::setups::ArtificialTsunami2d::getHeight(t_real i_x,
-                                                     t_real i_y) const {
+                                                    t_real i_y) const {
   t_real l_bIn = getBathymetryRaw(i_x, i_y);
   if (l_bIn < 0) {
     return std::max(-l_bIn, m_delta);
@@ -51,7 +53,7 @@ tsunami_lab::setups::ArtificialTsunami2d::getMomentumY(t_real, t_real) const {
 
 tsunami_lab::t_real
 tsunami_lab::setups::ArtificialTsunami2d::getBathymetry(t_real i_x,
-                                                         t_real i_y) const {
+                                                        t_real i_y) const {
   t_real l_bIn = getBathymetryRaw(i_x, i_y);
   t_real l_d = getDisplacement(i_x, i_y);
   if (l_bIn < 0) {
