@@ -22,9 +22,9 @@ class ArtificialTsunami2d;
  * 2D artificial tsunami setup.
  *
  * Bathymetry is a flat ocean floor at -100 m everywhere.
- * The vertical displacement is a Gaussian centered at the origin with
- * amplitude 5 m and standard deviation 25 km, mimicking a submarine
- * earthquake. Initial water height and bathymetry follow Eq. 5.2.1.
+ * The vertical displacement is given by Eq. 5.2.1 on the square
+ * [-500, 500] x [-500, 500] m and zero outside. Initial water height
+ * and bathymetry follow Eq. 5.2.1.
  **/
 class tsunami_lab::setups::ArtificialTsunami2d : public Setup {
 private:
@@ -39,8 +39,8 @@ private:
   t_real getBathymetryRaw(t_real i_x, t_real i_y) const;
 
   /**
-   * Computes the vertical displacement at (x, y).
-   * Gaussian with amplitude 5 m and sigma = 25 km centred at the origin.
+   * Computes the vertical displacement at (x, y) per Eq. 5.2.1.
+   * Returns 0 outside [-500, 500] x [-500, 500] m.
    *
    * @param i_x x-coordinate [m].
    * @param i_y y-coordinate [m].
