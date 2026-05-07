@@ -18,6 +18,7 @@
 #include "setups/shockshock/ShockShock1d.h"
 #include "setups/subcritical1d/SubCritical1d.h"
 #include "setups/supercritical1d/SuperCritical1d.h"
+#include "setups/artificialtsunami2d/ArtificialTsunami2d.h"
 #include "setups/tsunamievent1d/TsunamiEvent1d.h"
 #include <algorithm>
 #include <chrono>
@@ -57,6 +58,9 @@ static void printUsage(const char* i_prog) {
             << std::endl;
   std::cerr << "        >                 [obstacleAmp=0] [obstacleCX=0] "
                "[obstacleCY=0] [obstacleW=0]"
+            << std::endl;
+  std::cerr << "        > ArtificialTsunami2d  (no params; 100m pool + "
+               "Gaussian displacement)"
             << std::endl;
   std::cerr << std::endl;
   std::cerr << "optional parameters:" << std::endl;
@@ -339,10 +343,16 @@ int main(int i_argc, char* i_argv[]) {
         }
         const char* l_csvPath = i_argv[++l_i];
         l_setup = new tsunami_lab::setups::TsunamiEvent1d(l_csvPath);
+      } else if (l_setupMode == "artificialtsunami2d") {
+        l_is2d = true;
+        if (!l_domainSizeSet)
+          l_domainSize = 200000.0f; // 200 km default
+        l_domainOrigin = -l_domainSize / 2.0f;
+        l_setup = new tsunami_lab::setups::ArtificialTsunami2d();
       } else {
         std::cerr << "error: unknown setup '" << l_setupMode
                   << "' -- use DamBreak, RareRare, ShockShock, SubCritical, "
-                     "SuperCritical, or TsunamiEvent"
+                     "SuperCritical, TsunamiEvent, or ArtificialTsunami2d"
                   << std::endl;
         printUsage(i_argv[0]);
         return EXIT_FAILURE;
