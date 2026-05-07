@@ -34,7 +34,7 @@ private:
   t_idx m_timeStep = 0;
   bool m_bWritten = false;
 
-  void checkErr(int i_err);
+  static void checkErr(int i_err);
 
 public:
   /**
@@ -74,6 +74,35 @@ public:
              t_real const* i_hv,
              t_real const* i_b,
              t_idx i_stride);
+
+  /**
+   * Reads a 2D scalar field (e.g. bathymetry, displacement) from a netCDF
+   * file following COARDS conventions. The file must contain 1D coordinate
+   * variables `x` (length nx) and `y` (length ny) and a 2D data variable
+   * with the given name. The data variable's dimension order may be either
+   * (y, x) or (x, y).
+   *
+   * Output arrays are allocated with new[] inside the function. The caller
+   * is responsible for calling delete[] on each of o_x, o_y, o_z.
+   * The output z-array is laid out row-major such that
+   *     o_z[iy * nx + ix]
+   * holds the value at (o_x[ix], o_y[iy]).
+   *
+   * @param i_path      input file path.
+   * @param i_varName   name of the 2D data variable to read.
+   * @param o_nx        number of x grid points.
+   * @param o_ny        number of y grid points.
+   * @param o_x         output x coordinates (length nx).
+   * @param o_y         output y coordinates (length ny).
+   * @param o_z         output data values, row-major (length nx * ny).
+   **/
+  static void read(const char* i_path,
+                   const char* i_varName,
+                   t_idx& o_nx,
+                   t_idx& o_ny,
+                   t_real*& o_x,
+                   t_real*& o_y,
+                   t_real*& o_z);
 };
 
 #endif // TSUNAMI_LAB_NETCDF_H
