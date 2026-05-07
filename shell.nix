@@ -19,5 +19,6 @@ pkgs.mkShell {
     netcdf
     hdf5
     zlib
+    paraview
   ];
 }
