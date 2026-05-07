@@ -8,6 +8,7 @@
  * Entry-point for simulations.
  **/
 #include "io/csv/Csv.h"
+#include "io/netcdf/NetCDF.h"
 #include "io/stations/Stations.h"
 #include "patches/WavePropagation1d/WavePropagation1d.h"
 #include "patches/WavePropagation2d/WavePropagation2d.h"
@@ -459,6 +460,16 @@ int main(int i_argc, char* i_argv[]) {
     return EXIT_FAILURE;
   }
 
+  // NetCDF writer for 2D simulations
+  tsunami_lab::io::NetCDF* l_netCdf = nullptr;
+  if (l_is2d) {
+    std::string l_ncPath = l_simDir + "/solution.nc";
+    std::cout << "  netCDF output: " << l_ncPath << std::endl;
+    l_netCdf =
+        new tsunami_lab::io::NetCDF(l_nx, l_ny, l_dxy, l_dxy, l_domainOrigin,
+                                    l_domainOrigin, l_ncPath.c_str());
+  }
+
   // stations — optional, loaded from XML config
   tsunami_lab::io::Stations* l_stations = nullptr;
   if (!l_configPath.empty()) {
@@ -499,19 +510,25 @@ int main(int i_argc, char* i_argv[]) {
       std::cout << "  simulation time / #time steps: " << l_simTime << " s / "
                 << l_timeStep << std::endl;
 
-      std::string l_path =
-          l_simDir + "/solution_" +
-          std::string(4 - std::min(4, (int)std::to_string(l_nOut).length()),
-                      '0') +
-          std::to_string(l_nOut) + ".csv";
-      std::cout << "  writing wave field to " << l_path << std::endl;
+      if (l_is2d) {
+        l_netCdf->write(l_simTime, l_waveProp->getHeight(),
+                        l_waveProp->getMomentumX(), l_waveProp->getMomentumY(),
+                        l_waveProp->getBathymetry(), l_waveProp->getStride());
+      } else {
+        std::string l_path =
+            l_simDir + "/solution_" +
+            std::string(4 - std::min(4, (int)std::to_string(l_nOut).length()),
+                        '0') +
+            std::to_string(l_nOut) + ".csv";
+        std::cout << "  writing wave field to " << l_path << std::endl;
 
-      std::ofstream l_file(l_path);
-      tsunami_lab::io::Csv::write(
-          l_dxy, l_nx, l_ny, l_is2d ? l_waveProp->getStride() : 1,
-          l_waveProp->getHeight(), l_waveProp->getBathymetry(),
-          l_waveProp->getMomentumX(), nullptr, l_simTime, l_file);
-      l_file.close();
+        std::ofstream l_file(l_path);
+        tsunami_lab::io::Csv::write(
+            l_dxy, l_nx, l_ny, 1, l_waveProp->getHeight(),
+            l_waveProp->getBathymetry(), l_waveProp->getMomentumX(), nullptr,
+            l_simTime, l_file);
+        l_file.close();
+      }
       l_nOut++;
     }
 
@@ -533,6 +550,7 @@ int main(int i_argc, char* i_argv[]) {
 
   // free memory
   std::cout << "freeing memory" << std::endl;
+  delete l_netCdf;
   delete l_stations;
   delete l_setup;
   delete l_waveProp;
