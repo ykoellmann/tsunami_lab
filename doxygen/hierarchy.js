@@ -2,6 +2,7 @@ var hierarchy =
 [
     [ "tsunami_lab::io::Csv", "classtsunami__lab_1_1io_1_1Csv.html", null ],
     [ "tsunami_lab::solvers::FWave", "classtsunami__lab_1_1solvers_1_1FWave.html", null ],
+    [ "tsunami_lab::io::NetCDF", "classtsunami__lab_1_1io_1_1NetCDF.html", null ],
     [ "tsunami_lab::solvers::Roe", "classtsunami__lab_1_1solvers_1_1Roe.html", null ],
     [ "tsunami_lab::setups::Setup", "classtsunami__lab_1_1setups_1_1Setup.html", [
       [ "tsunami_lab::setups::CircularDamBreak2d", "classtsunami__lab_1_1setups_1_1CircularDamBreak2d.html", null ],
