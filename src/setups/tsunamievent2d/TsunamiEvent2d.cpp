@@ -11,10 +11,8 @@
 #include "../../io/netcdf/NetCDF.h"
 #include <algorithm>
 
-tsunami_lab::t_idx
-tsunami_lab::setups::TsunamiEvent2d::closestIdx(t_real const* i_arr,
-                                                 t_idx i_n,
-                                                 t_real i_val) {
+tsunami_lab::t_idx tsunami_lab::setups::TsunamiEvent2d::closestIdx(
+    t_real const* i_arr, t_idx i_n, t_real i_val) {
   if (i_val <= i_arr[0])
     return 0;
   if (i_val >= i_arr[i_n - 1])
@@ -33,10 +31,10 @@ tsunami_lab::setups::TsunamiEvent2d::closestIdx(t_real const* i_arr,
 }
 
 tsunami_lab::setups::TsunamiEvent2d::TsunamiEvent2d(const char* i_bathPath,
-                                                     const char* i_displPath,
-                                                     const char* i_bathVar,
-                                                     const char* i_displVar,
-                                                     t_real i_delta)
+                                                    const char* i_displPath,
+                                                    const char* i_bathVar,
+                                                    const char* i_displVar,
+                                                    t_real i_delta)
     : m_delta(i_delta) {
   io::NetCDF::read(i_bathPath, i_bathVar, m_nxBath, m_nyBath, m_xBath, m_yBath,
                    m_bath);
@@ -55,7 +53,7 @@ tsunami_lab::setups::TsunamiEvent2d::~TsunamiEvent2d() {
 
 tsunami_lab::t_real
 tsunami_lab::setups::TsunamiEvent2d::getBathymetryRaw(t_real i_x,
-                                                       t_real i_y) const {
+                                                      t_real i_y) const {
   t_idx l_ix = closestIdx(m_xBath, m_nxBath, i_x);
   t_idx l_iy = closestIdx(m_yBath, m_nyBath, i_y);
   return m_bath[l_iy * m_nxBath + l_ix];
@@ -63,10 +61,10 @@ tsunami_lab::setups::TsunamiEvent2d::getBathymetryRaw(t_real i_x,
 
 tsunami_lab::t_real
 tsunami_lab::setups::TsunamiEvent2d::getDisplacement(t_real i_x,
-                                                      t_real i_y) const {
+                                                     t_real i_y) const {
   // zero outside the displacement grid extent
-  if (i_x < m_xDispl[0] || i_x > m_xDispl[m_nxDispl - 1] ||
-      i_y < m_yDispl[0] || i_y > m_yDispl[m_nyDispl - 1])
+  if (i_x < m_xDispl[0] || i_x > m_xDispl[m_nxDispl - 1] || i_y < m_yDispl[0] ||
+      i_y > m_yDispl[m_nyDispl - 1])
     return 0;
 
   t_idx l_ix = closestIdx(m_xDispl, m_nxDispl, i_x);
@@ -94,7 +92,7 @@ tsunami_lab::setups::TsunamiEvent2d::getMomentumY(t_real, t_real) const {
 
 tsunami_lab::t_real
 tsunami_lab::setups::TsunamiEvent2d::getBathymetry(t_real i_x,
-                                                    t_real i_y) const {
+                                                   t_real i_y) const {
   t_real l_bIn = getBathymetryRaw(i_x, i_y);
   t_real l_d = getDisplacement(i_x, i_y);
   if (l_bIn < 0)
