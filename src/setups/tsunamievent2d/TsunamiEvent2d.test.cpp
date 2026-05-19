@@ -162,10 +162,14 @@ TEST_CASE("TsunamiEvent2d: domain extent from bathymetry grid",
 
   tsunami_lab::setups::TsunamiEvent2d l_setup(k_bathPath, k_displPath);
 
-  REQUIRE(l_setup.getDomainOriginX() == Approx(0.f));
-  REQUIRE(l_setup.getDomainOriginY() == Approx(0.f));
-  REQUIRE(l_setup.getDomainSizeX() == Approx(200.f));
-  REQUIRE(l_setup.getDomainSizeY() == Approx(50.f));
+  // bathymetry grid is cell centers at x ∈ {0,100,200}, y ∈ {0,50}
+  //   → dx_in = 100, dy_in = 50, full domain
+  //     x: nx_in * dx_in = 3 * 100 = 300, left edge at 0 - 50 = -50
+  //     y: ny_in * dy_in = 2 * 50  = 100, bottom edge at 0 - 25 = -25
+  REQUIRE(l_setup.getDomainOriginX() == Approx(-50.f));
+  REQUIRE(l_setup.getDomainOriginY() == Approx(-25.f));
+  REQUIRE(l_setup.getDomainSizeX() == Approx(300.f));
+  REQUIRE(l_setup.getDomainSizeY() == Approx(100.f));
 }
 
 TEST_CASE("TsunamiEvent2d: closestIdx helper", "[TsunamiEvent2d]") {

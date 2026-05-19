@@ -72,11 +72,26 @@ public:
 
   ~TsunamiEvent2d();
 
-  /** Domain extent derived from the bathymetry grid. **/
-  t_real getDomainOriginX() const { return m_xBath[0]; }
-  t_real getDomainOriginY() const { return m_yBath[0]; }
-  t_real getDomainSizeX() const { return m_xBath[m_nxBath - 1] - m_xBath[0]; }
-  t_real getDomainSizeY() const { return m_yBath[m_nyBath - 1] - m_yBath[0]; }
+  /**
+   * Domain extent derived from the bathymetry grid. Coordinates in the
+   * grid file are cell centers (COARDS convention), so the physical
+   * domain extends half a cell width beyond the first / last sample
+   * on each side.
+   **/
+  t_real getDomainOriginX() const {
+    return m_xBath[0] -
+           0.5f * (m_xBath[m_nxBath - 1] - m_xBath[0]) / (m_nxBath - 1);
+  }
+  t_real getDomainOriginY() const {
+    return m_yBath[0] -
+           0.5f * (m_yBath[m_nyBath - 1] - m_yBath[0]) / (m_nyBath - 1);
+  }
+  t_real getDomainSizeX() const {
+    return m_nxBath * (m_xBath[m_nxBath - 1] - m_xBath[0]) / (m_nxBath - 1);
+  }
+  t_real getDomainSizeY() const {
+    return m_nyBath * (m_yBath[m_nyBath - 1] - m_yBath[0]) / (m_nyBath - 1);
+  }
 
   /**
    * Water height at (i_x, i_y) from Eq. 5.2.1.

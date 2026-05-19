@@ -44,11 +44,11 @@ TEST_CASE("TsunamiEvent2d matches ArtificialTsunami2d on linked input data",
   REQUIRE(l_fileSetup.getMomentumY(0.f, 0.f) == Approx(0.f));
 
   // Domain reported by the file-based setup must match the bathymetry file:
-  // 1000 cells x 10 m spacing centered on the origin, cell centers at +/- 4995.
-  REQUIRE(l_fileSetup.getDomainOriginX() == Approx(-4995.f));
-  REQUIRE(l_fileSetup.getDomainOriginY() == Approx(-4995.f));
-  REQUIRE(l_fileSetup.getDomainSizeX() == Approx(9990.f));
-  REQUIRE(l_fileSetup.getDomainSizeY() == Approx(9990.f));
+  // 1000 cells x 10 m spacing centered on the origin, full extent [-5000, 5000].
+  REQUIRE(l_fileSetup.getDomainOriginX() == Approx(-5000.f));
+  REQUIRE(l_fileSetup.getDomainOriginY() == Approx(-5000.f));
+  REQUIRE(l_fileSetup.getDomainSizeX() == Approx(10000.f));
+  REQUIRE(l_fileSetup.getDomainSizeY() == Approx(10000.f));
 
   // ---- inside the displacement square: sample at the cell centers
   // of the 100x100 displacement grid (x, y in {-495, -485, ..., 495}).
