@@ -49,7 +49,7 @@ var NAVTREE =
 
 var NAVTREEINDEX =
 [
-"CircularDamBreak2d_8h_source.html"
+"ArtificialTsunami2d_8h_source.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

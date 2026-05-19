@@ -1,0 +1,270 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5. Large Data Input and Output &mdash; Tsunami Lab  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/full_width.css?v=8223e249" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="4. Two-Dimensional Solver" href="04_two_dimensional.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Tsunami Lab
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Project Phases:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="01_riemann_solver.html">1. Riemann Solver</a></li>
+<li class="toctree-l1"><a class="reference internal" href="02_finite_volume.html">2. Finite Volume Discretization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="03_Bathymetry_%26_Boundary_Conditions.html">3. Bathymetry &amp; Boundary Conditions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="04_two_dimensional.html">4. Two-Dimensional Solver</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">5. Large Data Input and Output</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#implementation">Implementation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#build-system-5-1-1">Build System (5.1.1)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#netcdf-writer-5-1-2">netCDF Writer (5.1.2)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#netcdf-reader-5-2">netCDF Reader (5.2)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#two-dimensional-tsunami-setup-5-2">Two-Dimensional Tsunami Setup (5.2)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#unit-tests">Unit Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#results-visualizations">Results &amp; Visualizations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#tsunami-in-a-swimming-pool">Tsunami in a Swimming Pool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cross-check-against-the-analytic-setup">Cross-Check Against the Analytic Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#real-bathymetry-tohoku-region">Real Bathymetry: Tōhoku Region</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#individual-contributions">Individual Contributions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Tsunami Lab</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">5. Large Data Input and Output</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/chapters/05_large_data_io.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="large-data-input-and-output">
+<h1>5. Large Data Input and Output<a class="headerlink" href="#large-data-input-and-output" title="Link to this heading"></a></h1>
+<section id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Link to this heading"></a></h2>
+<section id="build-system-5-1-1">
+<h3>Build System (5.1.1)<a class="headerlink" href="#build-system-5-1-1" title="Link to this heading"></a></h3>
+<p>netCDF and its dependencies (<code class="docutils literal notranslate"><span class="pre">zlib</span></code>, <code class="docutils literal notranslate"><span class="pre">HDF5</span></code>) are provided via the Nix
+shell in <code class="docutils literal notranslate"><span class="pre">shell.nix</span></code>.  <code class="docutils literal notranslate"><span class="pre">SConstruct</span></code> discovers the installation by
+querying <code class="docutils literal notranslate"><span class="pre">nc-config</span> <span class="pre">--prefix</span></code> at build time and links against <code class="docutils literal notranslate"><span class="pre">-lnetcdf</span></code>.</p>
+</section>
+<section id="netcdf-writer-5-1-2">
+<h3>netCDF Writer (5.1.2)<a class="headerlink" href="#netcdf-writer-5-1-2" title="Link to this heading"></a></h3>
+<p>The class <code class="docutils literal notranslate"><span class="pre">io::NetCDF</span></code> (<code class="docutils literal notranslate"><span class="pre">src/io/netcdf/</span></code>) writes simulation snapshots to a
+single COARDS-compliant file.  The dimensions <code class="docutils literal notranslate"><span class="pre">time</span></code> (<code class="docutils literal notranslate"><span class="pre">NC_UNLIMITED</span></code>),
+<code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> carry standard attributes; the time variable uses
+<code class="docutils literal notranslate"><span class="pre">units</span> <span class="pre">=</span> <span class="pre">&quot;seconds</span> <span class="pre">since</span> <span class="pre">earthquake</span> <span class="pre">event&quot;</span></code> to trigger ParaView’s time
+slider.  The data variables <code class="docutils literal notranslate"><span class="pre">h</span></code>, <code class="docutils literal notranslate"><span class="pre">hu</span></code>, <code class="docutils literal notranslate"><span class="pre">hv</span></code> are 3-D
+<code class="docutils literal notranslate"><span class="pre">(time,</span> <span class="pre">x,</span> <span class="pre">y)</span></code>; the bathymetry <code class="docutils literal notranslate"><span class="pre">b</span></code> is a static 2-D variable written only
+once on the first call to <code class="docutils literal notranslate"><span class="pre">write</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">write</span></code> copies only the <strong>interior</strong> cells into a contiguous buffer using
+the patch’s ghost-cell stride and appends one slice along the unlimited time
+dimension per call.</p>
+</section>
+<section id="netcdf-reader-5-2">
+<h3>netCDF Reader (5.2)<a class="headerlink" href="#netcdf-reader-5-2" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">NetCDF::read</span></code> parses a COARDS-style 2-D scalar field. It supports both
+the canonical <code class="docutils literal notranslate"><span class="pre">(y,</span> <span class="pre">x)</span></code> and the transposed <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y)</span></code> dimension order and
+emits the output in row-major <span class="math notranslate nohighlight">\(o\_z[i_y \cdot n_x + i_x]\)</span> layout,
+transposing on the fly if needed.</p>
+</section>
+<section id="two-dimensional-tsunami-setup-5-2">
+<h3>Two-Dimensional Tsunami Setup (5.2)<a class="headerlink" href="#two-dimensional-tsunami-setup-5-2" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">setups::TsunamiEvent2d</span></code> (<code class="docutils literal notranslate"><span class="pre">src/setups/tsunamievent2d/</span></code>) consumes two
+netCDF files (bathymetry, displacement) and implements the initial conditions
+from the assignment:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{split}
+h  &amp;= \begin{cases}
+        \max(-b_\text{in},\, \delta), &amp; b_\text{in} &lt; 0 \\
+        0, &amp; \text{else}
+      \end{cases}\\
+hu &amp;= 0, \quad hv = 0\\
+b  &amp;= \begin{cases}
+        \min(b_\text{in},\, -\delta) + d, &amp; b_\text{in} &lt; 0 \\
+        \max(b_\text{in},\,  \delta) + d, &amp; \text{else}
+      \end{cases}
+\end{split}\end{split}\]</div>
+<p>with <span class="math notranslate nohighlight">\(\delta = 20\,\text{m}\)</span>.</p>
+<p>Queries between input samples use a binary-search <strong>nearest-neighbour</strong>
+lookup (<code class="docutils literal notranslate"><span class="pre">closestIdx</span></code>).  <code class="docutils literal notranslate"><span class="pre">getDisplacement</span></code> returns <span class="math notranslate nohighlight">\(d = 0\)</span> outside
+the displacement file’s extent.  The domain getters return the left/bottom
+edge <span class="math notranslate nohighlight">\(x_\text{file}[0] - \tfrac{1}{2}\Delta x\)</span> and the full extent
+<span class="math notranslate nohighlight">\(n \cdot \Delta x\)</span>, since the file coordinates are cell centres.</p>
+<p>The CLI accepts <code class="docutils literal notranslate"><span class="pre">-p</span> <span class="pre">TsunamiEvent2d</span> <span class="pre">&lt;bath.nc&gt;</span> <span class="pre">&lt;displ.nc&gt;</span></code>.  When <code class="docutils literal notranslate"><span class="pre">-d</span></code> is
+omitted, the domain is taken from the bathymetry file and <code class="docutils literal notranslate"><span class="pre">ny</span></code> is chosen so
+that cells stay square.  The sampling loop queries the setup at cell centres,
+matching the coordinates written by <code class="docutils literal notranslate"><span class="pre">io::NetCDF</span></code>.</p>
+</section>
+</section>
+<section id="unit-tests">
+<h2>Unit Tests<a class="headerlink" href="#unit-tests" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">NetCDF</span></code> (<code class="docutils literal notranslate"><span class="pre">src/io/netcdf/NetCDF.test.cpp</span></code>):</p>
+<ul class="simple">
+<li><p>round-trip write of a <span class="math notranslate nohighlight">\(4 \times 3\)</span> patch with ghost-cell stride and
+two time steps, verified through the raw netCDF C API,</p></li>
+<li><p>read of a synthetic COARDS file with <code class="docutils literal notranslate"><span class="pre">(y,</span> <span class="pre">x)</span></code> dimension order,</p></li>
+<li><p>read of the same file with transposed <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y)</span></code> order — the reader
+must produce identical row-major output.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">TsunamiEvent2d</span></code> (<code class="docutils literal notranslate"><span class="pre">src/setups/tsunamievent2d/TsunamiEvent2d.test.cpp</span></code>):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">closestIdx</span></code> returns the correct index for exact, equidistant, and
+out-of-range queries,</p></li>
+<li><p>nearest-neighbour bathymetry lookup at exact and intermediate grid points,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">getDisplacement</span></code> is <span class="math notranslate nohighlight">\(0\)</span> outside the displacement grid,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">getHeight</span></code> / <code class="docutils literal notranslate"><span class="pre">getBathymetry</span></code> reproduce Eq. 5.2.1 for under-water and
+above-water cells, with and without displacement,</p></li>
+<li><p>domain getters return the full <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">\cdot</span> <span class="pre">\Delta</span> <span class="pre">x</span></code> extent.</p></li>
+</ul>
+<p>Cross-check (<code class="docutils literal notranslate"><span class="pre">TsunamiEvent2dCompare.test.cpp</span></code>): the file-based setup must
+match the analytic <code class="docutils literal notranslate"><span class="pre">ArtificialTsunami2d</span></code> to <span class="math notranslate nohighlight">\(10^{-4}\,\text{m}\)</span> at the
+displacement-grid cell centres and outside the displacement square.  The test
+is skipped when the input data is not present.</p>
+<p>The full suite is <strong>48 test cases / 52 967 assertions</strong>.</p>
+</section>
+<section id="results-visualizations">
+<h2>Results &amp; Visualizations<a class="headerlink" href="#results-visualizations" title="Link to this heading"></a></h2>
+<section id="tsunami-in-a-swimming-pool">
+<h3>Tsunami in a Swimming Pool<a class="headerlink" href="#tsunami-in-a-swimming-pool" title="Link to this heading"></a></h3>
+<p>Run the artificial-tsunami input
+(<span class="math notranslate nohighlight">\(10 \times 10\,\text{km}\)</span> pool at <span class="math notranslate nohighlight">\(-100\,\text{m}\)</span> with a
+<span class="math notranslate nohighlight">\(1 \times 1\,\text{km}\)</span> displacement square):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./build/tsunami_lab<span class="w"> </span>-n<span class="w"> </span><span class="m">500</span><span class="w"> </span>-t<span class="w"> </span><span class="m">1000</span><span class="w"> </span>-p<span class="w"> </span>TsunamiEvent2d<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>ressources/artificial_tsunami_2d/artificialtsunami_bathymetry_1000.nc<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>ressources/artificial_tsunami_2d/artificialtsunami_displ_1000.nc
+</pre></div>
+</div>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="../../simulations/visualizations/large_data_io/swimming_pool.gif"><img alt="../../simulations/visualizations/large_data_io/swimming_pool.gif" src="../../simulations/visualizations/large_data_io/swimming_pool.gif" style="width: 70%;" />
+</a>
+<figcaption>
+<p><span class="caption-text"><em>(Placeholder)</em> Water surface <span class="math notranslate nohighlight">\(\eta = h + b\)</span> for the swimming-pool
+tsunami.  The wave radiates outward from the displacement square.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="cross-check-against-the-analytic-setup">
+<h3>Cross-Check Against the Analytic Setup<a class="headerlink" href="#cross-check-against-the-analytic-setup" title="Link to this heading"></a></h3>
+<p>Running the same scenario with the analytic <code class="docutils literal notranslate"><span class="pre">ArtificialTsunami2d</span></code> and the
+file-based <code class="docutils literal notranslate"><span class="pre">TsunamiEvent2d</span></code> produces visually indistinguishable results.</p>
+<figure class="align-center" id="id2">
+<a class="reference internal image-reference" href="../../simulations/visualizations/large_data_io/compare_artificial_vs_file.png"><img alt="../../simulations/visualizations/large_data_io/compare_artificial_vs_file.png" src="../../simulations/visualizations/large_data_io/compare_artificial_vs_file.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text"><em>(Placeholder)</em> Side-by-side snapshot at <span class="math notranslate nohighlight">\(t \approx 200\,\text{s}\)</span> of
+analytic (left) and netCDF-driven (right) setup.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="real-bathymetry-tohoku-region">
+<h3>Real Bathymetry: Tōhoku Region<a class="headerlink" href="#real-bathymetry-tohoku-region" title="Link to this heading"></a></h3>
+<figure class="align-center" id="id3">
+<a class="reference internal image-reference" href="../../simulations/visualizations/large_data_io/tohoku_2d_animation.gif"><img alt="../../simulations/visualizations/large_data_io/tohoku_2d_animation.gif" src="../../simulations/visualizations/large_data_io/tohoku_2d_animation.gif" style="width: 80%;" />
+</a>
+<figcaption>
+<p><span class="caption-text"><em>(Placeholder)</em> Tōhoku 2D tsunami on the cut GEBCO bathymetry with the
+UCSB displacement.</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+</section>
+<section id="individual-contributions">
+<h2>Individual Contributions<a class="headerlink" href="#individual-contributions" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Yannik Köllmann:</strong></p></li>
+<li><p><strong>Jan Vogt:</strong></p></li>
+<li><p><strong>Mika Brückner:</strong> Integration of netCDF and dependent libraries into the build system.</p></li>
+</ul>
+<p>Implementation of the netCDF writer including unit tests.
+Writing this report.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="04_two_dimensional.html" class="btn btn-neutral float-left" title="4. Two-Dimensional Solver" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Yannik, Jan, Mika.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

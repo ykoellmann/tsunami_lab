@@ -3,7 +3,7 @@ var annotated_dup =
     [ "tsunami_lab", "namespacetsunami__lab.html", [
       [ "io", null, [
         [ "Csv", "classtsunami__lab_1_1io_1_1Csv.html", null ],
-        [ "NetCDF", "classtsunami__lab_1_1io_1_1NetCDF.html", null ],
+        [ "NetCDF", "classtsunami__lab_1_1io_1_1NetCDF.html", "classtsunami__lab_1_1io_1_1NetCDF" ],
         [ "Stations", "classtsunami__lab_1_1io_1_1Stations.html", "classtsunami__lab_1_1io_1_1Stations" ]
       ] ],
       [ "patches", null, [
@@ -12,6 +12,7 @@ var annotated_dup =
         [ "WavePropagation2d", "classtsunami__lab_1_1patches_1_1WavePropagation2d.html", "classtsunami__lab_1_1patches_1_1WavePropagation2d" ]
       ] ],
       [ "setups", null, [
+        [ "ArtificialTsunami2d", "classtsunami__lab_1_1setups_1_1ArtificialTsunami2d.html", "classtsunami__lab_1_1setups_1_1ArtificialTsunami2d" ],
         [ "CircularDamBreak2d", "classtsunami__lab_1_1setups_1_1CircularDamBreak2d.html", "classtsunami__lab_1_1setups_1_1CircularDamBreak2d" ],
         [ "DamBreak1d", "classtsunami__lab_1_1setups_1_1DamBreak1d.html", "classtsunami__lab_1_1setups_1_1DamBreak1d" ],
         [ "RareRare1d", "classtsunami__lab_1_1setups_1_1RareRare1d.html", "classtsunami__lab_1_1setups_1_1RareRare1d" ],
@@ -19,7 +20,8 @@ var annotated_dup =
         [ "ShockShock1d", "classtsunami__lab_1_1setups_1_1ShockShock1d.html", "classtsunami__lab_1_1setups_1_1ShockShock1d" ],
         [ "SubCritical1d", "classtsunami__lab_1_1setups_1_1SubCritical1d.html", "classtsunami__lab_1_1setups_1_1SubCritical1d" ],
         [ "SuperCritical1d", "classtsunami__lab_1_1setups_1_1SuperCritical1d.html", "classtsunami__lab_1_1setups_1_1SuperCritical1d" ],
-        [ "TsunamiEvent1d", "classtsunami__lab_1_1setups_1_1TsunamiEvent1d.html", "classtsunami__lab_1_1setups_1_1TsunamiEvent1d" ]
+        [ "TsunamiEvent1d", "classtsunami__lab_1_1setups_1_1TsunamiEvent1d.html", "classtsunami__lab_1_1setups_1_1TsunamiEvent1d" ],
+        [ "TsunamiEvent2d", "classtsunami__lab_1_1setups_1_1TsunamiEvent2d.html", "classtsunami__lab_1_1setups_1_1TsunamiEvent2d" ]
       ] ],
       [ "solvers", null, [
         [ "FWave", "classtsunami__lab_1_1solvers_1_1FWave.html", null ],
