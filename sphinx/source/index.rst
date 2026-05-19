@@ -15,7 +15,7 @@ Documentation and reports for the Tsunami Lab at Friedrich Schiller University J
    chapters/02_finite_volume
    chapters/03_Bathymetry_&_Boundary_Conditions.rst
    chapters/04_two_dimensional
-   chapters/05_data_io
+   chapters/05_large_data_io
    chapters/06_tsunami_simulations
    chapters/07_checkpointing
    chapters/08_optimization
