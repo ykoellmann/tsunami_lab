@@ -44,7 +44,8 @@ TEST_CASE("TsunamiEvent2d matches ArtificialTsunami2d on linked input data",
   REQUIRE(l_fileSetup.getMomentumY(0.f, 0.f) == Approx(0.f));
 
   // Domain reported by the file-based setup must match the bathymetry file:
-  // 1000 cells x 10 m spacing centered on the origin, full extent [-5000, 5000].
+  // 1000 cells x 10 m spacing centered on the origin, full extent [-5000,
+  // 5000].
   REQUIRE(l_fileSetup.getDomainOriginX() == Approx(-5000.f));
   REQUIRE(l_fileSetup.getDomainOriginY() == Approx(-5000.f));
   REQUIRE(l_fileSetup.getDomainSizeX() == Approx(10000.f));
