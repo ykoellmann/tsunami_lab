@@ -24,9 +24,10 @@ jobs:
       - name: Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install scons
-          sudo apt-get install valgrind
-          sudo apt-get install cppcheck
+          sudo apt-get install -y scons
+          sudo apt-get install -y valgrind
+          sudo apt-get install -y cppcheck
+          sudo apt-get install -y libnetcdf-dev netcdf-bin
           git submodule init
           git submodule update
 
