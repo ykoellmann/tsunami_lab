@@ -106,7 +106,8 @@ int main(int i_argc, char* i_argv[]) {
   bool l_is2d = false;
   tsunami_lab::t_real l_domainSize = 10.0;
   bool l_domainSizeSet = false;
-  tsunami_lab::t_real l_domainOrigin = 0.0; // left/bottom boundary coordinate
+  tsunami_lab::t_real l_domainOrigin = 0.0;  // left boundary coordinate
+  tsunami_lab::t_real l_domainOriginY = 0.0; // bottom boundary coordinate
   tsunami_lab::t_real l_endTime = 1.25;
   std::string l_solverMode = "fwave";
   std::string l_setupMode;
@@ -253,7 +254,8 @@ int main(int i_argc, char* i_argv[]) {
         if (!l_domainSizeSet) {
           l_domainSize = 100.0f;
         }
-        l_domainOrigin = -50.0f;
+        l_domainOrigin = -0.5f * l_domainSize;
+        l_domainOriginY = l_domainOrigin;
         tsunami_lab::t_real l_oAmp = 0.0f, l_oCx = 0.0f, l_oCy = 0.0f,
                             l_oW = 0.0f;
         if (l_i + 1 < i_argc && i_argv[l_i + 1][0] != '-')
@@ -353,6 +355,7 @@ int main(int i_argc, char* i_argv[]) {
         if (!l_domainSizeSet)
           l_domainSize = 200000.0f; // 200 km default
         l_domainOrigin = -l_domainSize / 2.0f;
+        l_domainOriginY = l_domainOrigin;
         l_setup = new tsunami_lab::setups::ArtificialTsunami2d();
       } else if (l_setupMode == "tsunamievent2d") {
         if (l_i + 2 >= i_argc) {
@@ -401,6 +404,7 @@ int main(int i_argc, char* i_argv[]) {
   // for TsunamiEvent2d: derive domain from bathymetry file if not overridden
   if (l_tsunamiEvent2d != nullptr && !l_domainSizeSet) {
     l_domainOrigin = l_tsunamiEvent2d->getDomainOriginX();
+    l_domainOriginY = l_tsunamiEvent2d->getDomainOriginY();
     l_domainSize = l_tsunamiEvent2d->getDomainSizeX();
     // compute ny so cells stay square (dx = dy)
     tsunami_lab::t_real l_dxy0 =
@@ -448,12 +452,12 @@ int main(int i_argc, char* i_argv[]) {
   tsunami_lab::t_real l_hMax =
       std::numeric_limits<tsunami_lab::t_real>::lowest();
 
-  // set up solver
+  // set up solver — sample setup at cell centers
   for (tsunami_lab::t_idx l_cy = 0; l_cy < l_ny; l_cy++) {
-    tsunami_lab::t_real l_y = l_domainOrigin + l_cy * l_dxy;
+    tsunami_lab::t_real l_y = l_domainOriginY + (l_cy + 0.5f) * l_dxy;
 
     for (tsunami_lab::t_idx l_cx = 0; l_cx < l_nx; l_cx++) {
-      tsunami_lab::t_real l_x = l_domainOrigin + l_cx * l_dxy;
+      tsunami_lab::t_real l_x = l_domainOrigin + (l_cx + 0.5f) * l_dxy;
 
       // get initial values of the setup
       tsunami_lab::t_real l_h = l_setup->getHeight(l_x, l_y);
@@ -510,7 +514,7 @@ int main(int i_argc, char* i_argv[]) {
     std::cout << "  netCDF output: " << l_ncPath << std::endl;
     l_netCdf =
         new tsunami_lab::io::NetCDF(l_nx, l_ny, l_dxy, l_dxy, l_domainOrigin,
-                                    l_domainOrigin, l_ncPath.c_str());
+                                    l_domainOriginY, l_ncPath.c_str());
   }
 
   // stations — optional, loaded from XML config
@@ -527,7 +531,7 @@ int main(int i_argc, char* i_argv[]) {
         std::string l_stationsDir = l_simDir + "/stations";
         l_stations =
             new tsunami_lab::io::Stations(tsunami_lab::io::Stations::fromXml(
-                l_stationsNode, l_domainOrigin, l_domainOrigin, l_dxy, l_dxy,
+                l_stationsNode, l_domainOrigin, l_domainOriginY, l_dxy, l_dxy,
                 l_stationsDir));
         std::cout << "  stations config loaded from: " << l_configPath
                   << std::endl;
