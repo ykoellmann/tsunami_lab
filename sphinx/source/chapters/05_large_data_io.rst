@@ -112,12 +112,11 @@ Run the artificial-tsunami input
        ressources/artificial_tsunami_2d/artificialtsunami_bathymetry_1000.nc \
        ressources/artificial_tsunami_2d/artificialtsunami_displ_1000.nc
 
-.. figure:: ../../../simulations/visualizations/large_data_io/swimming_pool.gif
+.. figure:: ../../../simulations/visualizations/large_data_io/swimming_pool.webp
    :align: center
    :width: 70%
 
-   *(Placeholder)* Water surface :math:`\eta = h + b` for the swimming-pool
-   tsunami.  The wave radiates outward from the displacement square.
+   Swimming-pool tsunami.  The wave radiates outward from the displacement square.
 
 Cross-Check Against the Analytic Setup
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -125,22 +124,11 @@ Cross-Check Against the Analytic Setup
 Running the same scenario with the analytic ``ArtificialTsunami2d`` and the
 file-based ``TsunamiEvent2d`` produces visually indistinguishable results.
 
-.. figure:: ../../../simulations/visualizations/large_data_io/compare_artificial_vs_file.png
+.. figure:: ../../../simulations/visualizations/large_data_io/compare_artificial_vs_file.webp
    :align: center
    :width: 100%
 
-   *(Placeholder)* Side-by-side snapshot at :math:`t \approx 200\,\text{s}` of
-   analytic (left) and netCDF-driven (right) setup.
-
-Real Bathymetry: Tōhoku Region
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. figure:: ../../../simulations/visualizations/large_data_io/tohoku_2d_animation.gif
-   :align: center
-   :width: 80%
-
-   *(Placeholder)* Tōhoku 2D tsunami on the cut GEBCO bathymetry with the
-   UCSB displacement.
+   Side-by-side of analytic (left) and netCDF-driven (right) setup.
 
 Individual Contributions
 -------------------------
@@ -154,6 +142,4 @@ Individual Contributions
   on :math:`[-500, 500]^2`) and added the cross-check test that loads the linked
   artificial-tsunami nc files through ``TsunamiEvent2d`` and compares the result
   cell-by-cell against the analytic setup.
-- **Mika Brückner:** Integration of netCDF and dependent libraries into the build system.
-Implementation of the netCDF writer including unit tests.
-Writing this report.
+- **Mika Brückner:** Integration of netCDF and dependent libraries into the build system. Implementation of the netCDF writer including unit tests. Visualization of the swimming-pool tsunami and the side-by-side comparison of the analytic and file-based setups. Writing this report.
