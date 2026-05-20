@@ -147,7 +147,13 @@ Individual Contributions
 
 - **Yannik Köllmann:** Implementation of ``ArtificialTsunami2d`` and ``TsunamiEvent2d``
   including unit tests and command-line integration.
-- **Jan Vogt:**
+- **Jan Vogt:** Implementation of the netCDF reader ``NetCDF::read`` (COARDS-conformant,
+  auto-handling of ``(y, x)`` and ``(x, y)`` dimension orders) including unit tests, plus
+  fixes for off-by-one attribute lengths in the writer. Fixed a bug in
+  ``ArtificialTsunami2d::getDisplacement`` (was a Gaussian, now implements Eq. 5.2.1
+  on :math:`[-500, 500]^2`) and added the cross-check test that loads the linked
+  artificial-tsunami nc files through ``TsunamiEvent2d`` and compares the result
+  cell-by-cell against the analytic setup.
 - **Mika Brückner:** Integration of netCDF and dependent libraries into the build system.
 Implementation of the netCDF writer including unit tests.
 Writing this report.
