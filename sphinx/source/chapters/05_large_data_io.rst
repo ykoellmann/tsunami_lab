@@ -145,7 +145,8 @@ Real Bathymetry: Tōhoku Region
 Individual Contributions
 -------------------------
 
-- **Yannik Köllmann:**
+- **Yannik Köllmann:** Implementation of ``ArtificialTsunami2d`` and ``TsunamiEvent2d``
+  including unit tests and command-line integration.
 - **Jan Vogt:**
 - **Mika Brückner:** Integration of netCDF and dependent libraries into the build system.
 Implementation of the netCDF writer including unit tests.
