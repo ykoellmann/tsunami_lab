@@ -130,7 +130,6 @@ void tsunami_lab::patches::WavePropagation2d::setGhost(
 
 void tsunami_lab::patches::WavePropagation2d::timeStep(t_real i_scaling,
                                                        std::string) {
-  t_idx l_stride = getStride();
   t_idx l_size = (m_nCells_x + 2) * (m_nCells_y + 2);
 
   t_real* l_hCur = m_h + m_step * l_size;
