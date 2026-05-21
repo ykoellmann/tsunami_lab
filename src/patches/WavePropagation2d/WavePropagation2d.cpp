@@ -32,14 +32,15 @@ tsunami_lab::patches::WavePropagation2d::~WavePropagation2d() {
 }
 
 void tsunami_lab::patches::WavePropagation2d::setGhostOutflow() {
-  t_idx l_stride = getStride(); // = m_nCells_y + 2
+  t_idx l_nY = m_nCells_y + 2;
+  t_idx l_stepSize = (m_nCells_x + 2) * l_nY;
 
-  t_real* l_h = m_h + m_step * (m_nCells_x + 2) * l_stride;
-  t_real* l_hu = m_hu + m_step * (m_nCells_x + 2) * l_stride;
-  t_real* l_hv = m_hv + m_step * (m_nCells_x + 2) * l_stride;
+  t_real* l_h = m_h + m_step * l_stepSize;
+  t_real* l_hu = m_hu + m_step * l_stepSize;
+  t_real* l_hv = m_hv + m_step * l_stepSize;
 
   // Left ghost column (x=0): copy from x=1
-  for (t_idx l_iy = 0; l_iy < l_stride; l_iy++) {
+  for (t_idx l_iy = 0; l_iy < l_nY; l_iy++) {
     t_idx l_ghost = getCoordinates(0, l_iy);
     t_idx l_inner = getCoordinates(1, l_iy);
     l_h[l_ghost] = l_h[l_inner];
@@ -48,7 +49,7 @@ void tsunami_lab::patches::WavePropagation2d::setGhostOutflow() {
   }
 
   // Right ghost column (x = m_nCells_x+1): copy from x = m_nCells_x
-  for (t_idx l_iy = 0; l_iy < l_stride; l_iy++) {
+  for (t_idx l_iy = 0; l_iy < l_nY; l_iy++) {
     t_idx l_ghost = getCoordinates(m_nCells_x + 1, l_iy);
     t_idx l_inner = getCoordinates(m_nCells_x, l_iy);
     l_h[l_ghost] = l_h[l_inner];
@@ -80,12 +81,13 @@ void tsunami_lab::patches::WavePropagation2d::setGhost(
     BoundaryCondition i_right,
     BoundaryCondition i_upper,
     BoundaryCondition i_lower) {
-  t_idx l_stride = getStride();
-  t_real* l_h = m_h + m_step * (m_nCells_x + 2) * l_stride;
-  t_real* l_hu = m_hu + m_step * (m_nCells_x + 2) * l_stride;
-  t_real* l_hv = m_hv + m_step * (m_nCells_x + 2) * l_stride;
+  t_idx l_nY = m_nCells_y + 2;
+  t_idx l_stepSize = (m_nCells_x + 2) * l_nY;
+  t_real* l_h = m_h + m_step * l_stepSize;
+  t_real* l_hu = m_hu + m_step * l_stepSize;
+  t_real* l_hv = m_hv + m_step * l_stepSize;
 
-  for (t_idx l_iy = 0; l_iy < l_stride; l_iy++) {
+  for (t_idx l_iy = 0; l_iy < l_nY; l_iy++) {
     t_idx l_ghost = getCoordinates(0, l_iy);
     t_idx l_inner = getCoordinates(1, l_iy);
     l_h[l_ghost] = l_h[l_inner];
@@ -95,7 +97,7 @@ void tsunami_lab::patches::WavePropagation2d::setGhost(
     m_b[l_ghost] = m_b[l_inner];
   }
 
-  for (t_idx l_iy = 0; l_iy < l_stride; l_iy++) {
+  for (t_idx l_iy = 0; l_iy < l_nY; l_iy++) {
     t_idx l_ghost = getCoordinates(m_nCells_x + 1, l_iy);
     t_idx l_inner = getCoordinates(m_nCells_x, l_iy);
     l_h[l_ghost] = l_h[l_inner];
@@ -129,7 +131,7 @@ void tsunami_lab::patches::WavePropagation2d::setGhost(
 void tsunami_lab::patches::WavePropagation2d::timeStep(t_real i_scaling,
                                                        std::string) {
   t_idx l_stride = getStride();
-  t_idx l_size = (m_nCells_x + 2) * l_stride;
+  t_idx l_size = (m_nCells_x + 2) * (m_nCells_y + 2);
 
   t_real* l_hCur = m_h + m_step * l_size;
   t_real* l_huCur = m_hu + m_step * l_size;
