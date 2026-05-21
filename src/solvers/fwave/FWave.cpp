@@ -106,6 +106,12 @@ void tsunami_lab::solvers::FWave::netUpdates(t_real i_hL,
                                              t_real i_bR,
                                              t_real o_netUpdateL[2],
                                              t_real o_netUpdateR[2]) {
+  if (i_hL <= 0 || i_hR <= 0) {
+    o_netUpdateL[0] = o_netUpdateL[1] = 0;
+    o_netUpdateR[0] = o_netUpdateR[1] = 0;
+    return;
+  }
+
   // compute velocities: u = hu / h
   t_real l_uL = i_huL / i_hL;
   t_real l_uR = i_huR / i_hR;

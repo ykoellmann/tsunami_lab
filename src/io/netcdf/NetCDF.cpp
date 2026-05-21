@@ -110,7 +110,7 @@ void NetCDF::write(t_real i_simTime,
   auto fillBuf = [&](t_real const* i_src) {
     for (t_idx l_ix = 0; l_ix < m_nx; l_ix++)
       for (t_idx l_iy = 0; l_iy < m_ny; l_iy++)
-        l_buf[l_ix * m_ny + l_iy] = i_src[l_ix * i_stride + l_iy];
+        l_buf[l_ix * m_ny + l_iy] = i_src[l_ix + l_iy * i_stride];
   };
 
   // time coordinate
