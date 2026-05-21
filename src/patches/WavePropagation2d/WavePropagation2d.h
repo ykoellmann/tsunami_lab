@@ -111,7 +111,7 @@ public:
    *
    * @return stride in y-direction.
    **/
-  t_idx getStride() { return m_nCells_y + 2; }
+  t_idx getStride() { return m_nCells_x + 2; }
 
   /**
    * Gets cells' water heights.
