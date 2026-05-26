@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <!-- Station near Sōma for the March 11, 2011 M 9.1 Tohoku event.
+         Domain coordinates: projection center (epicenter) at (0,0).
+         Sōma town (~128 km west, ~55 km south of the epicenter) lies on
+         land; the station is placed just offshore so the cell stays wet. -->
+    <stations output_frequency="30.0">
+        <station name="soma" x="-120000.0" y="-50000.0" />
+    </stations>
+</config>
