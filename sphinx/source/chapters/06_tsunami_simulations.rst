@@ -242,6 +242,6 @@ the measured data; the finer 500 m grid resolves a higher and earlier peak
 Individual Contributions
 -------------------------
 
-- **Yannik Köllmann:**
+- **Yannik Köllmann:** Simulation and visualization of the Chile event at 1000 m and 500 m resolution. Analysis of computational demands.
 - **Jan Vogt:**
 - **Mika Brückner:** Bug fixes. Implementation of visualization script for bathymetry data. Visualization of the bathymetry and sea floor displacement. Simulation and visualization of the Tohoku event at 1000 m and 500 m resolution. Analysis of the Sōma station data.
