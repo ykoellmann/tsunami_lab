@@ -86,6 +86,11 @@ visualized below.
 .. figure:: ../../../simulations/visualizations/chile/chile_gebco20_usgs_250m_displ_fixed_3d.png
    :name: fig:chile_displ
 
+The event was simulated at 1000 m and 500 m resolution with outflow boundaries.
+The visualizations show the free surface :math:`\eta = h + b`.
+
+[PLACEHOLDER] Visualizations of the 1000 m and 500 m runs.
+
 The computational demands at the studied resolutions (domain
 :math:`3500\,\text{km} \times 2950\,\text{km}`, :math:`h_{max} \approx
 9600\,\text{m}`, end time :math:`20{,}000\,\text{s}`):
@@ -239,4 +244,4 @@ Individual Contributions
 
 - **Yannik Köllmann:**
 - **Jan Vogt:**
-- **Mika Brückner:**
+- **Mika Brückner:** Bug fixes. Implementation of visualization script for bathymetry data. Visualization of the bathymetry and sea floor displacement. Simulation and visualization of the Tohoku event at 1000 m and 500 m resolution. Analysis of the Sōma station data.
