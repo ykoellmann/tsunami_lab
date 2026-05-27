@@ -249,5 +249,5 @@ Individual Contributions
 -------------------------
 
 - **Yannik Köllmann:** Simulation and visualization of the Chile event at 1000 m and 500 m resolution. Analysis of computational demands.
-- **Jan Vogt:**
+- **Jan Vogt:** Tsunami arrival at Sōma: estimated the travel time from the epicenter to Sōma with the :math:`\sqrt{gh}` shallow-water rule of thumb along the bathymetry profile (≈ 46 min) and compared this estimate against the simulated station arrival and the historically measured wave.
 - **Mika Brückner:** Bug fixes. Implementation of visualization script for bathymetry data. Visualization of the bathymetry and sea floor displacement. Simulation and visualization of the Tohoku event at 1000 m and 500 m resolution. Analysis of the Sōma station data.
