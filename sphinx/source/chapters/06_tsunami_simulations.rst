@@ -86,10 +86,18 @@ visualized below.
 .. figure:: ../../../simulations/visualizations/chile/chile_gebco20_usgs_250m_displ_fixed_3d.png
    :name: fig:chile_displ
 
-The event was simulated at 1000 m and 500 m resolution with outflow boundaries.
+The event was simulated at 1500 m, 1000 m and 500 m (not shown here) resolution with outflow boundaries.
 The visualizations show the free surface :math:`\eta = h + b`.
 
-[PLACEHOLDER] Visualizations of the 1000 m and 500 m runs.
+.. figure:: ../../../simulations/visualizations/chile/chile_1500.webp
+   :name: fig:chile_1500m
+
+   Chile simulation at 1500 m resolution.
+
+.. figure:: ../../../simulations/visualizations/chile/chile_1000.webp
+   :name: fig:chile_1000m
+
+   Chile simulation at 1000 m resolution.
 
 The computational demands at the studied resolutions (domain
 :math:`3500\,\text{km} \times 2950\,\text{km}`, :math:`h_{max} \approx
@@ -108,16 +116,11 @@ The computational demands at the studied resolutions (domain
      - 1.63 s
      - 12 273
      - 1.27 × 10\ :sup:`11`
-   * - 500 m
-     - 7000 × 5900 = 41.3 M
-     - 0.82 s
-     - 24 546
-     - 1.01 × 10\ :sup:`12`
-   * - 250 m
-     - 14000 × 11800 = 165.2 M
-     - 0.41 s
-     - 49 093
-     - 8.11 × 10\ :sup:`12`
+   * - 1500 m
+     - 2333 × 1967 = 4.59 M
+     - 2.44 s
+     - 8 182
+     - 3.75 × 10\ :sup:`10`
 
 .. note::
 
@@ -142,10 +145,13 @@ The right side of the plots covers the water height over time at the Sōma stati
 .. figure:: ../../../simulations/visualizations/tohoku/tohoku_1000.webp
    :name: fig:tohoku_1000m
 
+   Tohoku simulation at 1000 m resolution.
+
 
 .. figure:: ../../../simulations/visualizations/tohoku/tohoku_500.webp
    :name: fig:tohoku_500m
 
+   Tohoku simulation at 500 m resolution.
 
 **Computational demands** (domain :math:`2700\,\text{km} \times
 1500\,\text{km}`, :math:`h_{max} \approx 9611\,\text{m}`, end time
