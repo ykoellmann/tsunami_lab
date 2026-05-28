@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# Pre-commit hook: mirrors the CI pipeline (Style Check + Static Analysis + Unit Tests)
+# Skip all checks with: SKIP_HOOKS=1 git commit
+
+set -euo pipefail
+
+BOLD='\033[1m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+ok()   { echo -e "${GREEN}✓${NC} $*"; }
+warn() { echo -e "${YELLOW}⚠${NC}  $*"; }
+fail() { echo -e "${RED}✗${NC} $*"; }
+
+if [[ "${SKIP_HOOKS:-0}" == "1" ]]; then
+  warn "SKIP_HOOKS=1 — skipping all pre-commit checks"
+  exit 0
+fi
+
+ERRORS=0
+
+# --- Style Check (clang-format) ---
+if command -v clang-format &>/dev/null; then
+  echo -e "\n${BOLD}Style Check (clang-format)${NC}"
+  BAD_FILES=()
+  while IFS= read -r -d '' f; do
+    if ! clang-format --dry-run --Werror "$f" 2>/dev/null; then
+      BAD_FILES+=("$f")
+    fi
+  done < <(find src/ -name "*.cpp" -o -name "*.h" -print0)
+
+  if [[ ${#BAD_FILES[@]} -gt 0 ]]; then
+    fail "clang-format violations:"
+    for f in "${BAD_FILES[@]}"; do
+      echo "    $f"
+    done
+    echo "  Run: find src/ -name '*.cpp' -o -name '*.h' | xargs clang-format -i"
+    ERRORS=1
+  else
+    ok "clang-format"
+  fi
+else
+  warn "clang-format not found — skipping style check (install via brew: brew install clang-format)"
+fi
+
+# --- Static Analysis (cppcheck) ---
+if command -v cppcheck &>/dev/null; then
+  echo -e "\n${BOLD}Static Analysis (cppcheck)${NC}"
+  if cppcheck src/ --template=gcc --force --error-exitcode=1 2>&1; then
+    ok "cppcheck"
+  else
+    fail "cppcheck found issues"
+    ERRORS=1
+  fi
+else
+  warn "cppcheck not found — skipping static analysis (install via brew: brew install cppcheck)"
+fi
+
+# --- Unit Tests ---
+if command -v scons &>/dev/null; then
+  echo -e "\n${BOLD}Unit Tests (scons mode=debug)${NC}"
+  if scons mode=debug --quiet 2>&1 && ./build/tests 2>&1; then
+    ok "unit tests"
+  else
+    fail "unit tests failed"
+    ERRORS=1
+  fi
+else
+  warn "scons not found — skipping unit tests (install via pip: pip install scons)"
+fi
+
+echo ""
+if [[ $ERRORS -ne 0 ]]; then
+  fail "Pre-commit checks failed. Fix the issues above or run with SKIP_HOOKS=1 to bypass."
+  exit 1
+fi
+
+ok "All checks passed"
+exit 0
