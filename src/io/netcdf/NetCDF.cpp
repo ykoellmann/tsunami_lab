@@ -319,7 +319,8 @@ void NetCDF::readCheckpoint(const char* i_path,
   std::vector<float> l_buf(l_nx * l_ny);
 
   auto fetch3 = [&](int i_var, t_real*& o_dst) {
-    checkErr(nc_get_vara_float(l_ncId, i_var, l_start3, l_count3, l_buf.data()));
+    checkErr(
+        nc_get_vara_float(l_ncId, i_var, l_start3, l_count3, l_buf.data()));
     o_dst = new t_real[l_nx * l_ny];
     // stored as (x, y) -> emit row-major (iy*nx + ix) for consumer convenience
     for (size_t l_ix = 0; l_ix < l_nx; l_ix++)
@@ -337,8 +338,7 @@ void NetCDF::readCheckpoint(const char* i_path,
   o_b = new t_real[l_nx * l_ny];
   for (size_t l_ix = 0; l_ix < l_nx; l_ix++)
     for (size_t l_iy = 0; l_iy < l_ny; l_iy++)
-      o_b[l_iy * l_nx + l_ix] =
-          static_cast<t_real>(l_buf[l_ix * l_ny + l_iy]);
+      o_b[l_iy * l_nx + l_ix] = static_cast<t_real>(l_buf[l_ix * l_ny + l_iy]);
 
   checkErr(nc_close(l_ncId));
 }
