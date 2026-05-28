@@ -12,6 +12,7 @@ pkgs.mkShell {
     doxygen
     scons
     clang-tools
+    cppcheck
     bear
     gmt
     wget
@@ -21,4 +22,8 @@ pkgs.mkShell {
     zlib
     paraview
   ];
+
+  shellHook = ''
+    git config core.hooksPath .githooks
+  '';
 }
