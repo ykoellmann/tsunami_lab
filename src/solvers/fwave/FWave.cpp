@@ -106,10 +106,30 @@ void tsunami_lab::solvers::FWave::netUpdates(t_real i_hL,
                                              t_real i_bR,
                                              t_real o_netUpdateL[2],
                                              t_real o_netUpdateR[2]) {
-  if (i_hL <= 0 || i_hR <= 0) {
+  // Wet/dry handling: reflect at the wet-dry interface instead of discarding
+  // the edge. Both sides dry -> nothing to do. Otherwise the dry side is
+  // mirrored from the wet side (h, -hu, b): this turns the coast into a proper
+  // reflecting wall, and i_bL = i_bR zeroes the bed-slope source term across
+  // the steep coastal step. Together they prevent the one-sided momentum
+  // runaway that would otherwise drive the water height negative there.
+  bool l_doUpdateLeft = true;
+  bool l_doUpdateRight = true;
+
+  if (i_hL <= 0 && i_hR <= 0) {
     o_netUpdateL[0] = o_netUpdateL[1] = 0;
     o_netUpdateR[0] = o_netUpdateR[1] = 0;
     return;
+  }
+  if (i_hL <= 0) { // left side dry -> reflect to the right
+    i_hL = i_hR;
+    i_huL = -i_huR;
+    i_bL = i_bR;
+    l_doUpdateLeft = false;
+  } else if (i_hR <= 0) { // right side dry -> reflect to the left
+    i_hR = i_hL;
+    i_huR = -i_huL;
+    i_bR = i_bL;
+    l_doUpdateRight = false;
   }
 
   // compute velocities: u = hu / h
@@ -149,17 +169,18 @@ void tsunami_lab::solvers::FWave::netUpdates(t_real i_hL,
     o_netUpdateL[l_qt] = 0;
     o_netUpdateR[l_qt] = 0;
 
-    // 1st wave: Z_1 goes left if lambda_1 < 0, right otherwise
-    if (l_waveSpeedL < 0) {
+    // 1st wave: Z_1 goes left if lambda_1 < 0, right otherwise. Updates to a
+    // reflected (dry) side are skipped.
+    if (l_waveSpeedL < 0 && l_doUpdateLeft) {
       o_netUpdateL[l_qt] += l_waveL[l_qt];
-    } else {
+    } else if (l_waveSpeedL >= 0 && l_doUpdateRight) {
       o_netUpdateR[l_qt] += l_waveL[l_qt];
     }
 
-    // 2nd wave:  Z_2 goes right if lambda_2 > 0, left otherwise
-    if (l_waveSpeedR > 0) {
+    // 2nd wave:  Z_2 goes right if lambda_2 > 0, left otherwise.
+    if (l_waveSpeedR > 0 && l_doUpdateRight) {
       o_netUpdateR[l_qt] += l_waveR[l_qt];
-    } else {
+    } else if (l_waveSpeedR <= 0 && l_doUpdateLeft) {
       o_netUpdateL[l_qt] += l_waveR[l_qt];
     }
   }

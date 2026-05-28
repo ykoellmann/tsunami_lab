@@ -137,11 +137,11 @@ TEST_CASE("TsunamiEvent2d: height and bathymetry from Eq. 5.2.1",
   REQUIRE(l_setup.getHeight(100.f, 25.f) == Approx(150.f));
   REQUIRE(l_setup.getBathymetry(100.f, 25.f) == Approx(-145.f));
 
-  // --- above-water cell: b_in = 10 >= 0
-  // h = max(-10, 20) = 20  (no dry cells: land gets at least m_delta)
+  // --- above-water cell: b_in = 10 >= 0 → dry land, height is zero
+  // h = 0  (Eq. 5.2.1: no water column on land)
   // b = max(10, 20) + d   (closest displacement: x=100,y=50 is inside grid?
   // y=50>40 → outside → d=0) b = max(10,20) + 0 = 20
-  REQUIRE(l_setup.getHeight(100.f, 50.f) == Approx(20.f));
+  REQUIRE(l_setup.getHeight(100.f, 50.f) == Approx(0.f));
   REQUIRE(l_setup.getBathymetry(100.f, 50.f) == Approx(20.f));
 }
 
