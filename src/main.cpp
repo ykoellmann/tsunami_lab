@@ -597,9 +597,9 @@ int main(int i_argc, char* i_argv[]) {
     if (l_appendMode) {
       l_netCdf = new tsunami_lab::io::NetCDF(l_ncPath.c_str());
     } else {
-      l_netCdf = new tsunami_lab::io::NetCDF(l_nx, l_ny, l_dxy, l_dxy,
-                                             l_domainOrigin, l_domainOriginY,
-                                             l_ncPath.c_str());
+      l_netCdf =
+          new tsunami_lab::io::NetCDF(l_nx, l_ny, l_dxy, l_dxy, l_domainOrigin,
+                                      l_domainOriginY, l_ncPath.c_str());
       auto l_bcStr = [](tsunami_lab::patches::BoundaryCondition i_bc) {
         return i_bc == tsunami_lab::patches::BoundaryCondition::Reflecting
                    ? std::string("reflecting")
