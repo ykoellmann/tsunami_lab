@@ -75,7 +75,9 @@ tsunami_lab::setups::TsunamiEvent2d::getDisplacement(t_real i_x,
 tsunami_lab::t_real
 tsunami_lab::setups::TsunamiEvent2d::getHeight(t_real i_x, t_real i_y) const {
   t_real l_bIn = getBathymetryRaw(i_x, i_y);
-  return std::max(-l_bIn, m_delta);
+  if (l_bIn < 0)
+    return std::max(-l_bIn, m_delta);
+  return 0;
 }
 
 tsunami_lab::t_real

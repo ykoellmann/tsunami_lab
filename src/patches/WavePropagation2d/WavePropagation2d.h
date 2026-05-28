@@ -128,7 +128,8 @@ public:
    * @return momenta in x-direction.
    **/
   t_real const* getMomentumX() {
-    return m_hu + m_step * (m_nCells_x + 2) * (m_nCells_y + 2) + getStride() + 1;
+    return m_hu + m_step * (m_nCells_x + 2) * (m_nCells_y + 2) + getStride() +
+           1;
   }
 
   /**
@@ -137,7 +138,8 @@ public:
    * @return momenta in y-direction.
    **/
   t_real const* getMomentumY() {
-    return m_hv + m_step * (m_nCells_x + 2) * (m_nCells_y + 2) + getStride() + 1;
+    return m_hv + m_step * (m_nCells_x + 2) * (m_nCells_y + 2) + getStride() +
+           1;
   }
 
   /**
