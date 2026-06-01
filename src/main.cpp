@@ -13,6 +13,7 @@
 #include "patches/WavePropagation1d/WavePropagation1d.h"
 #include "patches/WavePropagation2d/WavePropagation2d.h"
 #include "setups/artificialtsunami2d/ArtificialTsunami2d.h"
+#include "setups/checkpoint/CheckPoint.h"
 #include "setups/dambreak/CircularDamBreak2d.h"
 #include "setups/dambreak/DamBreak1d.h"
 #include "setups/rarerare/RareRare1d.h"
@@ -22,14 +23,20 @@
 #include "setups/tsunamievent1d/TsunamiEvent1d.h"
 #include "setups/tsunamievent2d/TsunamiEvent2d.h"
 #include <algorithm>
-#include <chrono>
+#include <atomic>
 #include <cmath>
+#include <csignal>
 #include <cstdlib>
 #include <errno.h>
 #include <fstream>
 #include <iostream>
 #include <limits>
 #include <sys/stat.h>
+
+namespace {
+std::atomic<bool> g_interrupted{false};
+void onSigint(int) { g_interrupted.store(true); }
+} // namespace
 
 static void printUsage(const char* i_prog) {
   std::cerr << "usage: " << i_prog
@@ -82,6 +89,15 @@ static void printUsage(const char* i_prog) {
   std::cerr << "  --bc-right right boundary condition: outflow | reflecting "
                "(default: outflow)"
             << std::endl;
+  std::cerr << "  -o, --out  output directory (default: auto-derived from "
+               "setup + parameters)"
+            << std::endl;
+  std::cerr << std::endl;
+  std::cerr << "checkpointing:" << std::endl;
+  std::cerr << "  If <out>/solution.nc already contains at least one time "
+               "step, the run continues from that checkpoint and the -p "
+               "argument is ignored."
+            << std::endl;
   std::cerr << std::endl;
   std::cerr << "examples:" << std::endl;
   std::cerr << "  " << i_prog << " -n 100 -p DamBreak 10 5 5" << std::endl;
@@ -101,6 +117,11 @@ static void printUsage(const char* i_prog) {
 }
 
 int main(int i_argc, char* i_argv[]) {
+  // graceful CTRL-C handling: ask the time loop to stop so destructors run
+  // (in particular nc_close finalizes the NetCDF/HDF5 checkpoint file).
+  std::signal(SIGINT, onSigint);
+  std::signal(SIGTERM, onSigint);
+
   tsunami_lab::t_idx l_nx = 0;
   tsunami_lab::t_idx l_ny = 1;
   bool l_is2d = false;
@@ -112,6 +133,7 @@ int main(int i_argc, char* i_argv[]) {
   std::string l_solverMode = "fwave";
   std::string l_setupMode;
   std::string l_configPath;
+  std::string l_outDirOverride;
 
   // boundary conditions default to outflow on both sides
   tsunami_lab::patches::BoundaryCondition l_bcLeft =
@@ -176,6 +198,9 @@ int main(int i_argc, char* i_argv[]) {
 
     } else if ((l_arg == "-c" || l_arg == "--config") && l_i + 1 < i_argc) {
       l_configPath = i_argv[++l_i];
+
+    } else if ((l_arg == "-o" || l_arg == "--out") && l_i + 1 < i_argc) {
+      l_outDirOverride = i_argv[++l_i];
 
     } else if ((l_arg == "-d" || l_arg == "--domain") && l_i + 1 < i_argc) {
       l_domainSize = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
@@ -395,24 +420,88 @@ int main(int i_argc, char* i_argv[]) {
     printUsage(i_argv[0]);
     return EXIT_FAILURE;
   }
-  if (l_setup == nullptr) {
-    std::cerr << "error: missing required argument -p" << std::endl;
-    printUsage(i_argv[0]);
-    return EXIT_FAILURE;
-  }
 
-  // for TsunamiEvent2d: derive domain from bathymetry file if not overridden
-  if (l_tsunamiEvent2d != nullptr && !l_domainSizeSet) {
-    l_domainOrigin = l_tsunamiEvent2d->getDomainOriginX();
-    l_domainOriginY = l_tsunamiEvent2d->getDomainOriginY();
-    l_domainSize = l_tsunamiEvent2d->getDomainSizeX();
-    // compute ny so cells stay square (dx = dy)
-    tsunami_lab::t_real l_dxy0 =
-        l_domainSize / static_cast<tsunami_lab::t_real>(l_nx);
-    l_ny = static_cast<tsunami_lab::t_idx>(
-        l_tsunamiEvent2d->getDomainSizeY() / l_dxy0 + 0.5f);
-    if (l_ny < 1)
-      l_ny = 1;
+  // determine output directory. Deterministic, so a second run with the same
+  // command line lands on the same path and can pick up its checkpoint file.
+  std::string l_simBaseDir = "simulations/";
+  std::string l_simDir;
+  if (!l_outDirOverride.empty()) {
+    l_simDir = l_outDirOverride;
+  } else {
+    l_simDir = l_simBaseDir + l_setupMode + "_" +
+               std::to_string(static_cast<long long>(l_p1)) + "_" +
+               std::to_string(static_cast<long long>(l_p2)) + "_" +
+               std::to_string(static_cast<long long>(l_p3)) + "_" +
+               l_solverMode + "_n" + std::to_string(l_nx);
+  }
+  std::string l_ncPath = l_simDir + "/solution.nc";
+
+  // try to resume from an existing checkpoint
+  bool l_appendMode = tsunami_lab::io::NetCDF::hasCheckpoint(l_ncPath.c_str());
+  tsunami_lab::t_real l_simTimeStart = 0;
+  tsunami_lab::t_real l_dtCheckpoint = 0;
+  tsunami_lab::setups::CheckPoint* l_checkpointSetup = nullptr;
+
+  if (l_appendMode) {
+    std::cout << "\033[33mfound checkpoint at " << l_ncPath
+              << " — resuming\033[0m" << std::endl;
+
+    // discard any setup that was constructed from -p; replace with CheckPoint
+    delete l_setup;
+    l_setup = nullptr;
+    l_tsunamiEvent2d = nullptr; // owned via l_setup, already deleted
+
+    l_checkpointSetup = new tsunami_lab::setups::CheckPoint(l_ncPath.c_str());
+    l_setup = l_checkpointSetup;
+    const auto& l_info = l_checkpointSetup->getInfo();
+
+    // grid + run params from checkpoint always win
+    l_is2d = true;
+    l_nx = l_info.nx;
+    l_ny = l_info.ny;
+    l_domainOrigin = l_info.originX;
+    l_domainOriginY = l_info.originY;
+    l_domainSize = l_info.dxy * static_cast<tsunami_lab::t_real>(l_info.nx);
+    if (l_info.endTime > 0)
+      l_endTime = l_info.endTime;
+    if (l_info.dt > 0)
+      l_dtCheckpoint = l_info.dt;
+    if (!l_info.solverMode.empty())
+      l_solverMode = l_info.solverMode;
+    auto l_applyBc = [&](const std::string& i_val,
+                         tsunami_lab::patches::BoundaryCondition& o_bc) {
+      if (i_val == "reflecting")
+        o_bc = tsunami_lab::patches::BoundaryCondition::Reflecting;
+      else if (i_val == "outflow")
+        o_bc = tsunami_lab::patches::BoundaryCondition::Outflow;
+    };
+    l_applyBc(l_info.bcLeft, l_bcLeft);
+    l_applyBc(l_info.bcRight, l_bcRight);
+
+    l_simTimeStart = l_info.lastSimTime;
+    if (l_setupMode.empty())
+      l_setupMode = l_info.setupMode;
+  } else {
+    // require -p only when there is no checkpoint to resume from
+    if (l_setup == nullptr) {
+      std::cerr << "error: missing required argument -p" << std::endl;
+      printUsage(i_argv[0]);
+      return EXIT_FAILURE;
+    }
+
+    // for TsunamiEvent2d: derive domain from bathymetry file if not overridden
+    if (l_tsunamiEvent2d != nullptr && !l_domainSizeSet) {
+      l_domainOrigin = l_tsunamiEvent2d->getDomainOriginX();
+      l_domainOriginY = l_tsunamiEvent2d->getDomainOriginY();
+      l_domainSize = l_tsunamiEvent2d->getDomainSizeX();
+      // compute ny so cells stay square (dx = dy)
+      tsunami_lab::t_real l_dxy0 =
+          l_domainSize / static_cast<tsunami_lab::t_real>(l_nx);
+      l_ny = static_cast<tsunami_lab::t_idx>(
+          l_tsunamiEvent2d->getDomainSizeY() / l_dxy0 + 0.5f);
+      if (l_ny < 1)
+        l_ny = 1;
+    }
   }
 
   // derived quantities — computed after all args are parsed
@@ -478,25 +567,19 @@ int main(int i_argc, char* i_argv[]) {
     }
   }
 
-  // derive maximum wave speed in setup; the momentum is ignored
-  tsunami_lab::t_real l_speedMax = std::sqrt(tsunami_lab::g * l_hMax);
-
-  // derive constant time step; changes at simulation time are ignored
-  tsunami_lab::t_real l_dt = 0.5f * l_dxy / l_speedMax;
+  // derive constant time step. on restart we re-use the dt stored at
+  // checkpoint creation so the time-step grid matches; otherwise it's
+  // computed from the initial state's maximum wave speed.
+  tsunami_lab::t_real l_dt = 0;
+  if (l_appendMode && l_dtCheckpoint > 0) {
+    l_dt = l_dtCheckpoint;
+  } else {
+    tsunami_lab::t_real l_speedMax = std::sqrt(tsunami_lab::g * l_hMax);
+    l_dt = 0.5f * l_dxy / l_speedMax;
+  }
 
   // derive scaling for a time step
   tsunami_lab::t_real l_scaling = l_dt / l_dxy;
-
-  // output directory
-  std::string l_simBaseDir = "simulations/";
-  auto l_ts = std::chrono::duration_cast<std::chrono::seconds>(
-                  std::chrono::system_clock::now().time_since_epoch())
-                  .count();
-  std::string l_simDir = l_simBaseDir + l_setupMode + "_" +
-                         std::to_string(static_cast<long long>(l_p1)) + "_" +
-                         std::to_string(static_cast<long long>(l_p2)) + "_" +
-                         std::to_string(static_cast<long long>(l_p3)) + "_" +
-                         l_solverMode + "_" + std::to_string(l_ts);
 
   mkdir(l_simBaseDir.c_str(), 0755);
   if (mkdir(l_simDir.c_str(), 0755) != 0 && errno != EEXIST) {
@@ -507,14 +590,24 @@ int main(int i_argc, char* i_argv[]) {
     return EXIT_FAILURE;
   }
 
-  // NetCDF writer for 2D simulations
+  // NetCDF writer for 2D simulations — append on restart, otherwise create
   tsunami_lab::io::NetCDF* l_netCdf = nullptr;
   if (l_is2d) {
-    std::string l_ncPath = l_simDir + "/solution.nc";
     std::cout << "  netCDF output: " << l_ncPath << std::endl;
-    l_netCdf =
-        new tsunami_lab::io::NetCDF(l_nx, l_ny, l_dxy, l_dxy, l_domainOrigin,
-                                    l_domainOriginY, l_ncPath.c_str());
+    if (l_appendMode) {
+      l_netCdf = new tsunami_lab::io::NetCDF(l_ncPath.c_str());
+    } else {
+      l_netCdf =
+          new tsunami_lab::io::NetCDF(l_nx, l_ny, l_dxy, l_dxy, l_domainOrigin,
+                                      l_domainOriginY, l_ncPath.c_str());
+      auto l_bcStr = [](tsunami_lab::patches::BoundaryCondition i_bc) {
+        return i_bc == tsunami_lab::patches::BoundaryCondition::Reflecting
+                   ? std::string("reflecting")
+                   : std::string("outflow");
+      };
+      l_netCdf->writeMetadata(l_endTime, l_dt, l_bcStr(l_bcLeft),
+                              l_bcStr(l_bcRight), l_solverMode, l_setupMode);
+    }
   }
 
   // stations — optional, loaded from XML config
@@ -539,10 +632,11 @@ int main(int i_argc, char* i_argv[]) {
     }
   }
 
-  // time loop
-  tsunami_lab::t_idx l_timeStep = 0;
+  // time loop — start from checkpoint state if resuming
+  tsunami_lab::t_idx l_timeStep =
+      l_appendMode ? static_cast<tsunami_lab::t_idx>(l_simTimeStart / l_dt) : 0;
   tsunami_lab::t_idx l_nOut = 0;
-  tsunami_lab::t_real l_simTime = 0;
+  tsunami_lab::t_real l_simTime = l_simTimeStart;
 
   // one snapshot every 0.5 % of total time steps
   tsunami_lab::t_idx l_outInterval =
@@ -553,6 +647,17 @@ int main(int i_argc, char* i_argv[]) {
 
   // iterate over time
   while (l_simTime < l_endTime) {
+    if (g_interrupted.load()) {
+      std::cout << "\n\033[33minterrupt received — writing final checkpoint "
+                   "and shutting down\033[0m"
+                << std::endl;
+      if (l_is2d && l_netCdf != nullptr) {
+        l_netCdf->write(l_simTime, l_waveProp->getHeight(),
+                        l_waveProp->getMomentumX(), l_waveProp->getMomentumY(),
+                        l_waveProp->getBathymetry(), l_waveProp->getStride());
+      }
+      break;
+    }
     if (l_timeStep % l_outInterval == 0) {
       std::cout << "  simulation time / #time steps: " << l_simTime << " s / "
                 << l_timeStep << std::endl;

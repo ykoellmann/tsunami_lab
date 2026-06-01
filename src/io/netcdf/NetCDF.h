@@ -10,6 +10,7 @@
 
 #include "../../constants.h"
 #include <netcdf.h>
+#include <string>
 
 namespace tsunami_lab {
 namespace io {
@@ -18,6 +19,27 @@ class NetCDF;
 } // namespace tsunami_lab
 
 class tsunami_lab::io::NetCDF {
+public:
+  /**
+   * Metadata describing a checkpointed simulation run.
+   * Stored as global attributes in the netCDF file.
+   **/
+  struct CheckpointInfo {
+    t_idx nx = 0;
+    t_idx ny = 0;
+    t_real dxy = 0;
+    t_real originX = 0;
+    t_real originY = 0;
+    t_real endTime = 0;
+    t_real dt = 0;
+    t_real lastSimTime = 0;
+    t_idx nTimeSteps = 0;
+    std::string bcLeft;
+    std::string bcRight;
+    std::string solverMode;
+    std::string setupMode;
+  };
+
 private:
   t_idx m_nx = 0;
   t_idx m_ny = 0;
@@ -56,10 +78,21 @@ public:
          t_real i_originY,
          const char* i_path);
 
+  /**
+   * Opens an existing netCDF file for append, resuming writes after the last
+   * stored time step. Used to continue a simulation from a checkpoint.
+   *
+   * @param i_path      path of the existing netCDF file.
+   **/
+  NetCDF(const char* i_path);
+
   ~NetCDF();
 
   /**
    * Writes the current simulation state as a new time step.
+   *
+   * Calls nc_sync after writing so the on-disk file is consistent even if
+   * the process is killed shortly afterwards.
    *
    * @param i_simTime   simulation time [s].
    * @param i_h         water heights (interior cells, row-major x-major).
@@ -74,6 +107,17 @@ public:
              t_real const* i_hv,
              t_real const* i_b,
              t_idx i_stride);
+
+  /**
+   * Writes run-level metadata as global attributes. Call once after the
+   * "create" constructor; required for checkpoint-restart.
+   **/
+  void writeMetadata(t_real i_endTime,
+                     t_real i_dt,
+                     const std::string& i_bcLeft,
+                     const std::string& i_bcRight,
+                     const std::string& i_solverMode,
+                     const std::string& i_setupMode);
 
   /**
    * Reads a 2D scalar field (e.g. bathymetry, displacement) from a netCDF
@@ -103,6 +147,26 @@ public:
                    t_real*& o_x,
                    t_real*& o_y,
                    t_real*& o_z);
+
+  /**
+   * Returns true if the given path is a netCDF file that contains at least
+   * one written time step (i.e. is usable as a checkpoint).
+   **/
+  static bool hasCheckpoint(const char* i_path);
+
+  /**
+   * Reads checkpoint metadata + the last time slice from an existing file.
+   *
+   * Output arrays o_h, o_hu, o_hv, o_b are allocated with new[] and the
+   * caller is responsible for delete[]. Each is laid out row-major
+   * (iy*nx + ix) with nx, ny taken from o_info.
+   **/
+  static void readCheckpoint(const char* i_path,
+                             CheckpointInfo& o_info,
+                             t_real*& o_h,
+                             t_real*& o_hu,
+                             t_real*& o_hv,
+                             t_real*& o_b);
 };
 
 #endif // TSUNAMI_LAB_NETCDF_H
