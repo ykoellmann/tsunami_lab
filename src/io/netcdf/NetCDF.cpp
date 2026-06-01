@@ -18,6 +18,18 @@ putAttStr(int i_ncId, int i_varId, const char* i_name, const char* i_value) {
   return nc_put_att_text(i_ncId, i_varId, i_name, std::strlen(i_value),
                          i_value);
 }
+
+// Read a text global attribute into a std::string. Returns true on success.
+bool getAttStr(int i_ncId, const char* i_name, std::string& o_value) {
+  size_t l_len = 0;
+  if (nc_inq_attlen(i_ncId, NC_GLOBAL, i_name, &l_len) != NC_NOERR)
+    return false;
+  std::vector<char> l_buf(l_len + 1, '\0');
+  if (nc_get_att_text(i_ncId, NC_GLOBAL, i_name, l_buf.data()) != NC_NOERR)
+    return false;
+  o_value.assign(l_buf.data(), l_len);
+  return true;
+}
 } // namespace
 
 namespace tsunami_lab {
@@ -60,6 +72,18 @@ NetCDF::NetCDF(t_idx i_nx,
   checkErr(putAttStr(m_ncId, m_varY, "units", "meters"));
   checkErr(putAttStr(m_ncId, m_varY, "axis", "Y"));
 
+  // grid layout as global attributes — required for checkpoint restart
+  float l_dx = static_cast<float>(m_dx);
+  float l_dy = static_cast<float>(m_dy);
+  float l_originX = static_cast<float>(m_originX);
+  float l_originY = static_cast<float>(m_originY);
+  checkErr(nc_put_att_float(m_ncId, NC_GLOBAL, "dx", NC_FLOAT, 1, &l_dx));
+  checkErr(nc_put_att_float(m_ncId, NC_GLOBAL, "dy", NC_FLOAT, 1, &l_dy));
+  checkErr(
+      nc_put_att_float(m_ncId, NC_GLOBAL, "origin_x", NC_FLOAT, 1, &l_originX));
+  checkErr(
+      nc_put_att_float(m_ncId, NC_GLOBAL, "origin_y", NC_FLOAT, 1, &l_originY));
+
   // data variables: [time, x, y]
   int l_dimsTxy[3] = {m_dimTime, m_dimX, m_dimY};
   int l_dimsXy[2] = {m_dimX, m_dimY};
@@ -91,6 +115,48 @@ NetCDF::NetCDF(t_idx i_nx,
 
   checkErr(nc_put_var_float(m_ncId, m_varX, l_x.data()));
   checkErr(nc_put_var_float(m_ncId, m_varY, l_y.data()));
+}
+
+NetCDF::NetCDF(const char* i_path) {
+  // open existing file for append
+  checkErr(nc_open(i_path, NC_WRITE, &m_ncId));
+
+  // look up dimensions
+  checkErr(nc_inq_dimid(m_ncId, "time", &m_dimTime));
+  checkErr(nc_inq_dimid(m_ncId, "x", &m_dimX));
+  checkErr(nc_inq_dimid(m_ncId, "y", &m_dimY));
+
+  size_t l_nTime = 0, l_nx = 0, l_ny = 0;
+  checkErr(nc_inq_dimlen(m_ncId, m_dimTime, &l_nTime));
+  checkErr(nc_inq_dimlen(m_ncId, m_dimX, &l_nx));
+  checkErr(nc_inq_dimlen(m_ncId, m_dimY, &l_ny));
+  m_nx = l_nx;
+  m_ny = l_ny;
+  m_timeStep = l_nTime;
+
+  // look up variables
+  checkErr(nc_inq_varid(m_ncId, "time", &m_varTime));
+  checkErr(nc_inq_varid(m_ncId, "x", &m_varX));
+  checkErr(nc_inq_varid(m_ncId, "y", &m_varY));
+  checkErr(nc_inq_varid(m_ncId, "h", &m_varH));
+  checkErr(nc_inq_varid(m_ncId, "hu", &m_varHu));
+  checkErr(nc_inq_varid(m_ncId, "hv", &m_varHv));
+  checkErr(nc_inq_varid(m_ncId, "b", &m_varB));
+
+  // restore grid layout from global attributes
+  float l_dx = 0, l_dy = 0, l_originX = 0, l_originY = 0;
+  checkErr(nc_get_att_float(m_ncId, NC_GLOBAL, "dx", &l_dx));
+  checkErr(nc_get_att_float(m_ncId, NC_GLOBAL, "dy", &l_dy));
+  checkErr(nc_get_att_float(m_ncId, NC_GLOBAL, "origin_x", &l_originX));
+  checkErr(nc_get_att_float(m_ncId, NC_GLOBAL, "origin_y", &l_originY));
+  m_dx = l_dx;
+  m_dy = l_dy;
+  m_originX = l_originX;
+  m_originY = l_originY;
+
+  // bathymetry is a non-time variable; if any time step exists, it was
+  // written by the original run — don't overwrite it on append.
+  m_bWritten = (l_nTime > 0);
 }
 
 NetCDF::~NetCDF() {
@@ -141,6 +207,140 @@ void NetCDF::write(t_real i_simTime,
   }
 
   m_timeStep++;
+
+  // flush in-memory buffers so an unexpected crash doesn't lose this step
+  checkErr(nc_sync(m_ncId));
+}
+
+void NetCDF::writeMetadata(t_real i_endTime,
+                           t_real i_dt,
+                           const std::string& i_bcLeft,
+                           const std::string& i_bcRight,
+                           const std::string& i_solverMode,
+                           const std::string& i_setupMode) {
+  float l_endTime = static_cast<float>(i_endTime);
+  float l_dt = static_cast<float>(i_dt);
+  checkErr(
+      nc_put_att_float(m_ncId, NC_GLOBAL, "end_time", NC_FLOAT, 1, &l_endTime));
+  checkErr(nc_put_att_float(m_ncId, NC_GLOBAL, "dt", NC_FLOAT, 1, &l_dt));
+  checkErr(putAttStr(m_ncId, NC_GLOBAL, "bc_left", i_bcLeft.c_str()));
+  checkErr(putAttStr(m_ncId, NC_GLOBAL, "bc_right", i_bcRight.c_str()));
+  checkErr(putAttStr(m_ncId, NC_GLOBAL, "solver_mode", i_solverMode.c_str()));
+  checkErr(putAttStr(m_ncId, NC_GLOBAL, "setup_mode", i_setupMode.c_str()));
+}
+
+bool NetCDF::hasCheckpoint(const char* i_path) {
+  int l_ncId = -1;
+  if (nc_open(i_path, NC_NOWRITE, &l_ncId) != NC_NOERR)
+    return false;
+
+  int l_dimTime = -1;
+  if (nc_inq_dimid(l_ncId, "time", &l_dimTime) != NC_NOERR) {
+    nc_close(l_ncId);
+    return false;
+  }
+  size_t l_len = 0;
+  if (nc_inq_dimlen(l_ncId, l_dimTime, &l_len) != NC_NOERR) {
+    nc_close(l_ncId);
+    return false;
+  }
+  nc_close(l_ncId);
+  return l_len >= 1;
+}
+
+void NetCDF::readCheckpoint(const char* i_path,
+                            CheckpointInfo& o_info,
+                            t_real*& o_h,
+                            t_real*& o_hu,
+                            t_real*& o_hv,
+                            t_real*& o_b) {
+  int l_ncId = -1;
+  checkErr(nc_open(i_path, NC_NOWRITE, &l_ncId));
+
+  // dimension ids and lengths
+  int l_dimTime = -1, l_dimX = -1, l_dimY = -1;
+  checkErr(nc_inq_dimid(l_ncId, "time", &l_dimTime));
+  checkErr(nc_inq_dimid(l_ncId, "x", &l_dimX));
+  checkErr(nc_inq_dimid(l_ncId, "y", &l_dimY));
+
+  size_t l_nTime = 0, l_nx = 0, l_ny = 0;
+  checkErr(nc_inq_dimlen(l_ncId, l_dimTime, &l_nTime));
+  checkErr(nc_inq_dimlen(l_ncId, l_dimX, &l_nx));
+  checkErr(nc_inq_dimlen(l_ncId, l_dimY, &l_ny));
+
+  if (l_nTime == 0) {
+    std::cerr << "NetCDF readCheckpoint: file has no time steps" << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+
+  o_info.nx = l_nx;
+  o_info.ny = l_ny;
+  o_info.nTimeSteps = l_nTime;
+
+  // global attributes
+  float l_dx = 0, l_dy = 0, l_originX = 0, l_originY = 0;
+  checkErr(nc_get_att_float(l_ncId, NC_GLOBAL, "dx", &l_dx));
+  checkErr(nc_get_att_float(l_ncId, NC_GLOBAL, "dy", &l_dy));
+  checkErr(nc_get_att_float(l_ncId, NC_GLOBAL, "origin_x", &l_originX));
+  checkErr(nc_get_att_float(l_ncId, NC_GLOBAL, "origin_y", &l_originY));
+  o_info.dxy = l_dx;
+  o_info.originX = l_originX;
+  o_info.originY = l_originY;
+  (void)l_dy; // dx == dy by construction
+
+  float l_endTime = 0, l_dt = 0;
+  if (nc_get_att_float(l_ncId, NC_GLOBAL, "end_time", &l_endTime) == NC_NOERR)
+    o_info.endTime = l_endTime;
+  if (nc_get_att_float(l_ncId, NC_GLOBAL, "dt", &l_dt) == NC_NOERR)
+    o_info.dt = l_dt;
+  getAttStr(l_ncId, "bc_left", o_info.bcLeft);
+  getAttStr(l_ncId, "bc_right", o_info.bcRight);
+  getAttStr(l_ncId, "solver_mode", o_info.solverMode);
+  getAttStr(l_ncId, "setup_mode", o_info.setupMode);
+
+  // last sim time
+  int l_varTime = -1;
+  checkErr(nc_inq_varid(l_ncId, "time", &l_varTime));
+  size_t l_lastIdx = l_nTime - 1;
+  float l_lastTime = 0;
+  checkErr(nc_get_var1_float(l_ncId, l_varTime, &l_lastIdx, &l_lastTime));
+  o_info.lastSimTime = l_lastTime;
+
+  // read last time slice of h, hu, hv and 2D b — all in stored (x, y) layout
+  int l_varH = -1, l_varHu = -1, l_varHv = -1, l_varB = -1;
+  checkErr(nc_inq_varid(l_ncId, "h", &l_varH));
+  checkErr(nc_inq_varid(l_ncId, "hu", &l_varHu));
+  checkErr(nc_inq_varid(l_ncId, "hv", &l_varHv));
+  checkErr(nc_inq_varid(l_ncId, "b", &l_varB));
+
+  size_t l_start3[3] = {l_lastIdx, 0, 0};
+  size_t l_count3[3] = {1, l_nx, l_ny};
+
+  std::vector<float> l_buf(l_nx * l_ny);
+
+  auto fetch3 = [&](int i_var, t_real*& o_dst) {
+    checkErr(
+        nc_get_vara_float(l_ncId, i_var, l_start3, l_count3, l_buf.data()));
+    o_dst = new t_real[l_nx * l_ny];
+    // stored as (x, y) -> emit row-major (iy*nx + ix) for consumer convenience
+    for (size_t l_ix = 0; l_ix < l_nx; l_ix++)
+      for (size_t l_iy = 0; l_iy < l_ny; l_iy++)
+        o_dst[l_iy * l_nx + l_ix] =
+            static_cast<t_real>(l_buf[l_ix * l_ny + l_iy]);
+  };
+
+  fetch3(l_varH, o_h);
+  fetch3(l_varHu, o_hu);
+  fetch3(l_varHv, o_hv);
+
+  // b is 2D (x, y)
+  checkErr(nc_get_var_float(l_ncId, l_varB, l_buf.data()));
+  o_b = new t_real[l_nx * l_ny];
+  for (size_t l_ix = 0; l_ix < l_nx; l_ix++)
+    for (size_t l_iy = 0; l_iy < l_ny; l_iy++)
+      o_b[l_iy * l_nx + l_ix] = static_cast<t_real>(l_buf[l_ix * l_ny + l_iy]);
+
+  checkErr(nc_close(l_ncId));
 }
 
 void NetCDF::read(const char* i_path,

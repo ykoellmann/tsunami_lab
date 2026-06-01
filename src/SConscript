@@ -23,6 +23,7 @@ l_sources = [ 'solvers/roe/Roe.cpp',
               'setups/tsunamievent1d/TsunamiEvent1d.cpp',
               'setups/artificialtsunami2d/ArtificialTsunami2d.cpp',
               'setups/tsunamievent2d/TsunamiEvent2d.cpp',
+              'setups/checkpoint/CheckPoint.cpp',
               'io/netcdf/NetCDF.cpp',
               'io/csv/Csv.cpp',
               'io/stations/Stations.cpp' ]
