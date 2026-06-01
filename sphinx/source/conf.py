@@ -18,6 +18,8 @@ extensions = []
 templates_path = ['_templates']
 exclude_patterns = []
 
+suppress_warnings = ['toc.not_readable']
+
 
 
 # -- Options for HTML output -------------------------------------------------

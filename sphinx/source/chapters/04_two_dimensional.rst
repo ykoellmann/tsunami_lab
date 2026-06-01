@@ -1,5 +1,5 @@
 4. Two-Dimensional Solver
-==================
+=========================
 
 Implementation
 ---------------

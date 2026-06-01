@@ -171,13 +171,14 @@ Theoretical Estimate:
   t_{evac} &= \frac{s_{village}}{\lambda_r^{Roe}} = \frac{25000m}{9.32994} = 2679.54 s \approx 44.66 min
 
 Simulation:
-""""""""""
+"""""""""""
 Setup: ``./build/tsunami_lab -n 30000 -d 30000 -t 2400 -p DamBreak 14 3.5 5000 0 0.7``.
 The shock front reaches the village (:math:`x=30000`) at
 :math:`t \approx 2256 s (\sim 37.6 min)`.
 
 .. image:: ../../../simulations/visualizations/evacuation_problem.gif
    :width: 30%
+
 Results:
 """"""""
 
