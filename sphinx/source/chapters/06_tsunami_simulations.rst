@@ -122,9 +122,6 @@ The computational demands at the studied resolutions (domain
      - 8 182
      - 3.75 × 10\ :sup:`10`
 
-.. note::
-
-
 2011 M 9.1 Tohoku Event (6.2)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -132,7 +129,7 @@ The input bathymetry and the vertical displacement of the sea floor are
 visualized below.
 
 .. figure:: ../../../simulations/visualizations/tohoku/tohoku_gebco20_usgs_250m_bath_3d.png
-   :name: fig:chile_bathy
+   :name: fig:tohoku_bathy
 
 .. figure:: ../../../simulations/visualizations/tohoku/tohoku_gebco20_usgs_250m_displ_3d.png
    :name: fig:tohoku_displ
@@ -202,7 +199,7 @@ The first waves therefore leave the computational domain after roughly
 **41 min** of simulated time.
 
 Tsunami Arrival at Sōma (6.2.2)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Rule-of-thumb estimate.** Using :math:`\lambda \approx \sqrt{g\,h}` along
 the bathymetry cut from the epicenter to Sōma
