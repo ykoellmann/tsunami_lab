@@ -92,6 +92,9 @@ static void printUsage(const char* i_prog) {
   std::cerr << "  -o, --out  output directory (default: auto-derived from "
                "setup + parameters)"
             << std::endl;
+  std::cerr << "  -k         coarsening factor: k×k cells averaged into one "
+               "output cell (default: 1)"
+            << std::endl;
   std::cerr << std::endl;
   std::cerr << "checkpointing:" << std::endl;
   std::cerr << "  If <out>/solution.nc already contains at least one time "
@@ -134,6 +137,7 @@ int main(int i_argc, char* i_argv[]) {
   std::string l_setupMode;
   std::string l_configPath;
   std::string l_outDirOverride;
+  tsunami_lab::t_idx l_coarseK = 1;
 
   // boundary conditions default to outflow on both sides
   tsunami_lab::patches::BoundaryCondition l_bcLeft =
@@ -201,6 +205,15 @@ int main(int i_argc, char* i_argv[]) {
 
     } else if ((l_arg == "-o" || l_arg == "--out") && l_i + 1 < i_argc) {
       l_outDirOverride = i_argv[++l_i];
+
+    } else if ((l_arg == "-k" || l_arg == "--coarse") && l_i + 1 < i_argc) {
+      long l_val = std::atol(i_argv[++l_i]);
+      if (l_val < 1) {
+        std::cerr << "error: -k must be >= 1" << std::endl;
+        printUsage(i_argv[0]);
+        return EXIT_FAILURE;
+      }
+      l_coarseK = static_cast<tsunami_lab::t_idx>(l_val);
 
     } else if ((l_arg == "-d" || l_arg == "--domain") && l_i + 1 < i_argc) {
       l_domainSize = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
@@ -520,6 +533,8 @@ int main(int i_argc, char* i_argv[]) {
   std::cout << "  setup:                          " << l_setupMode << std::endl;
   std::cout << "  end time:                       " << l_endTime << " s"
             << std::endl;
+  if (l_coarseK > 1)
+    std::cout << "  coarsening factor:              " << l_coarseK << std::endl;
   auto l_bcName = [](tsunami_lab::patches::BoundaryCondition i_bc) {
     return i_bc == tsunami_lab::patches::BoundaryCondition::Reflecting
                ? "reflecting"
@@ -597,9 +612,9 @@ int main(int i_argc, char* i_argv[]) {
     if (l_appendMode) {
       l_netCdf = new tsunami_lab::io::NetCDF(l_ncPath.c_str());
     } else {
-      l_netCdf =
-          new tsunami_lab::io::NetCDF(l_nx, l_ny, l_dxy, l_dxy, l_domainOrigin,
-                                      l_domainOriginY, l_ncPath.c_str());
+      l_netCdf = new tsunami_lab::io::NetCDF(l_nx, l_ny, l_dxy, l_dxy,
+                                             l_domainOrigin, l_domainOriginY,
+                                             l_ncPath.c_str(), l_coarseK);
       auto l_bcStr = [](tsunami_lab::patches::BoundaryCondition i_bc) {
         return i_bc == tsunami_lab::patches::BoundaryCondition::Reflecting
                    ? std::string("reflecting")

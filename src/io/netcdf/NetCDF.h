@@ -41,8 +41,11 @@ public:
   };
 
 private:
-  t_idx m_nx = 0;
-  t_idx m_ny = 0;
+  t_idx m_nx = 0;    // output (coarse) cells in x
+  t_idx m_ny = 0;    // output (coarse) cells in y
+  t_idx m_srcNx = 0; // source cells in x (= m_nx when k == 1)
+  t_idx m_srcNy = 0; // source cells in y
+  t_idx m_k = 1;     // coarsening factor
   t_real m_dx = 0;
   t_real m_dy = 0;
   t_real m_originX = 0;
@@ -69,6 +72,8 @@ public:
    * @param i_originX   x-coordinate of the left domain boundary [m].
    * @param i_originY   y-coordinate of the bottom domain boundary [m].
    * @param i_path      output file path.
+   * @param i_k         coarsening factor: k×k source cells are averaged into
+   *                    one output cell (default 1 = no coarsening).
    **/
   NetCDF(t_idx i_nx,
          t_idx i_ny,
@@ -76,7 +81,8 @@ public:
          t_real i_dy,
          t_real i_originX,
          t_real i_originY,
-         const char* i_path);
+         const char* i_path,
+         t_idx i_k = 1);
 
   /**
    * Opens an existing netCDF file for append, resuming writes after the last

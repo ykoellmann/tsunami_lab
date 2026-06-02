@@ -48,9 +48,14 @@ NetCDF::NetCDF(t_idx i_nx,
                t_real i_dy,
                t_real i_originX,
                t_real i_originY,
-               const char* i_path)
-    : m_nx(i_nx), m_ny(i_ny), m_dx(i_dx), m_dy(i_dy), m_originX(i_originX),
-      m_originY(i_originY) {
+               const char* i_path,
+               t_idx i_k)
+    : m_srcNx(i_nx), m_srcNy(i_ny), m_k(i_k < 1 ? 1 : i_k), m_dx(i_dx),
+      m_dy(i_dy), m_originX(i_originX), m_originY(i_originY) {
+
+  // coarse output dimensions
+  m_nx = (i_nx + m_k - 1) / m_k;
+  m_ny = (i_ny + m_k - 1) / m_k;
 
   checkErr(nc_create(i_path, NC_CLOBBER | NC_NETCDF4, &m_ncId));
 
@@ -106,12 +111,18 @@ NetCDF::NetCDF(t_idx i_nx,
 
   checkErr(nc_enddef(m_ncId));
 
-  // write x coordinate values: cell centers
+  // write coordinate values: centers of the coarsened output cells
   std::vector<float> l_x(m_nx), l_y(m_ny);
-  for (t_idx l_i = 0; l_i < m_nx; l_i++)
-    l_x[l_i] = m_originX + (l_i + 0.5f) * m_dx;
-  for (t_idx l_j = 0; l_j < m_ny; l_j++)
-    l_y[l_j] = m_originY + (l_j + 0.5f) * m_dy;
+  for (t_idx l_ox = 0; l_ox < m_nx; l_ox++) {
+    t_idx l_cnt = std::min(m_k, m_srcNx - l_ox * m_k);
+    l_x[l_ox] =
+        static_cast<float>(m_originX + (l_ox * m_k + 0.5 * l_cnt) * m_dx);
+  }
+  for (t_idx l_oy = 0; l_oy < m_ny; l_oy++) {
+    t_idx l_cnt = std::min(m_k, m_srcNy - l_oy * m_k);
+    l_y[l_oy] =
+        static_cast<float>(m_originY + (l_oy * m_k + 0.5 * l_cnt) * m_dy);
+  }
 
   checkErr(nc_put_var_float(m_ncId, m_varX, l_x.data()));
   checkErr(nc_put_var_float(m_ncId, m_varY, l_y.data()));
@@ -170,13 +181,32 @@ void NetCDF::write(t_real i_simTime,
                    t_real const* i_hv,
                    t_real const* i_b,
                    t_idx i_stride) {
-  // copy interior cells into contiguous buffer [x][y]
+  // copy / average interior cells into contiguous output buffer [ox][oy]
   std::vector<float> l_buf(m_nx * m_ny);
 
   auto fillBuf = [&](t_real const* i_src) {
-    for (t_idx l_ix = 0; l_ix < m_nx; l_ix++)
-      for (t_idx l_iy = 0; l_iy < m_ny; l_iy++)
-        l_buf[l_ix * m_ny + l_iy] = i_src[l_ix + l_iy * i_stride];
+    if (m_k == 1) {
+      for (t_idx l_ix = 0; l_ix < m_nx; l_ix++)
+        for (t_idx l_iy = 0; l_iy < m_ny; l_iy++)
+          l_buf[l_ix * m_ny + l_iy] = i_src[l_ix + l_iy * i_stride];
+    } else {
+      for (t_idx l_ox = 0; l_ox < m_nx; l_ox++) {
+        t_idx l_ix0 = l_ox * m_k;
+        t_idx l_ix1 = std::min(l_ix0 + m_k, m_srcNx);
+        for (t_idx l_oy = 0; l_oy < m_ny; l_oy++) {
+          t_idx l_iy0 = l_oy * m_k;
+          t_idx l_iy1 = std::min(l_iy0 + m_k, m_srcNy);
+          float l_sum = 0;
+          t_idx l_cnt = 0;
+          for (t_idx l_ix = l_ix0; l_ix < l_ix1; l_ix++)
+            for (t_idx l_iy = l_iy0; l_iy < l_iy1; l_iy++) {
+              l_sum += static_cast<float>(i_src[l_ix + l_iy * i_stride]);
+              l_cnt++;
+            }
+          l_buf[l_ox * m_ny + l_oy] = (l_cnt > 0) ? l_sum / l_cnt : 0.0f;
+        }
+      }
+    }
   };
 
   // time coordinate
