@@ -38,6 +38,22 @@ The ``io::NetCDF`` writer accepts a coarsening factor :math:`k` (CLI flag
 each :math:`k \times k` source block.  For :math:`k = 1` the original code
 path is used unchanged.
 
+Unit Tests
+~~~~~~~~~~
+
+Both features are covered by Catch2 tests:
+
+- ``NetCDF.test.cpp``: a metadata + ``readCheckpoint`` round-trip (grid,
+  :math:`\Delta t`, end time, boundary conditions, solver/setup names and the
+  **last** time slice are recovered exactly); ``hasCheckpoint`` returning
+  ``false`` for a missing file and a file with zero time steps but ``true``
+  after one step; and coarse averaging for both an evenly divisible grid
+  (4×4, :math:`k=2`) and the :math:`\lceil m/k \rceil` edge case (3×3,
+  :math:`k=2`) where trailing blocks cover fewer source cells.
+- ``CheckPoint.test.cpp``: querying each cell center returns that cell's
+  stored value across all four fields, and out-of-domain queries clamp to the
+  border cells.
+
 Results & Visualizations
 --------------------------
 
@@ -66,4 +82,5 @@ Individual Contributions
 - **Mika Brückner:** Implementation of checkpointing: ``writeMetadata``,
   ``NetCDF::hasCheckpoint``, ``NetCDF::readCheckpoint``, ``setups::CheckPoint``,
   auto-resume logic in ``main``, ``nc_sync``.
-- **Jan Vogt:** tba
+- **Jan Vogt:**   Implementation of unit test. Help with bug fixes.
+
