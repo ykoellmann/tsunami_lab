@@ -14,10 +14,20 @@ after every snapshot so the file is consistent even if the process is killed.
 
 ``setups::CheckPoint`` reads a checkpoint via ``NetCDF::readCheckpoint``,
 which extracts the **last** time slice of ``h``, ``hu``, ``hv``, ``b`` and
-all metadata. At startup ``main`` calls ``NetCDF::hasCheckpoint``; if the
-file already contains at least one time step the solver replaces the ``-p``
-setup with ``CheckPoint``, restores all parameters, and resumes from
+all metadata. The output path is derived deterministically from the setup
+and ``-n`` (overridable with ``-o``), so re-running the same command lands
+on the same ``solution.nc``. At startup ``main`` calls
+``NetCDF::hasCheckpoint``; if the file already contains at least one time
+step the solver opens it through the append constructor, replaces the
+``-p`` setup with ``CheckPoint``, restores all parameters, and resumes from
 ``lastSimTime`` — no extra flags needed.
+
+To make checkpoints usable after a crash, ``main`` installs a
+``SIGINT``/``SIGTERM`` handler that sets a flag instead of terminating
+immediately.  The time loop checks the flag, writes one final snapshot, and
+returns so the ``NetCDF`` destructor runs ``nc_close`` and finalizes the
+NetCDF-4/HDF5 file cleanly.  This was necessary because a hard kill leaves
+the HDF5 container in an unreadable state even with ``nc_sync``.
 
 Coarse Output (7.2)
 ~~~~~~~~~~~~~~~~~~~~~
