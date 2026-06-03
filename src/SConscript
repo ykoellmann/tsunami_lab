@@ -50,6 +50,7 @@ l_tests = [ 'tests.cpp',
             'setups/artificialtsunami2d/ArtificialTsunami2d.test.cpp',
             'setups/tsunamievent2d/TsunamiEvent2d.test.cpp',
             'setups/tsunamievent2d/TsunamiEvent2dCompare.test.cpp',
+            'setups/checkpoint/CheckPoint.test.cpp',
             'io/stations/Stations.test.cpp',
             'io/netcdf/NetCDF.test.cpp']
 
