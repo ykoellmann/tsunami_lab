@@ -2,6 +2,8 @@
 build/
 */build/*
 
+ressources/chile
+
 # Doxygen generated docs
 docs/html/
 docs/latex/

@@ -24,6 +24,7 @@
 #include "setups/tsunamievent2d/TsunamiEvent2d.h"
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <csignal>
 #include <cstdlib>
@@ -660,6 +661,11 @@ int main(int i_argc, char* i_argv[]) {
 
   std::cout << "entering time loop" << std::endl;
 
+  // accumulated wall-clock time spent in the pure compute kernel
+  // (setGhost + timeStep). Excludes I/O and setup, per ch. 8 task 1.3.
+  std::chrono::nanoseconds l_computeDuration{0};
+  tsunami_lab::t_idx l_iterCount = 0;
+
   // iterate over time
   while (l_simTime < l_endTime) {
     if (g_interrupted.load()) {
@@ -706,14 +712,35 @@ int main(int i_argc, char* i_argv[]) {
                         l_is2d ? l_waveProp->getStride() : 1);
     }
 
+    auto l_tic = std::chrono::steady_clock::now();
     l_waveProp->setGhost(l_bcLeft, l_bcRight);
     l_waveProp->timeStep(l_scaling, l_solverMode);
+    l_computeDuration += std::chrono::steady_clock::now() - l_tic;
+    l_iterCount++;
 
     l_timeStep++;
     l_simTime += l_dt;
   }
 
   std::cout << "finished time loop" << std::endl;
+
+  // report timing: total compute time, and the normalized
+  // "time per cell and iteration" metric.
+  double l_computeSec =
+      std::chrono::duration<double>(l_computeDuration).count();
+  tsunami_lab::t_idx l_nCells = l_nx * l_ny;
+  std::cout << "timing (compute kernel only, I/O and setup excluded):"
+            << std::endl;
+  std::cout << "  iterations:                " << l_iterCount << std::endl;
+  std::cout << "  cells:                     " << l_nCells << std::endl;
+  std::cout << "  compute wall-clock:        " << l_computeSec << " s"
+            << std::endl;
+  if (l_iterCount > 0 && l_nCells > 0) {
+    double l_perCellIter = l_computeSec / (static_cast<double>(l_nCells) *
+                                           static_cast<double>(l_iterCount));
+    std::cout << "  time per cell & iteration: " << l_perCellIter * 1e9
+              << " ns" << std::endl;
+  }
 
   // free memory
   std::cout << "freeing memory" << std::endl;
