@@ -5,6 +5,7 @@
 # Entry-point for builds.
 ##
 import SCons
+import os
 
 print( '####################################' )
 print( '### Tsunami Lab                  ###' )
@@ -22,6 +23,19 @@ vars.AddVariables(
                 'compile modes, option \'san\' enables address and undefined behavior sanitizers',
                 'release',
                 allowed_values=('release', 'debug', 'release+san', 'debug+san' )
+              ),
+  EnumVariable( 'opt',
+                'optimization level for release builds',
+                'o2',
+                allowed_values=('o2', 'ofast' )
+              ),
+  BoolVariable( 'report',
+                'emit Clang optimization remarks (-Rpass=.* -Rpass-missed=.* -Rpass-analysis=.*)',
+                False
+              ),
+  BoolVariable( 'inline',
+                'allow function inlining; set to 0 (-fno-inline) for finer VTune profiling',
+                True
               )
 )
 
@@ -31,7 +45,15 @@ if vars.UnknownVariables():
   exit(1)
 
 # create environment
-env = Environment( variables = vars )
+# forward the surrounding shell environment so that, e.g., module-provided
+# compilers and their libraries are found on the cluster.
+env = Environment( variables = vars,
+                   ENV       = os.environ )
+
+# allow overriding the C++ compiler via the CXX environment variable,
+# e.g. `CXX=clang++ scons` (ch. 8, compilers task 1.1).
+if 'CXX' in os.environ:
+  env['CXX'] = os.environ['CXX']
 
 # generate help message
 Help( vars.GenerateHelpText( env ) )
@@ -48,7 +70,21 @@ if 'debug' in env['mode']:
   env.Append( CXXFLAGS = [ '-g',
                            '-O0' ] )
 else:
-  env.Append( CXXFLAGS = [ '-O2' ] )
+  # -Ofast enables -ffast-math: relaxes IEEE-754 compliance (reassociation,
+  # no NaN/Inf handling, flush-to-zero) which may change numerical results.
+  l_optFlag = '-Ofast' if env['opt'] == 'ofast' else '-O2'
+  env.Append( CXXFLAGS = [ l_optFlag ] )
+
+# disable inlining for finer-grained profiling (e.g. VTune, ch. 8 task)
+if not env['inline']:
+  env.Append( CXXFLAGS = [ '-g',
+                           '-fno-inline' ] )
+
+# Clang optimization-remark reports: vectorization, inlining, etc.
+if env['report']:
+  env.Append( CXXFLAGS = [ '-Rpass=.*',
+                           '-Rpass-missed=.*',
+                           '-Rpass-analysis=.*' ] )
 
 # add sanitizers
 if 'san' in  env['mode']:
