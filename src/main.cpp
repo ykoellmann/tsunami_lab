@@ -738,8 +738,8 @@ int main(int i_argc, char* i_argv[]) {
   if (l_iterCount > 0 && l_nCells > 0) {
     double l_perCellIter = l_computeSec / (static_cast<double>(l_nCells) *
                                            static_cast<double>(l_iterCount));
-    std::cout << "  time per cell & iteration: " << l_perCellIter * 1e9
-              << " ns" << std::endl;
+    std::cout << "  time per cell & iteration: " << l_perCellIter * 1e9 << " ns"
+              << std::endl;
   }
 
   // free memory
