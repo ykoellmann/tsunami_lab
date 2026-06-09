@@ -27,7 +27,12 @@ vars.AddVariables(
   EnumVariable( 'opt',
                 'optimization level for release builds',
                 'o2',
-                allowed_values=('o2', 'ofast' )
+                allowed_values=('o2', 'o3', 'ofast' )
+              ),
+  EnumVariable( 'arch',
+                'target architecture; \'native\' enables -march=native (e.g. AVX-512 on Ice Lake)',
+                'none',
+                allowed_values=('none', 'native', 'icelake-server' )
               ),
   BoolVariable( 'report',
                 'emit Clang optimization remarks (-Rpass=.* -Rpass-missed=.* -Rpass-analysis=.*)',
@@ -72,8 +77,12 @@ if 'debug' in env['mode']:
 else:
   # -Ofast enables -ffast-math: relaxes IEEE-754 compliance (reassociation,
   # no NaN/Inf handling, flush-to-zero) which may change numerical results.
-  l_optFlag = '-Ofast' if env['opt'] == 'ofast' else '-O2'
-  env.Append( CXXFLAGS = [ l_optFlag ] )
+  l_optFlags = { 'o2': '-O2', 'o3': '-O3', 'ofast': '-Ofast' }
+  env.Append( CXXFLAGS = [ l_optFlags[ env['opt'] ] ] )
+
+# enable architecture-specific codegen (vectorization), e.g. -march=native
+if env['arch'] != 'none':
+  env.Append( CXXFLAGS = [ '-march=' + env['arch'] ] )
 
 # disable inlining for finer-grained profiling (e.g. VTune, ch. 8 task)
 if not env['inline']:
