@@ -79,6 +79,12 @@ else:
   # no NaN/Inf handling, flush-to-zero) which may change numerical results.
   l_optFlags = { 'o2': '-O2', 'o3': '-O3', 'ofast': '-Ofast' }
   env.Append( CXXFLAGS = [ l_optFlags[ env['opt'] ] ] )
+  if env['opt'] == 'ofast':
+    # -ffast-math (implied by -Ofast) makes Clang fold sin(pi*x) into
+    # sinpif()/cospif(), which glibc does not provide -> link error.
+    # Disable just those libcalls; harmless for GCC (never emits them).
+    env.Append( CXXFLAGS = [ '-fno-builtin-sinpi',  '-fno-builtin-sinpif',
+                             '-fno-builtin-cospi',  '-fno-builtin-cospif' ] )
 
 # enable architecture-specific codegen (vectorization), e.g. -march=native
 if env['arch'] != 'none':
