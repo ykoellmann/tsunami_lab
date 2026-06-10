@@ -95,6 +95,77 @@ covers only 6 iterations because both runs were resumed from a checkpoint
 close to the end time; a longer run gives a more stable estimate, but the
 relative ordering is consistent across repetitions.
 
+Instrumentation and Performance Counters (8.3)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+VTune Profiler was made available on Draco via:
+
+.. code-block:: bash
+
+   export PATH=/cluster/intel/oneapi/2025.0.0/vtune/2025.0/bin64:$PATH
+
+The GUI was launched on the login node with X-forwarding (``ssh -X``).
+A Hotspots analysis was configured for the solver binary and executed on a
+compute node — interactively first, then as a batch job.  The solver was
+recompiled with ``scons inline=0`` (enables ``-g -fno-inline``) for
+finer-grained results.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 45 20 15
+
+   * - Function
+     - CPU Time
+     - % of CPU Time
+   * - ``tsunami_lab::solvers::FWave::netUpdates``
+     - 16.288 s
+     - 34.8 %
+   * - ``tsunami_lab::solvers::FWave::waveStrengths``
+     - 13.297 s
+     - 28.4 %
+   * - ``tsunami_lab::patches::WavePropagation2d::timeStep``
+     - 11.925 s
+     - 25.5 %
+   * - ``tsunami_lab::solvers::FWave::waveSpeeds``
+     - 3.000 s
+     - 6.4 %
+   * - ``NC_get_vara`` (libnetcdf)
+     - 1.510 s
+     - 3.2 %
+
+The F-Wave solver functions dominate with ~95 % of CPU time — specifically
+``netUpdates``, ``waveStrengths``, ``timeStep`` and ``waveSpeeds``.  This
+was expected: ``netUpdates`` is called for every cell edge at every
+timestep, making it the innermost hot loop of the simulation.  Physical
+core utilization was 2.0 % (0.941 / 48), confirming the solver is
+single-threaded.
+
+The following optimizations target the hotspots directly:
+
+- **Inlining** — with ``inline=0`` (profiling build), ``waveStrengths``,
+  ``waveSpeeds``, ``flux`` and ``deltaXPsi`` are all separate call sites
+  inside ``netUpdates``.  Re-enabling inlining folds all of them into a
+  single function body, eliminating four function calls per edge per
+  timestep at :math:`O(n_x \cdot n_y)` call sites.
+
+- **Redundant ``sqrt``** — ``waveSpeeds`` computes three square roots:
+  ``std::sqrt(i_hL)``, ``std::sqrt(i_hR)`` and ``std::sqrt(l_hRoe)``.
+  The third can be replaced by :math:`0.5(\sqrt{h_L} + \sqrt{h_R})`,
+  reusing the already-computed ``l_hSqrtL`` and ``l_hSqrtR`` and saving
+  one ``sqrt`` call per edge.
+
+- **Redundant division** — ``flux`` is called twice inside
+  ``waveStrengths`` and each call computes ``i_hu / i_h``.  The
+  velocities ``l_uL`` and ``l_uR`` are already computed in ``netUpdates``
+  and could be passed into ``waveStrengths`` directly to avoid the
+  redundant division.
+
+- **SIMD vectorization** — building with ``arch=icelake-server`` enables
+  AVX-512 on Draco's Ice Lake nodes.  The per-edge computation in
+  ``timeStep`` is independent across edges; with inlining enabled the
+  compiler can auto-vectorize the loop and process multiple edges per
+  clock cycle.
+
 Individual Contributions
 -------------------------
 
@@ -103,5 +174,6 @@ Individual Contributions
   ``std::chrono`` timer around the compute kernel in ``main.cpp`` and
   derivation of the normalized *time per cell and iteration* metric.
   Local vs. Draco comparison.
-- **Yannik Köllmann:**
+- **Yannik Köllmann:** VTune Hotspots analysis (interactive and batch),
+  profiling build (``scons inline=0``), hotspot interpretation and documentation of section 8.3.
 - **Mika Brückner:**
