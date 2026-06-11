@@ -34,6 +34,10 @@ vars.AddVariables(
                 'none',
                 allowed_values=('none', 'native', 'icelake-server' )
               ),
+  BoolVariable( 'omp',
+                'enable OpenMP shared-memory parallelism (-fopenmp)',
+                False
+              ),
   BoolVariable( 'report',
                 'emit Clang optimization remarks (-Rpass=.* -Rpass-missed=.* -Rpass-analysis=.*)',
                 False
@@ -87,9 +91,16 @@ if env['arch'] != 'none':
 # Under -ffast-math, oneAPI's Clang/icpx fold sin(pi*x)/cos(pi*x) into
 # sinpif()/cospif() from Intel's math library (libimf). icpx links libimf
 # automatically; raw clang++ does not, so add it explicitly. GCC + glibc
-# never emit these symbols, so libimf is only needed for the LLVM compilers.
-if 'clang' in env['CXX'] or 'icpx' in env['CXX']:
+# never emit these symbols, so libimf is only needed for the LLVM compilers
+# and only when -Ofast (which implies -ffast-math) is active.
+if ('clang' in env['CXX'] or 'icpx' in env['CXX']) and \
+   env['opt'] == 'ofast' and 'debug' not in env['mode']:
   env.Append( LINKFLAGS = [ '-limf' ] )
+
+# enable OpenMP
+if env['omp']:
+  env.Append( CXXFLAGS  = [ '-fopenmp' ] )
+  env.Append( LINKFLAGS = [ '-fopenmp' ] )
 
 # disable inlining for finer-grained profiling (e.g. VTune, ch. 8 task)
 if not env['inline']:
