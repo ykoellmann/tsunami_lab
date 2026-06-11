@@ -34,6 +34,13 @@ private:
   //! bathymetry for all cells
   t_real* m_b = nullptr;
 
+  //! per-edge net updates (size m_nCells+1); L = update applied to left cell,
+  //! R = update applied to right cell
+  t_real* m_netUpdatesL_h  = nullptr;
+  t_real* m_netUpdatesL_hu = nullptr;
+  t_real* m_netUpdatesR_h  = nullptr;
+  t_real* m_netUpdatesR_hu = nullptr;
+
 public:
   /**
    * Constructs the 1d wave propagation solver.

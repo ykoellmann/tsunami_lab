@@ -14,14 +14,26 @@ tsunami_lab::patches::WavePropagation2d::WavePropagation2d(t_idx i_nCells_x,
   m_nCells_x = i_nCells_x;
   m_nCells_y = i_nCells_y;
 
-  // Allocate memory: (nCells_x + 2) * (nCells_y + 2) cells (incl. ghost cells)
-  // We use 2 buffers for time-stepping (step 0 and step 1)
   t_idx l_size = (m_nCells_x + 2) * (m_nCells_y + 2);
 
-  m_h = new t_real[2 * l_size]{};
-  m_hu = new t_real[2 * l_size]{};
-  m_hv = new t_real[2 * l_size]{};
-  m_b = new t_real[l_size]{};
+  // Allocate without zero-init; touch pages in parallel (NUMA first-touch) so
+  // each page is mapped on the NUMA node of the thread that will own it during
+  // the X-sweep (static row distribution).
+  m_h  = new t_real[2 * l_size];
+  m_hu = new t_real[2 * l_size];
+  m_hv = new t_real[2 * l_size];
+  m_b  = new t_real[l_size];
+
+#pragma omp parallel for schedule(static)
+  for (t_idx l_i = 0; l_i < 2 * l_size; l_i++) {
+    m_h[l_i]  = 0;
+    m_hu[l_i] = 0;
+    m_hv[l_i] = 0;
+  }
+#pragma omp parallel for schedule(static)
+  for (t_idx l_i = 0; l_i < l_size; l_i++) {
+    m_b[l_i] = 0;
+  }
 }
 
 tsunami_lab::patches::WavePropagation2d::~WavePropagation2d() {
@@ -132,61 +144,75 @@ void tsunami_lab::patches::WavePropagation2d::timeStep(t_real i_scaling,
                                                        std::string) {
   t_idx l_size = (m_nCells_x + 2) * (m_nCells_y + 2);
 
-  t_real* l_hCur = m_h + m_step * l_size;
+  t_real* l_hCur  = m_h  + m_step * l_size;
   t_real* l_huCur = m_hu + m_step * l_size;
   t_real* l_hvCur = m_hv + m_step * l_size;
 
   m_step = 1 - m_step;
 
-  t_real* l_hNew = m_h + m_step * l_size;
+  t_real* l_hNew  = m_h  + m_step * l_size;
   t_real* l_huNew = m_hu + m_step * l_size;
   t_real* l_hvNew = m_hv + m_step * l_size;
 
-  for (t_idx l_i = 0; l_i < l_size; l_i++) {
-    l_hNew[l_i] = l_hCur[l_i];
-    l_huNew[l_i] = l_huCur[l_i];
-    l_hvNew[l_i] = l_hvCur[l_i];
-  }
-
-  // X-sweep (vertical edges (ix+1/2, iy)
-  for (t_idx l_iy = 1; l_iy <= m_nCells_y; l_iy++) {
-    for (t_idx l_ix = 0; l_ix <= m_nCells_x; l_ix++) {
-      t_idx l_idxL = getCoordinates(l_ix, l_iy);
-      t_idx l_idxR = getCoordinates(l_ix + 1, l_iy);
-
-      t_real l_netUpdateL[2];
-      t_real l_netUpdateR[2];
-
-      solvers::FWave::netUpdates(l_hCur[l_idxL], l_hCur[l_idxR],
-                                 l_huCur[l_idxL], l_huCur[l_idxR], m_b[l_idxL],
-                                 m_b[l_idxR], l_netUpdateL, l_netUpdateR);
-
-      l_hNew[l_idxL] -= i_scaling * l_netUpdateL[0];
-      l_huNew[l_idxL] -= i_scaling * l_netUpdateL[1];
-
-      l_hNew[l_idxR] -= i_scaling * l_netUpdateR[0];
-      l_huNew[l_idxR] -= i_scaling * l_netUpdateR[1];
+  // One parallel region for all three phases to avoid repeated thread creation.
+#pragma omp parallel
+  {
+    // Copy current state into the new buffer (no barrier needed before X-sweep
+    // because #pragma omp for has an implicit barrier at the end).
+#pragma omp for schedule(static)
+    for (t_idx l_i = 0; l_i < l_size; l_i++) {
+      l_hNew[l_i]  = l_hCur[l_i];
+      l_huNew[l_i] = l_huCur[l_i];
+      l_hvNew[l_i] = l_hvCur[l_i];
     }
-  }
 
-  // Y-sweep (horizontal edges (ix, iy+1/2)
-  for (t_idx l_iy = 0; l_iy <= m_nCells_y; l_iy++) {
-    for (t_idx l_ix = 1; l_ix <= m_nCells_x; l_ix++) {
-      t_idx l_idxB = getCoordinates(l_ix, l_iy);
-      t_idx l_idxT = getCoordinates(l_ix, l_iy + 1);
+    // X-sweep: vertical edges (ix+1/2, iy).
+    // Parallelise outer loop: rows are independent — different l_iy values
+    // never write to the same cell.
+#pragma omp for schedule(static)
+    for (t_idx l_iy = 1; l_iy <= m_nCells_y; l_iy++) {
+      for (t_idx l_ix = 0; l_ix <= m_nCells_x; l_ix++) {
+        t_idx  l_idxL = getCoordinates(l_ix,     l_iy);
+        t_idx  l_idxR = getCoordinates(l_ix + 1, l_iy);
+        t_real l_netUpdateL[2];
+        t_real l_netUpdateR[2];
 
-      t_real l_netUpdateB[2];
-      t_real l_netUpdateT[2];
+        solvers::FWave::netUpdates(l_hCur[l_idxL], l_hCur[l_idxR],
+                                   l_huCur[l_idxL], l_huCur[l_idxR],
+                                   m_b[l_idxL], m_b[l_idxR],
+                                   l_netUpdateL, l_netUpdateR);
 
-      solvers::FWave::netUpdates(l_hCur[l_idxB], l_hCur[l_idxT],
-                                 l_hvCur[l_idxB], l_hvCur[l_idxT], m_b[l_idxB],
-                                 m_b[l_idxT], l_netUpdateB, l_netUpdateT);
-
-      l_hNew[l_idxB] -= i_scaling * l_netUpdateB[0];
-      l_hvNew[l_idxB] -= i_scaling * l_netUpdateB[1];
-
-      l_hNew[l_idxT] -= i_scaling * l_netUpdateT[0];
-      l_hvNew[l_idxT] -= i_scaling * l_netUpdateT[1];
+        l_hNew[l_idxL]  -= i_scaling * l_netUpdateL[0];
+        l_huNew[l_idxL] -= i_scaling * l_netUpdateL[1];
+        l_hNew[l_idxR]  -= i_scaling * l_netUpdateR[0];
+        l_huNew[l_idxR] -= i_scaling * l_netUpdateR[1];
+      }
     }
-  }
+    // implicit barrier — all X-sweep work done before Y-sweep starts
+
+    // Y-sweep: horizontal edges (ix, iy+1/2).
+    // Adjacent l_iy rows share cells, so the outer loop stays sequential.
+    // Parallelise inner loop: for a fixed l_iy, different l_ix values write to
+    // distinct cells.  Implicit barrier after each #pragma omp for prevents
+    // l_iy and l_iy+1 from racing on the shared row.
+    for (t_idx l_iy = 0; l_iy <= m_nCells_y; l_iy++) {
+#pragma omp for schedule(static)
+      for (t_idx l_ix = 1; l_ix <= m_nCells_x; l_ix++) {
+        t_idx  l_idxB = getCoordinates(l_ix, l_iy);
+        t_idx  l_idxT = getCoordinates(l_ix, l_iy + 1);
+        t_real l_netUpdateB[2];
+        t_real l_netUpdateT[2];
+
+        solvers::FWave::netUpdates(l_hCur[l_idxB], l_hCur[l_idxT],
+                                   l_hvCur[l_idxB], l_hvCur[l_idxT],
+                                   m_b[l_idxB], m_b[l_idxT],
+                                   l_netUpdateB, l_netUpdateT);
+
+        l_hNew[l_idxB]  -= i_scaling * l_netUpdateB[0];
+        l_hvNew[l_idxB] -= i_scaling * l_netUpdateB[1];
+        l_hNew[l_idxT]  -= i_scaling * l_netUpdateT[0];
+        l_hvNew[l_idxT] -= i_scaling * l_netUpdateT[1];
+      }
+    }
+  } // end parallel
 }
