@@ -96,6 +96,9 @@ static void printUsage(const char* i_prog) {
   std::cerr << "  -k         coarsening factor: k×k cells averaged into one "
                "output cell (default: 1)"
             << std::endl;
+  std::cerr << "  --io-steps file-output interval in time steps; 0 disables "
+               "file output (default: derived from end time)"
+            << std::endl;
   std::cerr << std::endl;
   std::cerr << "checkpointing:" << std::endl;
   std::cerr << "  If <out>/solution.nc already contains at least one time "
@@ -139,6 +142,9 @@ int main(int i_argc, char* i_argv[]) {
   std::string l_configPath;
   std::string l_outDirOverride;
   tsunami_lab::t_idx l_coarseK = 1;
+  // file-output interval in time steps. -1 keeps the default (derived from the
+  // end time); 0 disables file output entirely
+  long l_ioSteps = -1;
 
   // boundary conditions default to outflow on both sides
   tsunami_lab::patches::BoundaryCondition l_bcLeft =
@@ -215,6 +221,15 @@ int main(int i_argc, char* i_argv[]) {
         return EXIT_FAILURE;
       }
       l_coarseK = static_cast<tsunami_lab::t_idx>(l_val);
+
+    } else if (l_arg == "--io-steps" && l_i + 1 < i_argc) {
+      l_ioSteps = std::atol(i_argv[++l_i]);
+      if (l_ioSteps < 0) {
+        std::cerr << "error: --io-steps must be >= 0 (0 disables file output)"
+                  << std::endl;
+        printUsage(i_argv[0]);
+        return EXIT_FAILURE;
+      }
 
     } else if ((l_arg == "-d" || l_arg == "--domain") && l_i + 1 < i_argc) {
       l_domainSize = static_cast<tsunami_lab::t_real>(std::atof(i_argv[++l_i]));
@@ -654,10 +669,14 @@ int main(int i_argc, char* i_argv[]) {
   tsunami_lab::t_idx l_nOut = 0;
   tsunami_lab::t_real l_simTime = l_simTimeStart;
 
-  // one snapshot every 0.5 % of total time steps
+  // file-output interval in time steps. By default one snapshot every 0.5 % of
+  // the total time steps; overridden by --io-steps (0 disables file output).
+  bool l_writeOutput = (l_ioSteps != 0);
   tsunami_lab::t_idx l_outInterval =
-      std::max(static_cast<tsunami_lab::t_idx>(25),
-               static_cast<tsunami_lab::t_idx>(0.005f * l_endTime / l_dt));
+      (l_ioSteps > 0)
+          ? static_cast<tsunami_lab::t_idx>(l_ioSteps)
+          : std::max(static_cast<tsunami_lab::t_idx>(25),
+                     static_cast<tsunami_lab::t_idx>(0.005f * l_endTime / l_dt));
 
   std::cout << "entering time loop" << std::endl;
 
@@ -679,7 +698,7 @@ int main(int i_argc, char* i_argv[]) {
       }
       break;
     }
-    if (l_timeStep % l_outInterval == 0) {
+    if (l_writeOutput && l_timeStep % l_outInterval == 0) {
       std::cout << "  simulation time / #time steps: " << l_simTime << " s / "
                 << l_timeStep << std::endl;
 
