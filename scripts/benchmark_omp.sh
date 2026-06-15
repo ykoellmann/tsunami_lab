@@ -33,8 +33,8 @@ BIN="${BENCH_BIN:-build/tsunami_lab}"
 
 # scenario: Tohoku 2011 via TsunamiEvent2d. Domain is derived from the bath
 # file; -n sets the cell count per dimension (resolution = 2700km / n).
-BATH="${BENCH_BATH:-ressources/tsunami_simmulations/output/tohoku_gebco20_ucsb3_250m_bath.nc}"
-DISPL="${BENCH_DISPL:-ressources/tsunami_simmulations/output/tohoku_gebco20_ucsb3_250m_displ.nc}"
+BATH="${BENCH_BATH:-ressources/tsunami_simulations/output/tohoku_gebco20_ucsb3_250m_bath.nc}"
+DISPL="${BENCH_DISPL:-ressources/tsunami_simulations/output/tohoku_gebco20_ucsb3_250m_displ.nc}"
 
 # problem size and simulated end time (seconds). Defaults give a few thousand
 # compute iterations on a grid large enough to scale to 144 threads while still
