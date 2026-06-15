@@ -372,8 +372,7 @@ Individual Contributions
 -------------------------
 
 - **Jan Vogt:** Create presentation and plan for individual phase of the project
-- **Yannik Köllmann:** Added the omp=1 SCons flag. Parallelised the 2D X-sweep (outer row loop) and the 1D solver (two-phase compute/apply to eliminate race conditions).
-Implemented the NUMA first-touch initialisation. Wrote the initial chapter 9 documentation.
+- **Yannik Köllmann:** Added the omp=1 SCons flag. Parallelised the 2D X-sweep (outer row loop) and the 1D solver (two-phase compute/apply to eliminate race conditions). Implemented the NUMA first-touch initialisation. Wrote the initial chapter 9 documentation.
 - **Mika Brückner:** Enhanced OpenMP parallelisation of the 2D solver (red-black Y-sweep and NUMA-aware, sweep-aligned first-touch initialisation).
 Added the ``--io-steps`` CLI option and fixed the serial-build compiler error (``-Wno-unknown-pragmas``).
 Wrote the benchmark script ``scripts/benchmark_omp.sh``, ran the benchmarks on the NVIDIA Grace node.
