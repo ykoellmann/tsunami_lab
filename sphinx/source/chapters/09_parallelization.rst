@@ -148,73 +148,190 @@ subtract-assignments into one parallel write.
 Results & Benchmarks
 ---------------------
 
+All benchmarks were run on a single **NVIDIA Grace** node with the Tohoku
+2011 ``TsunamiEvent2d`` scenario, built with ``omp=1 opt=o3 arch=native``
+(GCC). The grid was :math:`3000 \times 1667 \approx 5.0` million cells
+(``-n 3000``, domain derived from the 250 m bathymetry file), simulated to
+:math:`t = 600\,\text{s}` which is 411 time steps. The reported time is the
+solver's own *compute wall-clock* (the time-stepping kernel only; NetCDF I/O
+and the serial setup are excluded), driven by ``scripts/benchmark_omp.sh``.
+
 Speedup on NVIDIA Grace
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The speedup :math:`S_p = T_1 / T_p` was measured on the NVIDIA Grace
-cluster running the Tohoku 2011 scenario (250 m resolution, 1000 time
-steps) for thread counts from 1 to 144.
+The speedup :math:`S_p = T_1 / T_p` and parallel efficiency :math:`S_p/p`
+for thread counts from 1 to 144 (pinned with
+``OMP_PROC_BIND=close OMP_PLACES=cores``, ``OMP_SCHEDULE=static``):
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 25 25 20
+   :widths: 15 25 20 20 20
 
    * - Threads :math:`p`
      - Wall-clock :math:`T_p` (s)
      - Speedup :math:`S_p`
      - Efficiency :math:`S_p/p`
+     - Mcells/s
    * - 1
-     - —
-     - 1.0
+     - 47.37
      - 1.00
+     - 1.00
+     - 43.4
+   * - 2
+     - 24.90
+     - 1.90
+     - 0.95
+     - 82.5
    * - 4
-     - —
-     - —
-     - —
+     - 13.27
+     - 3.57
+     - 0.89
+     - 154.9
+   * - 8
+     - 7.24
+     - 6.54
+     - 0.82
+     - 283.8
    * - 16
-     - —
-     - —
-     - —
+     - 4.41
+     - 10.74
+     - 0.67
+     - 465.9
+   * - 36
+     - 3.85
+     - **12.31**
+     - 0.34
+     - 534.0
    * - 72
-     - —
-     - —
-     - —
+     - 4.82
+     - 9.83
+     - 0.14
+     - 426.7
+   * - 108
+     - 52.15
+     - 0.91
+     - 0.01
+     - 39.4
    * - 144
-     - —
-     - —
-     - —
+     - 57.27
+     - 0.83
+     - 0.01
+     - 35.9
 
-*(Numbers to be filled in after Grace benchmarks.)* TODO
+The solver scales well up to about 16 threads (efficiency ≥ 0.67) and
+reaches its **best absolute speedup of 12.3× at 36 threads** (534 Mcells/s).
+Beyond that, throughput drops and at 108/144 threads it collapses to *below*
+serial performance. The Grace Superchip is two 72-core dies on separate NUMA
+nodes; once the thread team spans both dies, two effects dominate:
+
+* The **Y-sweep parallelises the inner loop** (a barrier after every one of
+  the 1667 rows per step). At 100+ threads this synchronisation — now across
+  the inter-die link — costs far more than the work it guards.
+* Pages mapped by the first-touch initialisation on die 0 are accessed
+  remotely by threads on die 1.
+
+The inner-loop Y-sweep is therefore the primary scalability bottleneck on
+the full node; see :ref:`the outlook below <parallel-outlook>`.
 
 Scheduling strategies
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
-Three OpenMP scheduling strategies were compared on Grace.  All runs use
-``opt=o3 arch=native omp=1``:
+Three OpenMP scheduling strategies at 72 threads
+(``OMP_PROC_BIND=close OMP_PLACES=cores``):
 
 .. list-table::
    :header-rows: 1
-   :widths: 35 30 35
+   :widths: 30 20 20 30
 
    * - Strategy
-     - :math:`T_p` at 72 threads (s)
+     - :math:`T_p` (s)
+     - Mcells/s
      - Notes
-   * - ``schedule(static)``
-     - —
-     - default; even chunks, predictable first-touch
-   * - ``schedule(dynamic,64)``
-     - —
+   * - ``static``
+     - **4.90**
+     - 419
+     - even chunks; preserves first-touch mapping
+   * - ``dynamic,64``
+     - 19.02
+     - 108
      - load-balancing; invalidates first-touch mapping
-   * - ``schedule(guided)``
-     - —
-     - decreasing chunks; mixed NUMA behaviour
+   * - ``guided``
+     - 32.79
+     - 63
+     - decreasing chunks; worst NUMA behaviour
 
-*(Numbers to be filled in after Grace benchmarks.)* TODO
+``static`` wins by a wide margin (≈ 4× over ``dynamic``, ≈ 7× over
+``guided``) because it preserves the first-touch mapping: the same thread
+that touched a page during initialisation processes it during the sweep.
+``dynamic`` and ``guided`` hand chunks to whichever thread is free, so most
+accesses become remote — confirming that for this regular, uniform workload
+NUMA locality matters far more than load balancing.
 
-``static`` is expected to perform best because it preserves the first-touch
-mapping: the same thread that touched a page during initialisation
-processes that page during the sweep.  Dynamic scheduling can improve
-load balance for irregular workloads but negates the NUMA optimisation.
+Pinning and NUMA effects
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Thread pinning at 72 threads (``OMP_SCHEDULE=static``), varying
+``OMP_PROC_BIND`` and ``OMP_PLACES``:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 20 20 20 20
+
+   * - ``OMP_PROC_BIND``
+     - ``OMP_PLACES``
+     - :math:`T_p` (s)
+     - Mcells/s
+     - Slowdown
+   * - ``close``
+     - ``cores``
+     - **4.98**
+     - 412
+     - 1.0× (best)
+   * - ``spread``
+     - ``cores``
+     - 8.70
+     - 236
+     - 1.7×
+   * - ``false``
+     - ``cores``
+     - 356.52
+     - 5.8
+     - 72×
+   * - ``close``
+     - ``sockets``
+     - 376.31
+     - 5.5
+     - 76×
+   * - ``spread``
+     - ``sockets``
+     - 376.30
+     - 5.5
+     - 76×
+
+This is a textbook demonstration of NUMA effects. **Pinning threads to
+cores (``close``/``cores``) is essential** — it keeps each thread on the
+core whose NUMA node holds its first-touched pages. Disabling binding
+(``OMP_PROC_BIND=false``) lets the OS migrate threads freely, destroying the
+first-touch mapping and making nearly every access remote: a **70× slowdown**.
+``OMP_PLACES=sockets`` is just as catastrophic, because threads may float
+across all cores of a socket and lose locality. ``spread`` over cores is
+correct but ~1.7× slower than ``close`` here, since spreading the team
+across both dies again increases remote traffic for this memory-bound kernel.
+
+**Best configuration:** ``OMP_PROC_BIND=close OMP_PLACES=cores
+OMP_SCHEDULE=static`` — exactly the defaults used in the scaling sweep.
+
+.. _parallel-outlook:
+
+Outlook
+~~~~~~~
+
+The dominant remaining bottleneck is the **inner-loop parallelisation of the
+Y-sweep** with its per-row barrier, which prevents scaling beyond one Grace
+die. Replacing it with a parallel *outer* loop over independent column blocks
+(or a red-black / two-buffer scheme that removes the row dependency) would cut
+the barrier count from one-per-row to one-per-sweep and is expected to restore
+scaling toward 144 threads.
 
 Individual Contributions
 -------------------------
