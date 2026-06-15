@@ -18,20 +18,20 @@ tsunami_lab::patches::WavePropagation2d::WavePropagation2d(t_idx i_nCells_x,
 
   // Allocate without zero-init; touch pages in parallel (NUMA first-touch) so
   // each page is mapped on the NUMA node of the thread that will own it during
-  // the X-sweep (static row distribution).
+  // the sweeps.
   m_h = new t_real[2 * l_size];
   m_hu = new t_real[2 * l_size];
   m_hv = new t_real[2 * l_size];
   m_b = new t_real[l_size];
 
 #pragma omp parallel for schedule(static)
-  for (t_idx l_i = 0; l_i < 2 * l_size; l_i++) {
-    m_h[l_i] = 0;
-    m_hu[l_i] = 0;
-    m_hv[l_i] = 0;
-  }
-#pragma omp parallel for schedule(static)
   for (t_idx l_i = 0; l_i < l_size; l_i++) {
+    m_h[l_i] = 0;
+    m_h[l_size + l_i] = 0;
+    m_hu[l_i] = 0;
+    m_hu[l_size + l_i] = 0;
+    m_hv[l_i] = 0;
+    m_hv[l_size + l_i] = 0;
     m_b[l_i] = 0;
   }
 }
