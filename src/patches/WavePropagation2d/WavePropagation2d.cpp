@@ -159,7 +159,8 @@ void tsunami_lab::patches::WavePropagation2d::timeStep(t_real i_scaling,
   {
     // Copy current state into the new buffer (no barrier needed before X-sweep
     // because #pragma omp for has an implicit barrier at the end).
-#pragma omp for schedule(static)
+    // schedule(runtime): selectable via OMP_SCHEDULE for benchmarking;
+#pragma omp for schedule(runtime)
     for (t_idx l_i = 0; l_i < l_size; l_i++) {
       l_hNew[l_i]  = l_hCur[l_i];
       l_huNew[l_i] = l_huCur[l_i];
@@ -169,7 +170,7 @@ void tsunami_lab::patches::WavePropagation2d::timeStep(t_real i_scaling,
     // X-sweep: vertical edges (ix+1/2, iy).
     // Parallelise outer loop: rows are independent — different l_iy values
     // never write to the same cell.
-#pragma omp for schedule(static)
+#pragma omp for schedule(runtime)
     for (t_idx l_iy = 1; l_iy <= m_nCells_y; l_iy++) {
       for (t_idx l_ix = 0; l_ix <= m_nCells_x; l_ix++) {
         t_idx  l_idxL = getCoordinates(l_ix,     l_iy);
@@ -196,7 +197,7 @@ void tsunami_lab::patches::WavePropagation2d::timeStep(t_real i_scaling,
     // distinct cells.  Implicit barrier after each #pragma omp for prevents
     // l_iy and l_iy+1 from racing on the shared row.
     for (t_idx l_iy = 0; l_iy <= m_nCells_y; l_iy++) {
-#pragma omp for schedule(static)
+#pragma omp for schedule(runtime)
       for (t_idx l_ix = 1; l_ix <= m_nCells_x; l_ix++) {
         t_idx  l_idxB = getCoordinates(l_ix, l_iy);
         t_idx  l_idxT = getCoordinates(l_ix, l_iy + 1);

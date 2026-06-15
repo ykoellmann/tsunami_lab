@@ -58,7 +58,8 @@ void tsunami_lab::patches::WavePropagation1d::timeStep(t_real i_scaling,
   std::transform(i_mode.begin(), i_mode.end(), i_mode.begin(), ::tolower);
 
   // Phase 1: compute net updates for all edges in parallel (no write conflicts)
-#pragma omp parallel for schedule(static)
+  // schedule(runtime): selectable via OMP_SCHEDULE
+#pragma omp parallel for schedule(runtime)
   for (t_idx l_ed = 0; l_ed < m_nCells + 1; l_ed++) {
     t_real l_netUpdates[2][2] = {{0}};
     t_idx  l_ceL = l_ed;
@@ -87,7 +88,7 @@ void tsunami_lab::patches::WavePropagation1d::timeStep(t_real i_scaling,
   // Phase 2: apply updates to interior cells in parallel (each cell written once)
   // Cell l_ce receives the right update of edge l_ce-1 and the left update of
   // edge l_ce.
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(runtime)
   for (t_idx l_ce = 1; l_ce <= m_nCells; l_ce++) {
     l_hNew[l_ce]  = l_hOld[l_ce]
                   - i_scaling * (m_netUpdatesR_h[l_ce - 1]  + m_netUpdatesL_h[l_ce]);
