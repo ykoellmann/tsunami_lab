@@ -66,30 +66,40 @@ right net updates of edge :math:`(i_x, i_y)` only touch cells in row
    }
 
 **Y-sweep** (horizontal edges :math:`(i_x,\, i_y+\tfrac{1}{2})`).  Here
-adjacent *rows* share cells (edge :math:`(i_x, i_y)` writes to cell
-:math:`(i_x, i_y{+}1)`, which is also written by edge
-:math:`(i_x, i_y{+}1)`), so the outer loop must stay sequential.  The
-inner loop over columns is parallelised instead — for a fixed :math:`i_y`,
-different :math:`i_x` values write to distinct cells.  The implicit
-barrier after each ``#pragma omp for`` prevents row :math:`i_y` and
-:math:`i_y{+}1` from racing:
+adjacent *rows* share cells: edge :math:`(i_x, i_y)` writes cell
+:math:`(i_x, i_y{+}1)`, which edge :math:`(i_x, i_y{+}1)` also writes.
+The naive fix — keep the outer ``i_y`` loop sequential and parallelise the
+inner ``i_x`` loop — puts a barrier after *every one* of the 1667 rows, and
+that synchronisation became the dominant cost on the full node (see
+:ref:`results <parallel-outlook>`).
+
+Instead we use a **red-black split over rows**.  Edges of the same parity
+differ by :math:`\ge 2` and therefore write disjoint cells, so each parity
+pass parallelises over rows (keeping the cache-friendly ``i_x``-inner order),
+and the implicit barrier *between* the two passes separates the writes of
+edge :math:`i_y` and edge :math:`i_y{-}1` to their shared cell.  This reduces
+the barrier count from one-per-row to **two per sweep**:
 
 .. code-block:: c++
 
-   for (t_idx l_iy = 0; l_iy <= m_nCells_y; l_iy++) {
-     #pragma omp for schedule(static)
-     for (t_idx l_ix = 1; l_ix <= m_nCells_x; l_ix++) {
-       // ... FWave::netUpdates + cell updates
-     }
-   }
+   // even rows, then (barrier) odd rows
+   #pragma omp for schedule(runtime)
+   for (t_idx l_iy = 0; l_iy <= m_nCells_y; l_iy += 2)
+     processYRow(l_iy);
+   #pragma omp for schedule(runtime)
+   for (t_idx l_iy = 1; l_iy <= m_nCells_y; l_iy += 2)
+     processYRow(l_iy);
 
-To answer the assignment's question directly: **parallelising the outer
-loop is better for the X-sweep** (more coarse-grained work, better cache
-reuse per thread), while **the inner loop must be parallelised for the
-Y-sweep** due to the row-shared-cell dependency.
+To answer the assignment's question directly: **the outer loop is the right
+one to parallelise in both sweeps** — over rows in the X-sweep and over
+same-colour rows in the Y-sweep — because it is coarse-grained and minimises
+barriers.  Parallelising the *inner* loop (the naive Y-sweep) is correct but
+far slower at scale due to the per-row barrier.
+
+.. _parallel-firsttouch:
 
 NUMA-aware initialisation (first-touch policy)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 On multi-socket systems like NVIDIA Grace, each NUMA node has its own
 memory.  The OS maps a page to the node of the *first* thread to touch it
@@ -98,21 +108,30 @@ via ``new T[n]{}``), every access from a remote thread crosses a slow
 inter-socket link.
 
 To avoid this, the constructor allocates the arrays *without*
-zero-initialisation and then touches the pages in parallel using the same
-``schedule(static)`` that the sweeps use:
+zero-initialisation and touches the pages in parallel with the same
+``schedule(static)`` distribution the sweeps use.  A single loop over
+``[0, l_size)`` touches the same flat index range in *every* array and in
+*both* time buffers (``l_i`` and ``l_size + l_i``), so each thread owns the
+identical range it later reads/writes in the copy and sweep phases:
 
 .. code-block:: c++
 
-   m_h  = new t_real[2 * l_size];   // no {}
+   m_h = new t_real[2 * l_size];   // no {}
    // ...
    #pragma omp parallel for schedule(static)
-   for (t_idx l_i = 0; l_i < 2 * l_size; l_i++) {
-     m_h[l_i] = 0;  m_hu[l_i] = 0;  m_hv[l_i] = 0;
+   for (t_idx l_i = 0; l_i < l_size; l_i++) {
+     m_h[l_i] = 0;  m_h[l_size + l_i] = 0;   // both buffers
+     m_hu[l_i] = 0; m_hu[l_size + l_i] = 0;
+     m_hv[l_i] = 0; m_hv[l_size + l_i] = 0;
+     m_b[l_i] = 0;
    }
 
-Because the static block distribution assigns the same index range to the
-same thread in both the initialisation and the sweep loops, each thread
-processes pages that the OS has already mapped to its local NUMA node.
+A flat loop over ``2 * l_size`` would split each buffer differently from the
+per-buffer sweeps, leaving pages remote once the team spans more than one
+node.  In practice this alignment is essential for correctness of the NUMA
+story but, for the measured 5 M-cell problem, the kernel stays
+synchronisation-bound past one socket, so it does not by itself remove the
+108/144-thread drop (see :ref:`results <parallel-outlook>`).
 
 1D Solver (``WavePropagation1d``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -156,6 +175,9 @@ All benchmarks were run on a single **NVIDIA Grace** node with the Tohoku
 solver's own *compute wall-clock* (the time-stepping kernel only; NetCDF I/O
 and the serial setup are excluded), driven by ``scripts/benchmark_omp.sh``.
 
+The benchmark node has **two sockets of 72 cores each** (Grace, no SMT;
+``nproc`` = 144, two NUMA nodes: cores 0–71 → node 0, 72–143 → node 1).
+
 Speedup on NVIDIA Grace
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -173,65 +195,68 @@ for thread counts from 1 to 144 (pinned with
      - Efficiency :math:`S_p/p`
      - Mcells/s
    * - 1
-     - 47.37
+     - 46.90
      - 1.00
      - 1.00
-     - 43.4
+     - 43.8
    * - 2
-     - 24.90
-     - 1.90
-     - 0.95
-     - 82.5
+     - 23.84
+     - 1.97
+     - 0.98
+     - 86.2
    * - 4
-     - 13.27
-     - 3.57
-     - 0.89
-     - 154.9
+     - 12.01
+     - 3.90
+     - 0.98
+     - 171.1
    * - 8
-     - 7.24
-     - 6.54
-     - 0.82
-     - 283.8
+     - 6.06
+     - 7.73
+     - 0.97
+     - 338.9
    * - 16
-     - 4.41
-     - 10.74
-     - 0.67
-     - 465.9
+     - 3.06
+     - 15.31
+     - 0.96
+     - 670.9
    * - 36
-     - 3.85
-     - **12.31**
-     - 0.34
-     - 534.0
+     - 1.44
+     - 32.53
+     - 0.90
+     - 1425.5
    * - 72
-     - 4.82
-     - 9.83
-     - 0.14
-     - 426.7
+     - 0.76
+     - **62.06**
+     - 0.86
+     - 2720.0
    * - 108
-     - 52.15
-     - 0.91
-     - 0.01
-     - 39.4
+     - 17.87
+     - 2.62
+     - 0.02
+     - 115.0
    * - 144
-     - 57.27
-     - 0.83
-     - 0.01
-     - 35.9
+     - 16.13
+     - 2.91
+     - 0.02
+     - 127.4
 
-The solver scales well up to about 16 threads (efficiency ≥ 0.67) and
-reaches its **best absolute speedup of 12.3× at 36 threads** (534 Mcells/s).
-Beyond that, throughput drops and at 108/144 threads it collapses to *below*
-serial performance. The Grace Superchip is two 72-core dies on separate NUMA
-nodes; once the thread team spans both dies, two effects dominate:
+Within a single socket the solver scales **near-ideally**: 62× on 72 threads
+at 86 % efficiency (2.7 G cell-updates/s). With ``close``/``cores`` pinning,
+threads ≤ 72 all land on socket 0, and the first-touch initialisation places
+every page in node 0's memory, so all accesses stay local.
 
-* The **Y-sweep parallelises the inner loop** (a barrier after every one of
-  the 1667 rows per step). At 100+ threads this synchronisation — now across
-  the inter-die link — costs far more than the work it guards.
-* Pages mapped by the first-touch initialisation on die 0 are accessed
-  remotely by threads on die 1.
-
-The inner-loop Y-sweep is therefore the primary scalability bottleneck on
-the full node; see :ref:`the outlook below <parallel-outlook>`.
+At **108 and 144 threads the team spans both sockets and throughput
+collapses** (≈ 17 s, i.e. only ~3× over serial). This is *not* a data-placement
+problem — aligning the first-touch initialisation with the sweep distribution
+(see :ref:`Implementation <parallel-firsttouch>`) did not change these numbers.
+It is the **strong-scaling limit combined with cross-socket synchronisation**:
+the 5 M-cell / 411-step problem is small, so each time step does little work
+per thread, while every step contains ~4 implicit barriers (copy, X-sweep,
+two Y-sweep colours). Up to 72 threads those barriers are intra-socket and
+cheap; beyond 72 they cross the inter-socket link and their cost dwarfs the
+shrinking per-thread work. The second socket therefore cannot pay off at this
+problem size — a larger domain is expected to keep scaling past 72 (see
+:ref:`outlook <parallel-outlook>`).
 
 Scheduling strategies
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -248,24 +273,24 @@ Three OpenMP scheduling strategies at 72 threads
      - Mcells/s
      - Notes
    * - ``static``
-     - **4.90**
-     - 419
+     - **0.758**
+     - 2712
      - even chunks; preserves first-touch mapping
-   * - ``dynamic,64``
-     - 19.02
-     - 108
-     - load-balancing; invalidates first-touch mapping
    * - ``guided``
-     - 32.79
-     - 63
-     - decreasing chunks; worst NUMA behaviour
+     - 0.791
+     - 2598
+     - large initial chunks; locality mostly preserved
+   * - ``dynamic,64``
+     - 7.67
+     - 268
+     - tiny round-robin chunks; destroys first-touch mapping
 
-``static`` wins by a wide margin (≈ 4× over ``dynamic``, ≈ 7× over
-``guided``) because it preserves the first-touch mapping: the same thread
-that touched a page during initialisation processes it during the sweep.
-``dynamic`` and ``guided`` hand chunks to whichever thread is free, so most
-accesses become remote — confirming that for this regular, uniform workload
-NUMA locality matters far more than load balancing.
+``static`` is best, with ``guided`` within ~4 % — once the Y-sweep no longer
+has a per-row barrier, ``guided``'s large initial chunks keep most accesses
+local. ``dynamic,64`` is **10× slower**: handing out tiny 64-iteration chunks
+round-robin scatters each thread's work across the array, so the pages it
+touches are mostly remote. For this regular, uniform workload NUMA locality
+matters far more than load balancing.
 
 Pinning and NUMA effects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -284,58 +309,70 @@ Thread pinning at 72 threads (``OMP_SCHEDULE=static``), varying
      - Slowdown
    * - ``close``
      - ``cores``
-     - **4.98**
-     - 412
+     - **0.758**
+     - 2713
      - 1.0× (best)
    * - ``spread``
      - ``cores``
-     - 8.70
-     - 236
-     - 1.7×
-   * - ``false``
-     - ``cores``
-     - 356.52
-     - 5.8
-     - 72×
-   * - ``close``
-     - ``sockets``
-     - 376.31
-     - 5.5
-     - 76×
+     - 0.887
+     - 2318
+     - 1.2×
    * - ``spread``
      - ``sockets``
-     - 376.30
-     - 5.5
-     - 76×
+     - 22.27
+     - 92
+     - 29×
+   * - ``close``
+     - ``sockets``
+     - 26.90
+     - 76
+     - 36×
+   * - ``false``
+     - ``cores``
+     - 28.41
+     - 72
+     - 37×
 
-This is a textbook demonstration of NUMA effects. **Pinning threads to
-cores (``close``/``cores``) is essential** — it keeps each thread on the
-core whose NUMA node holds its first-touched pages. Disabling binding
-(``OMP_PROC_BIND=false``) lets the OS migrate threads freely, destroying the
-first-touch mapping and making nearly every access remote: a **70× slowdown**.
-``OMP_PLACES=sockets`` is just as catastrophic, because threads may float
-across all cores of a socket and lose locality. ``spread`` over cores is
-correct but ~1.7× slower than ``close`` here, since spreading the team
-across both dies again increases remote traffic for this memory-bound kernel.
+This is a textbook demonstration of NUMA effects. **Pinning threads to cores
+(``close``/``cores``) is essential** — it keeps each thread on the core whose
+NUMA node holds its first-touched pages, so all 72 threads stay on socket 0
+with purely local memory. Every configuration that lets threads cross the
+socket boundary collapses by ~30–37×:
+
+* ``OMP_PROC_BIND=false`` lets the OS migrate threads freely across all 144
+  cores, so the first-touch mapping is meaningless and most accesses are remote.
+* ``OMP_PLACES=sockets`` binds a thread to a *socket* but lets it float over
+  all 72 cores of that socket and, with 72 threads, spreads the team over both
+  sockets — again losing locality.
+* ``spread``/``cores`` is correct but distributes the 72 threads across *both*
+  sockets (instead of packing socket 0), so it pays some remote traffic and is
+  1.2× slower than ``close``.
 
 **Best configuration:** ``OMP_PROC_BIND=close OMP_PLACES=cores
-OMP_SCHEDULE=static`` — exactly the defaults used in the scaling sweep.
+OMP_SCHEDULE=static`` — the defaults used in the scaling sweep.
 
 .. _parallel-outlook:
 
 Outlook
 ~~~~~~~
 
-The dominant remaining bottleneck is the **inner-loop parallelisation of the
-Y-sweep** with its per-row barrier, which prevents scaling beyond one Grace
-die. Replacing it with a parallel *outer* loop over independent column blocks
-(or a red-black / two-buffer scheme that removes the row dependency) would cut
-the barrier count from one-per-row to one-per-sweep and is expected to restore
-scaling toward 144 threads.
+The remaining limiter is the **cross-socket strong-scaling regime** at
+108/144 threads, where global barriers across the inter-socket link dominate
+the small per-thread workload. Two directions would let the second socket
+contribute:
+
+* **Larger domains.** More cells per thread amortise the per-step barriers;
+  a higher-resolution run (e.g. ``-n 8000``) is expected to keep scaling past
+  72 threads.
+* **Fewer / NUMA-local barriers.** A domain decomposition with explicit halo
+  exchange, or per-socket sub-teams, would replace the global barriers with
+  cheaper socket-local ones.
 
 Individual Contributions
 -------------------------
 
 - **Jan Vogt:**
 - **Yannik Köllmann:**
-- **Mika Brückner:**
+- **Mika Brückner:** Enhanced OpenMP parallelisation of the 2D solver (red-black Y-sweep and NUMA-aware, sweep-aligned first-touch initialisation).
+Added the ``--io-steps`` CLI option and fixed the serial-build compiler error (``-Wno-unknown-pragmas``).
+Wrote the benchmark script ``scripts/benchmark_omp.sh``, ran the benchmarks on the NVIDIA Grace node.
