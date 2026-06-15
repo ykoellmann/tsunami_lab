@@ -21,7 +21,6 @@ void tsunami_lab::solvers::FWave::waveSpeeds(t_real i_hL,
   t_real l_hSqrtL = std::sqrt(i_hL);
   t_real l_hSqrtR = std::sqrt(i_hR);
 
-
   // compute FWave averages
   t_real l_hRoe = 0.5f * (i_hL + i_hR);
   t_real l_uRoe = l_hSqrtL * i_uL + l_hSqrtR * i_uR;
