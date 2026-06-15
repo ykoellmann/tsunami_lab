@@ -191,12 +191,15 @@ void tsunami_lab::patches::WavePropagation2d::timeStep(t_real i_scaling,
     // implicit barrier — all X-sweep work done before Y-sweep starts
 
     // Y-sweep: horizontal edges (ix, iy+1/2).
-    // Adjacent l_iy rows share cells, so the outer loop stays sequential.
-    // Parallelise inner loop: for a fixed l_iy, different l_ix values write to
-    // distinct cells.  Implicit barrier after each #pragma omp for prevents
-    // l_iy and l_iy+1 from racing on the shared row.
-    for (t_idx l_iy = 0; l_iy <= m_nCells_y; l_iy++) {
-#pragma omp for schedule(runtime)
+    // Edge l_iy writes cells (ix, l_iy) and (ix, l_iy+1), so adjacent rows
+    // share a cell and cannot run concurrently. Instead of serialising the
+    // outer loop (one barrier per row), use a red-black split over rows:
+    // edges of the same parity differ by >= 2 and thus write disjoint cells,
+    // so each parity pass parallelises over rows (cache-friendly ix-inner) and
+    // the implicit barrier between the two passes separates the writes of
+    // edge l_iy and edge l_iy-1 to their shared cell. Two barriers per sweep
+    // instead of m_nCells_y.
+    auto l_processYRow = [&](t_idx l_iy) {
       for (t_idx l_ix = 1; l_ix <= m_nCells_x; l_ix++) {
         t_idx l_idxB = getCoordinates(l_ix, l_iy);
         t_idx l_idxT = getCoordinates(l_ix, l_iy + 1);
@@ -212,6 +215,20 @@ void tsunami_lab::patches::WavePropagation2d::timeStep(t_real i_scaling,
         l_hNew[l_idxT] -= i_scaling * l_netUpdateT[0];
         l_hvNew[l_idxT] -= i_scaling * l_netUpdateT[1];
       }
+    };
+
+    // even edges
+#pragma omp for schedule(runtime)
+    for (t_idx l_iy = 0; l_iy <= m_nCells_y; l_iy += 2) {
+      l_processYRow(l_iy);
+    }
+    // implicit barrier -> even-row writes complete before odd rows touch the
+    // shared cells
+
+    // odd edges
+#pragma omp for schedule(runtime)
+    for (t_idx l_iy = 1; l_iy <= m_nCells_y; l_iy += 2) {
+      l_processYRow(l_iy);
     }
   } // end parallel
 }
