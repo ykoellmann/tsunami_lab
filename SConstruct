@@ -101,6 +101,12 @@ if ('clang' in env['CXX'] or 'icpx' in env['CXX']) and \
 if env['omp']:
   env.Append( CXXFLAGS  = [ '-fopenmp' ] )
   env.Append( LINKFLAGS = [ '-fopenmp' ] )
+else:
+  # without -fopenmp the compiler does not recognise the #pragma omp lines.
+  # GCC then warns (-Wunknown-pragmas) which, combined with -Werror, breaks the
+  # serial build (e.g. CI). Silence it so serial builds simply ignore them;
+  # Clang ignores them silently anyway.
+  env.Append( CXXFLAGS = [ '-Wno-unknown-pragmas' ] )
 
 # disable inlining for finer-grained profiling (e.g. VTune, ch. 8 task)
 if not env['inline']:
