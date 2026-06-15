@@ -673,10 +673,10 @@ int main(int i_argc, char* i_argv[]) {
   // the total time steps; overridden by --io-steps (0 disables file output).
   bool l_writeOutput = (l_ioSteps != 0);
   tsunami_lab::t_idx l_outInterval =
-      (l_ioSteps > 0)
-          ? static_cast<tsunami_lab::t_idx>(l_ioSteps)
-          : std::max(static_cast<tsunami_lab::t_idx>(25),
-                     static_cast<tsunami_lab::t_idx>(0.005f * l_endTime / l_dt));
+      (l_ioSteps > 0) ? static_cast<tsunami_lab::t_idx>(l_ioSteps)
+                      : std::max(static_cast<tsunami_lab::t_idx>(25),
+                                 static_cast<tsunami_lab::t_idx>(
+                                     0.005f * l_endTime / l_dt));
 
   std::cout << "entering time loop" << std::endl;
 
