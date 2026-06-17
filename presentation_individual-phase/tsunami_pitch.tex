@@ -86,7 +86,17 @@
   \note{~30s. Status quo: umstaendlich, langsam, statisch. Motiviert Echtzeit + Interaktion.}
 \end{frame}
 
-% ---------- 2 | Die Luecke (naiv vs. Okada) --------------------------
+% ---------- 2 | Die Idee + Render ------------------------------------
+\begin{frame}{Die Idee}
+  \centering
+  \vspace{0.2cm}
+  \includegraphics[width=0.5\linewidth]{render.png} \\
+  {\large Diesen Solver haben wir \textcolor{teal}{bereits}.\\[0.15cm]
+  Unser Projekt würde ihn in \textcolor{teal}{Echtzeit steuerbar} machen.}
+  \note{~45s. Hier den vorhandenen Render zeigen. Botschaft: existiert schon, geringes Risiko.}
+\end{frame}
+
+% ---------- 3 | Die Luecke (naiv vs. Okada) --------------------------
 \begin{frame}{Das Problem mit dem simplen Klick}
   \centering
   \vspace{0.2cm}
@@ -94,7 +104,8 @@
     % ---- links: naiv ----
     \begin{column}{0.48\textwidth}
       \centering
-      \begin{tikzpicture}[scale=1.0]
+      \begin{tikzpicture}[scale=0.9]
+        \useasboundingbox (0,-0.75) rectangle (4,4.0);
         \fill[ocean!35] (0,0) rectangle (4,1.5);
         \draw[foam, thick] (0,1.5) -- (4,1.5);
         \fill[coral] (1.85,1.5) rectangle (2.15,3.4);
@@ -107,11 +118,12 @@
     % ---- rechts: Okada ----
     \begin{column}{0.48\textwidth}
       \centering
-      \begin{tikzpicture}[scale=1.0]
+      \begin{tikzpicture}[scale=0.9]
+        \useasboundingbox (0,-0.75) rectangle (4,4.0);
         \fill[ocean!35] (0,0) rectangle (4,1.5);
         \draw[foam, thick, fill=teal!45]
-          (0,1.5) .. controls (1.4,1.5) and (1.5,2.35) ..
-          (2,2.35) .. controls (2.5,2.35) and (2.6,1.5) .. (4,1.5);
+        (0,1.5) .. controls (1.4,1.5) and (1.5,2.35) ..
+        (2,2.35) .. controls (2.5,2.35) and (2.6,1.5) .. (4,1.5);
         \draw[amber, very thick] (0,0.25) -- (1.9,0.25) -- (1.9,0.6) -- (4,0.6);
         \draw[-{Stealth}, amber, thick] (1.9,0.2) -- (1.9,0.7);
         \node[foam!80, font=\footnotesize] at (2,-0.45) {Verwerfung $\rightarrow$ Welle};
@@ -121,16 +133,6 @@
     \end{column}
   \end{columns}
   \note{~45s. Der Kontrast ist euer staerkstes Argument. Bild reden lassen.}
-\end{frame}
-
-% ---------- 3 | Die Idee + Render ------------------------------------
-\begin{frame}{Die Idee}
-  \centering
-  \vspace{0.2cm}
-  \includegraphics[width=0.5\linewidth]{render.png} \\
-  {\large Diesen Solver haben wir \textcolor{teal}{bereits}.\\[0.15cm]
-   Plan A macht ihn in \textcolor{teal}{Echtzeit steuerbar}.}
-  \note{~45s. Hier den vorhandenen Render zeigen. Botschaft: existiert schon, geringes Risiko.}
 \end{frame}
 
 % ---------- 4 | Die Reise (Ablauf) -----------------------------------
