@@ -9,8 +9,10 @@ pkgs.mkShell {
     python3Packages.matplotlib
     python3Packages.pandas
     python3Packages.numpy
+    python3Packages.glad
     doxygen
-    scons
+    cmake
+    ninja
     clang-tools
     cppcheck
     bear
@@ -21,6 +23,8 @@ pkgs.mkShell {
     hdf5
     zlib
     paraview
+    glfw
+    glm
   ];
 
   shellHook = ''

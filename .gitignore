@@ -27,6 +27,9 @@ sphinx/build/
 # SCons
 .sconsign.dblite
 
+# ImGui auto-generated layout file
+imgui.ini
+
 # GEBCO / GMT data (large, re-downloadable)
 data/*.zip
 data/*.nc
