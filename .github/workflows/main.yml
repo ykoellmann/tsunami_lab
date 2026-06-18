@@ -24,7 +24,7 @@ jobs:
       - name: Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y scons
+          sudo apt-get install -y cmake ninja-build
           sudo apt-get install -y valgrind
           sudo apt-get install -y cppcheck
           sudo apt-get install -y libnetcdf-dev netcdf-bin
@@ -42,29 +42,32 @@ jobs:
 
       - name: Unit Tests
         run: |
-          scons mode=debug
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_VIZ=OFF -G Ninja
+          cmake --build build --target tests tsunami_lab -j$(nproc)
           ./build/tests
 
       - name: Sanitize
         run: |
-          scons mode=debug+san
-          ./build/tests
-          ./build/tsunami_lab -n 25 -s FWave -p DamBreak 10 5 5
-          scons mode=release+san
-          ./build/tests
-          ./build/tsunami_lab -n 500 -s FWave -p DamBreak 10 5 5
+          cmake -B build_san -DBUILD_MODE=debug+san -DENABLE_VIZ=OFF -G Ninja
+          cmake --build build_san --target tests tsunami_lab -j$(nproc)
+          ./build_san/tests
+          ./build_san/tsunami_lab -n 25 -s FWave -p DamBreak 10 5 5
+          cmake -B build_san_rel -DBUILD_MODE=release+san -DENABLE_VIZ=OFF -G Ninja
+          cmake --build build_san_rel --target tests tsunami_lab -j$(nproc)
+          ./build_san_rel/tests
+          ./build_san_rel/tsunami_lab -n 500 -s FWave -p DamBreak 10 5 5
 
       - name: Valgrind
         run: |
-          scons mode=debug
           valgrind ./build/tests
           valgrind ./build/tsunami_lab -n 25 -s FWave -p DamBreak 10 5 5
 
       - name: Release
         run: |
-          scons
-          ./build/tests
-          ./build/tsunami_lab -n 500 -s FWave -p DamBreak 10 5 5
+          cmake -B build_rel -DCMAKE_BUILD_TYPE=Release -DENABLE_VIZ=OFF -G Ninja
+          cmake --build build_rel --target tests tsunami_lab -j$(nproc)
+          ./build_rel/tests
+          ./build_rel/tsunami_lab -n 500 -s FWave -p DamBreak 10 5 5
 
   Docs:
     runs-on: ubuntu-latest
