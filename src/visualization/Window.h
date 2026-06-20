@@ -1,8 +1,10 @@
 #ifndef TSUNAMI_LAB_VISUALIZATION_WINDOW_H
 #define TSUNAMI_LAB_VISUALIZATION_WINDOW_H
 
-#include <GLFW/glfw3.h>
+// glad must come before GLFW so that GLFW does not pull in system GL headers
 #include <glad/glad.h>
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
 
 namespace tsunami_lab {
 namespace visualization {

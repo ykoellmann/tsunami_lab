@@ -13,7 +13,11 @@ option(ENABLE_VIZ "Build viz target"       ON)
 option(ENABLE_INLINE "Allow inlining"      ON)
 
 # ---------- common flags ----------
-add_compile_options(-Wall -Wextra -Wpedantic -Wno-keyword-macro)
+add_compile_options(-Wall -Wextra -Wpedantic)
+# -Wno-keyword-macro is Clang-only; silence the GCC unknown-option warning
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wno-keyword-macro)
+endif()
 
 if(BUILD_MODE MATCHES "debug")
   add_compile_options(-g -O0)
@@ -62,6 +66,8 @@ set(NETCDF_LIBDIR  "${NETCDF_PREFIX}/lib")
 
 # ---------- submodules ----------
 add_subdirectory(submodules/pugixml  EXCLUDE_FROM_ALL)
+# Suppress global -Werror for pugixml so unknown/irrelevant warnings don't break the build
+target_compile_options(pugixml-static PRIVATE -w)
 add_subdirectory(submodules/Catch2   EXCLUDE_FROM_ALL)
 
 # ---------- solver library ----------
@@ -129,6 +135,9 @@ if(ENABLE_VIZ)
   # GLAD — committed generated files, no submodule needed
   add_library(glad STATIC thirdparty/glad/src/glad.c)
   target_include_directories(glad PUBLIC thirdparty/glad/include)
+  # -w: suppress pedantic pointer-cast warnings in generated C code
+  # -O1: required by glibc _FORTIFY_SOURCE (active even in debug builds)
+  target_compile_options(glad PRIVATE -w -O1)
 
   # ImGui — submodule, no own CMakeLists, so we build it manually
   add_library(imgui STATIC
@@ -145,12 +154,13 @@ if(ENABLE_VIZ)
     thirdparty/glad/include
   )
   target_link_libraries(imgui PUBLIC glfw)
-  target_compile_options(imgui PRIVATE -w)
+  target_compile_options(imgui PRIVATE -w -O1)
 
   # viz executable
   add_executable(tsunami_lab_viz
     src/main_viz.cpp
     src/visualization/Window.cpp
+    src/visualization/GlobeView.cpp
   )
   target_include_directories(tsunami_lab_viz PRIVATE src thirdparty/glad/include)
   target_link_libraries(tsunami_lab_viz PRIVATE solver_lib glad imgui glfw OpenGL::GL glm::glm)

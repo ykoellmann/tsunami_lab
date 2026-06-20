@@ -50,6 +50,29 @@ public:
 
   void setTarget(glm::vec3 i_target) { m_target = i_target; }
   void setDistance(float i_d) { m_distance = i_d; }
+  void setAzimuth(float i_a) { m_azimuth = i_a; }
+  void setElevation(float i_e) {
+    m_elevation = i_e;
+    if (m_elevation > 1.5f)
+      m_elevation = 1.5f;
+    if (m_elevation < -1.5f)
+      m_elevation = -1.5f;
+  }
+  float getDistance() const { return m_distance; }
+
+  // Flat-map pan: moves target in the world XZ plane (lon/lat space).
+  // Use instead of onMiddleDrag when the camera is in top-down globe mode.
+  void onMapPan(float i_dx, float i_dy) {
+    glm::vec3 l_right = glm::vec3(std::cos(m_azimuth), 0, -std::sin(m_azimuth));
+    glm::vec3 l_fwd = glm::vec3(std::sin(m_azimuth), 0, std::cos(m_azimuth));
+    float l_speed = m_distance * 0.001f;
+    // Drag right → map moves right → target lon decreases → target.x -= dx
+    m_target -= l_right * (i_dx * l_speed);
+    // Drag down  → map moves down  → target lat increases → target.z decreases
+    // (world Z = -lat, so decreasing Z = increasing lat = looking north)
+    m_target -= l_fwd * (i_dy * l_speed);
+    m_target.y = 0.0f;
+  }
 
 private:
   glm::vec3 m_target{0.0f, 0.0f, 0.0f};

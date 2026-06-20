@@ -47,6 +47,10 @@ public:
     glUniform1i(glGetUniformLocation(m_id, i_name), i_val);
   }
 
+  void setVec4(const char* i_name, const glm::vec4& i_val) const {
+    glUniform4fv(glGetUniformLocation(m_id, i_name), 1, &i_val[0]);
+  }
+
   ~Shader() {
     if (m_id)
       glDeleteProgram(m_id);

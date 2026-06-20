@@ -29,5 +29,8 @@ pkgs.mkShell {
 
   shellHook = ''
     git config core.hooksPath .githooks
+    # On non-NixOS systems the NVIDIA/Mesa GLX vendor libs live in /usr/lib64.
+    # libglvnd from nixpkgs needs them in LD_LIBRARY_PATH to find the vendor.
+    export LD_LIBRARY_PATH=/usr/lib64:''${LD_LIBRARY_PATH:-}
   '';
 }
