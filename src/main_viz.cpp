@@ -22,13 +22,13 @@ static AppState g_state = AppState::REGION_SELECT;
 // Global input state (filled by GLFW callbacks)
 // ────────────────────────────────────────────────────────────────────────────
 
-static tsunami_lab::visualization::Camera*    g_camera    = nullptr;
+static tsunami_lab::visualization::Camera* g_camera = nullptr;
 static tsunami_lab::visualization::GlobeView* g_globeView = nullptr;
 
-static bool   g_mouseLeft   = false;
-static bool   g_mouseMiddle = false;
+static bool g_mouseLeft = false;
+static bool g_mouseMiddle = false;
 static double g_lastX = 0, g_lastY = 0;
-static int    g_screenW = 1280, g_screenH = 720;
+static int g_screenW = 1280, g_screenH = 720;
 
 static void onMouseButton(GLFWwindow*, int i_btn, int i_act, int) {
   if (ImGui::GetIO().WantCaptureMouse)
@@ -36,12 +36,12 @@ static void onMouseButton(GLFWwindow*, int i_btn, int i_act, int) {
 
   if (i_btn == GLFW_MOUSE_BUTTON_LEFT) {
     bool pressed = (i_act == GLFW_PRESS);
-    g_mouseLeft  = pressed;
+    g_mouseLeft = pressed;
 
     if (g_state == AppState::REGION_SELECT && g_globeView) {
       if (pressed)
-        g_globeView->onMousePress((float)g_lastX, (float)g_lastY,
-                                  g_screenW, g_screenH, *g_camera);
+        g_globeView->onMousePress((float)g_lastX, (float)g_lastY, g_screenW,
+                                  g_screenH, *g_camera);
       else
         g_globeView->onMouseRelease();
     }
@@ -53,8 +53,8 @@ static void onMouseButton(GLFWwindow*, int i_btn, int i_act, int) {
 static void onCursorPos(GLFWwindow*, double i_x, double i_y) {
   float dx = (float)(i_x - g_lastX);
   float dy = (float)(i_y - g_lastY);
-  g_lastX  = i_x;
-  g_lastY  = i_y;
+  g_lastX = i_x;
+  g_lastY = i_y;
 
   if (!g_camera)
     return;
@@ -62,8 +62,8 @@ static void onCursorPos(GLFWwindow*, double i_x, double i_y) {
   if (g_state == AppState::REGION_SELECT) {
     // Left drag → selection rectangle
     if (g_mouseLeft && g_globeView)
-      g_globeView->onMouseMove((float)i_x, (float)i_y,
-                               g_screenW, g_screenH, *g_camera);
+      g_globeView->onMouseMove((float)i_x, (float)i_y, g_screenW, g_screenH,
+                               *g_camera);
     // Middle drag → flat-map pan
     if (g_mouseMiddle)
       g_camera->onMapPan(dx, dy);
@@ -102,7 +102,7 @@ static void setCameraGlobeView(tsunami_lab::visualization::Camera& cam) {
 // ────────────────────────────────────────────────────────────────────────────
 
 static std::future<std::pair<float, float>> g_geocodeFuture;
-static bool        g_geocodeRunning = false;
+static bool g_geocodeRunning = false;
 static std::string g_geocodeError;
 
 static void zoomToLocation(float i_lon, float i_lat, float i_zoom = 25.0f) {
@@ -134,7 +134,7 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
   bool doSearch = false;
   ImGui::SetNextItemWidth(200);
   if (ImGui::InputText("##city", cityBuf, sizeof(cityBuf),
-                        ImGuiInputTextFlags_EnterReturnsTrue))
+                       ImGuiInputTextFlags_EnterReturnsTrue))
     doSearch = true;
   ImGui::SameLine();
   if (g_geocodeRunning) {
@@ -147,10 +147,10 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
   }
 
   if (doSearch && !g_geocodeRunning && cityBuf[0] != '\0') {
-    g_geocodeError   = "";
+    g_geocodeError = "";
     g_geocodeRunning = true;
     std::string city = cityBuf;
-    g_geocodeFuture  = std::async(std::launch::async, [city]() {
+    g_geocodeFuture = std::async(std::launch::async, [city]() {
       return tsunami_lab::visualization::GlobeView::geocodeCity(city);
     });
   }
@@ -181,10 +181,10 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
   ImGui::SeparatorText("Auswahl");
   if (globeView.hasSelection()) {
     tsunami_lab::visualization::BBox sel = globeView.getSelection();
-    ImGui::Text("Lon: %.1f° – %.1f°  (%.1f°)",
-                sel.lonMin, sel.lonMax, sel.lonSpan());
-    ImGui::Text("Lat: %.1f° – %.1f°  (%.1f°)",
-                sel.latMin, sel.latMax, sel.latSpan());
+    ImGui::Text("Lon: %.1f° – %.1f°  (%.1f°)", sel.lonMin, sel.lonMax,
+                sel.lonSpan());
+    ImGui::Text("Lat: %.1f° – %.1f°  (%.1f°)", sel.latMin, sel.latMax,
+                sel.latSpan());
 
     ImGui::Spacing();
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.65f, 0.2f, 1));
@@ -229,12 +229,13 @@ static void drawSimulatingUi() {
 // ────────────────────────────────────────────────────────────────────────────
 
 int main() {
-  tsunami_lab::visualization::Window    l_window(1280, 720, "Tsunami Lab — Gebietsauswahl");
-  tsunami_lab::visualization::Camera   l_camera;
+  tsunami_lab::visualization::Window l_window(1280, 720,
+                                              "Tsunami Lab — Gebietsauswahl");
+  tsunami_lab::visualization::Camera l_camera;
   tsunami_lab::visualization::GlobeView l_globe;
-  tsunami_lab::visualization::Ui        l_ui;
+  tsunami_lab::visualization::Ui l_ui;
 
-  g_camera    = &l_camera;
+  g_camera = &l_camera;
   g_globeView = &l_globe;
 
   glfwSetMouseButtonCallback(l_window.handle(), onMouseButton);
@@ -266,8 +267,8 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // ── Build VP matrix ────────────────────────────────────────────────────
-    float      aspect = (l_h > 0) ? (float)l_w / (float)l_h : 1.0f;
-    glm::mat4  vp     = l_camera.projection(aspect) * l_camera.view();
+    float aspect = (l_h > 0) ? (float)l_w / (float)l_h : 1.0f;
+    glm::mat4 vp = l_camera.projection(aspect) * l_camera.view();
 
     // ── Draw ───────────────────────────────────────────────────────────────
     if (g_state == AppState::REGION_SELECT)

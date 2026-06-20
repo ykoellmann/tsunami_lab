@@ -22,11 +22,13 @@ fi
 ERRORS=0
 
 # --- Style Check (clang-format) ---
-if command -v clang-format &>/dev/null; then
+# Use clang-format-18 if available (matches CI); fall back to clang-format.
+CF=$(command -v clang-format-18 || command -v clang-format || true)
+if [[ -n "$CF" ]]; then
   echo -e "\n${BOLD}Style Check (clang-format)${NC}"
   BAD_FILES=()
   while IFS= read -r -d '' f; do
-    if ! clang-format --dry-run --Werror "$f" 2>/dev/null; then
+    if ! "$CF" --dry-run --Werror "$f" 2>/dev/null; then
       BAD_FILES+=("$f")
     fi
   done < <(find src/ -name "*.cpp" -o -name "*.h" -print0)
@@ -36,7 +38,7 @@ if command -v clang-format &>/dev/null; then
     for f in "${BAD_FILES[@]}"; do
       echo "    $f"
     done
-    echo "  Run: find src/ -name '*.cpp' -o -name '*.h' | xargs clang-format -i"
+    echo "  Run: find src/ -name '*.cpp' -o -name '*.h' | xargs $CF -i"
     ERRORS=1
   else
     ok "clang-format"
