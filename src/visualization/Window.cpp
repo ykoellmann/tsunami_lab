@@ -11,6 +11,11 @@ namespace visualization {
 
 Window::Window(int i_width, int i_height, const char* i_title) {
   glfwSetErrorCallback(glfwErrorCallback);
+  // Force X11/GLX on Linux; prevents GLFW 3.4 from attempting EGL first
+  // which can fail even when a valid X11 display is available.
+#if defined(__linux__)
+  glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+#endif
 
   if (!glfwInit()) {
     std::fprintf(stderr, "glfwInit() failed\n");
