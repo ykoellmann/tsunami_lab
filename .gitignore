@@ -13,6 +13,7 @@ build/
 */build/*
 
 ressources/chile
+/submission
 
 # Doxygen generated docs
 docs/html/

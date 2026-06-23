@@ -161,6 +161,8 @@ if(ENABLE_VIZ)
     src/main_viz.cpp
     src/visualization/Window.cpp
     src/visualization/GlobeView.cpp
+    src/visualization/Gebco.cpp
+    src/visualization/RegionView.cpp
   )
   target_include_directories(tsunami_lab_viz PRIVATE src thirdparty/glad/include)
   target_link_libraries(tsunami_lab_viz PRIVATE solver_lib glad imgui glfw OpenGL::GL glm::glm)
