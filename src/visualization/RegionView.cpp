@@ -16,19 +16,23 @@ namespace visualization {
 // from screen-space derivatives of the world position for cheap hill shading.
 static const char* k_terrVert = R"GLSL(
 #version 330 core
-layout(location = 0) in vec2 aXZ;   // (x, z) world position
+layout(location = 0) in vec2 aXZ;    // (x, z) world position
 layout(location = 1) in float aElev; // metres
+layout(location = 2) in float aDisp; // vertical seafloor displacement, metres
 
 uniform mat4 uVP;
 uniform float uScaleY; // metres → world units (already incl. exaggeration)
 
 out float vElev;
+out float vDisp;
 out vec3 vWorld;
 
 void main() {
-    vec3 world = vec3(aXZ.x, aElev * uScaleY, aXZ.y);
+    // Displacement uses the same vertical scale as the relief.
+    vec3 world = vec3(aXZ.x, (aElev + aDisp) * uScaleY, aXZ.y);
     vWorld = world;
     vElev = aElev;
+    vDisp = aDisp;
     gl_Position = uVP * vec4(world, 1.0);
 }
 )GLSL";
@@ -36,6 +40,7 @@ void main() {
 static const char* k_terrFrag = R"GLSL(
 #version 330 core
 in float vElev;
+in float vDisp;
 in vec3 vWorld;
 out vec4 fragColor;
 
@@ -54,7 +59,14 @@ void main() {
     if (n.y < 0.0) n = -n;
     vec3 lightDir = normalize(vec3(0.35, 1.0, 0.25));
     float diff = max(dot(n, lightDir), 0.0) * 0.65 + 0.35;
-    fragColor = vec4(colormap(vElev) * diff, 1.0);
+    vec3 base = colormap(vElev) * diff;
+
+    // Tint the deformed seafloor so the source is visible: warm for uplift,
+    // cool for subsidence, fading out where the displacement is negligible.
+    float m = clamp(abs(vDisp) / 5.0, 0.0, 1.0);
+    vec3 tint = (vDisp >= 0.0) ? vec3(0.95, 0.35, 0.15)
+                               : vec3(0.55, 0.20, 0.85);
+    fragColor = vec4(mix(base, tint, 0.55 * m), 1.0);
 }
 )GLSL";
 
@@ -120,6 +132,7 @@ bool RegionView::load(const gebco::Region& i_region) {
   // Normalise so the larger horizontal side spans 200 world units.
   const double l_scaleXZ = 200.0 / l_maxM;
   m_scaleY = (float)l_scaleXZ; // exaggeration multiplied in at draw time
+  m_scaleXZ = (float)l_scaleXZ;
 
   std::vector<float> l_xz((size_t)l_w * l_h * 2);
   for (int j = 0; j < l_h; j++) {
@@ -157,10 +170,17 @@ bool RegionView::load(const gebco::Region& i_region) {
   }
   m_idxCnt = (GLsizei)l_idx.size();
 
+  // Keep the horizontal positions for displacement (re)evaluation; a fresh
+  // region starts with no displacement applied.
+  m_xz = l_xz;
+  m_hasDispl = false;
+  std::vector<float> l_disp((size_t)l_w * l_h, 0.0f);
+
   if (m_vao == 0) {
     glGenVertexArrays(1, &m_vao);
     glGenBuffers(1, &m_vbXZ);
     glGenBuffers(1, &m_vbElv);
+    glGenBuffers(1, &m_vbDisp);
     glGenBuffers(1, &m_ebo);
   }
 
@@ -179,6 +199,13 @@ bool RegionView::load(const gebco::Region& i_region) {
   glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
   glEnableVertexAttribArray(1);
 
+  // Per-vertex displacement, initialised to zero.
+  glBindBuffer(GL_ARRAY_BUFFER, m_vbDisp);
+  glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(l_disp.size() * sizeof(float)),
+               l_disp.data(), GL_DYNAMIC_DRAW);
+  glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
+  glEnableVertexAttribArray(2);
+
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                (GLsizeiptr)(l_idx.size() * sizeof(unsigned int)), l_idx.data(),
@@ -186,6 +213,52 @@ bool RegionView::load(const gebco::Region& i_region) {
 
   glBindVertexArray(0);
   return true;
+}
+
+void RegionView::worldToLonLat(float i_worldX,
+                               float i_worldZ,
+                               double& o_lon,
+                               double& o_lat) const {
+  const double l_latC = 0.5 * (latMin + latMax);
+  const double l_lonC = 0.5 * (lonMin + lonMax);
+  const double l_mPerLat = 111132.0;
+  const double l_mPerLon = 111320.0 * std::cos(glm::radians(l_latC));
+  // Inverse of the lon/lat → world mapping in load() (note world Z = -lat).
+  o_lon = l_lonC + ((double)i_worldX / m_scaleXZ) / l_mPerLon;
+  o_lat = l_latC - ((double)i_worldZ / m_scaleXZ) / l_mPerLat;
+}
+
+void RegionView::applyDisplacement(
+    float i_worldX,
+    float i_worldZ,
+    const displacement::DisplacementModel& i_model) {
+  if (m_vao == 0 || m_xz.empty())
+    return;
+
+  const size_t l_n = m_xz.size() / 2;
+  std::vector<float> l_disp(l_n);
+  for (size_t l_v = 0; l_v < l_n; l_v++) {
+    // Local east/north offset from the click point, in metres. World Z runs
+    // south→north as -lat, so +north = -Δz.
+    double l_east = ((double)m_xz[l_v * 2 + 0] - i_worldX) / m_scaleXZ;
+    double l_north = -((double)m_xz[l_v * 2 + 1] - i_worldZ) / m_scaleXZ;
+    l_disp[l_v] = (float)i_model.verticalDisplacement(l_east, l_north);
+  }
+
+  glBindBuffer(GL_ARRAY_BUFFER, m_vbDisp);
+  glBufferSubData(GL_ARRAY_BUFFER, 0,
+                  (GLsizeiptr)(l_disp.size() * sizeof(float)), l_disp.data());
+  m_hasDispl = true;
+}
+
+void RegionView::clearDisplacement() {
+  if (m_vao == 0 || m_xz.empty())
+    return;
+  std::vector<float> l_zero(m_xz.size() / 2, 0.0f);
+  glBindBuffer(GL_ARRAY_BUFFER, m_vbDisp);
+  glBufferSubData(GL_ARRAY_BUFFER, 0,
+                  (GLsizeiptr)(l_zero.size() * sizeof(float)), l_zero.data());
+  m_hasDispl = false;
 }
 
 void RegionView::draw(const glm::mat4& i_vp) const {
@@ -218,6 +291,7 @@ RegionView::~RegionView() {
     glDeleteVertexArrays(1, &m_vao);
     glDeleteBuffers(1, &m_vbXZ);
     glDeleteBuffers(1, &m_vbElv);
+    glDeleteBuffers(1, &m_vbDisp);
     glDeleteBuffers(1, &m_ebo);
   }
   if (m_seaVao) {
