@@ -376,7 +376,6 @@ int main() {
       }
     }
 
-
     // Framebuffer size (pixels) drives the viewport; window size (logical
     // points) drives mouse→world unprojection so it matches the cursor coords.
     int l_fbW, l_fbH;
