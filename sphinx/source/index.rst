@@ -20,7 +20,7 @@ Documentation and reports for the Tsunami Lab at Friedrich Schiller University J
    chapters/07_checkpointing
    chapters/08_optimization
    chapters/09_parallelization
-   chapters/10_individual
+   chapters/10_individual_week1
 
 Code Documentation
 ==================
