@@ -53,7 +53,7 @@ GEBCO_NC_GLOB="*.nc"                 # auto-detect .nc filename after unzip
 
 DATA_DIR="${PROJECT_DIR}/data"
 TMP_DIR="${DATA_DIR}/tmp"
-RESSOURCES_DIR="${PROJECT_DIR}/ressources"
+RESOURCES_DIR="${PROJECT_DIR}/resources"
 VIS_BASE_DIR="${PROJECT_DIR}/simulations/visualizations"
 
 REGION_CUT="138/147/35/39"
@@ -68,7 +68,7 @@ GENERATE_PDF=false
 # Points-of-interest file for map overlay.
 # Format: whitespace-separated, one point per line:
 #   lon  lat  label
-# Example file (store in ressources/):
+# Example file (store in resources/):
 #   139.6917  35.6895  Tokyo
 #   142.3700  38.3000  Sendai
 # Leave empty to skip.
@@ -88,7 +88,7 @@ print_usage() {
 Usage: $(basename "$0") <name> [OPTIONS]
 
 The <name> argument is required and determines:
-  - Profile CSV:  ressources/<name>_bathymetry_profile.csv
+  - Profile CSV:  resources/<name>_bathymetry_profile.csv
   - Map outputs:  simulations/visualizations/<name>/
 
 Options:
@@ -142,7 +142,7 @@ done
 GEBCO_ZIP="${DATA_DIR}/${GEBCO_ZIP_NAME}"
 CUT_NC="${TMP_DIR}/GEBCO_cut.nc"
 PROFILE_RAW="${TMP_DIR}/profile_raw.csv"
-PROFILE_CSV="${RESSOURCES_DIR}/${SIM_NAME}_bathymetry_profile.csv"
+PROFILE_CSV="${RESOURCES_DIR}/${SIM_NAME}_bathymetry_profile.csv"
 VIS_DIR="${VIS_BASE_DIR}/${SIM_NAME}"
 MAP_PS="${VIS_DIR}/bathymetry_map.ps"
 MAP_PDF="${VIS_DIR}/bathymetry_map.pdf"
@@ -170,7 +170,7 @@ require_cmd() {
 require_cmd gmt
 require_cmd unzip
 
-mkdir -p "${DATA_DIR}" "${TMP_DIR}" "${RESSOURCES_DIR}" "${VIS_DIR}"
+mkdir -p "${DATA_DIR}" "${TMP_DIR}" "${RESOURCES_DIR}" "${VIS_DIR}"
 
 # ------------------------------------------------------------------------------
 # Step 1: Download GEBCO grid

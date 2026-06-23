@@ -180,7 +180,7 @@ TEST_CASE("Sanity check using middle states for Roe and FWave solvers.",
     // the CSV contains Riemann problem initial conditions (hLeft, hRight,
     // huLeft, huRight) and the exact middle state water height h* that the
     // physics predicts at the discontinuity
-    std::ifstream l_csv("ressources/middle_states.csv");
+    std::ifstream l_csv("resources/middle_states.csv");
     REQUIRE(l_csv.is_open());
 
     // skip lines starting with '#' (comments), then skip the header line

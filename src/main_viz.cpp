@@ -142,6 +142,7 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
 
   ImGui::TextWrapped("Linksklick + Ziehen:  Gebiet zeichnen\n"
                      "Mittelklick + Ziehen: Karte verschieben\n"
+                     "WASD / Pfeiltasten:   Karte verschieben\n"
                      "Scrollrad:            Zoom");
   ImGui::Spacing();
 
@@ -254,6 +255,7 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
 
   ImGui::TextWrapped("Linksklick + Ziehen:  Drehen\n"
                      "Mittelklick + Ziehen: Verschieben\n"
+                     "WASD / Pfeiltasten:   Drehen\n"
                      "Scrollrad:            Zoom");
   ImGui::Spacing();
 
@@ -339,8 +341,41 @@ int main() {
   // Set camera for flat-map globe view
   setCameraGlobeView(l_camera);
 
+  double g_lastFrameTime = glfwGetTime();
+
   while (!l_window.shouldClose()) {
     l_window.pollEvents();
+
+    double l_now = glfwGetTime();
+    float l_dt = (float)(l_now - g_lastFrameTime);
+    g_lastFrameTime = l_now;
+
+    // ── Keyboard camera pan/orbit (WASD + arrow keys) ──────────────────────
+    if (!ImGui::GetIO().WantCaptureKeyboard && g_camera) {
+      float l_speed = 200.0f * l_dt;
+      float l_kx = 0.0f, l_ky = 0.0f;
+      GLFWwindow* l_win = l_window.handle();
+      if (glfwGetKey(l_win, GLFW_KEY_A) == GLFW_PRESS ||
+          glfwGetKey(l_win, GLFW_KEY_LEFT) == GLFW_PRESS)
+        l_kx = -l_speed;
+      if (glfwGetKey(l_win, GLFW_KEY_D) == GLFW_PRESS ||
+          glfwGetKey(l_win, GLFW_KEY_RIGHT) == GLFW_PRESS)
+        l_kx = l_speed;
+      if (glfwGetKey(l_win, GLFW_KEY_W) == GLFW_PRESS ||
+          glfwGetKey(l_win, GLFW_KEY_UP) == GLFW_PRESS)
+        l_ky = -l_speed;
+      if (glfwGetKey(l_win, GLFW_KEY_S) == GLFW_PRESS ||
+          glfwGetKey(l_win, GLFW_KEY_DOWN) == GLFW_PRESS)
+        l_ky = l_speed;
+
+      if (l_kx != 0.0f || l_ky != 0.0f) {
+        if (g_state == AppState::REGION_SELECT)
+          g_camera->onMapPan(-l_kx, -l_ky);
+        else if (g_state == AppState::REGION_PREVIEW)
+          g_camera->onMouseDrag(l_kx, l_ky);
+      }
+    }
+
 
     // Framebuffer size (pixels) drives the viewport; window size (logical
     // points) drives mouse→world unprojection so it matches the cursor coords.
