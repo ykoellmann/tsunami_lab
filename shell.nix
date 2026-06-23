@@ -2,6 +2,7 @@
 
 pkgs.mkShell {
   buildInputs = with pkgs; [
+    git
     gcc14
     python3
     python3Packages.sphinx
@@ -18,6 +19,7 @@ pkgs.mkShell {
     bear
     gmt
     wget
+    unzip
     tree
     netcdf
     hdf5

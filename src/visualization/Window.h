@@ -18,8 +18,16 @@ public:
   void pollEvents() { glfwPollEvents(); }
   void swapBuffers() { glfwSwapBuffers(m_window); }
   GLFWwindow* handle() { return m_window; }
+  // Framebuffer size in pixels (use for glViewport). On HiDPI/Retina this is
+  // larger than the window size by the content scale factor.
   void getSize(int& o_w, int& o_h) const {
     glfwGetFramebufferSize(m_window, &o_w, &o_h);
+  }
+
+  // Window size in logical points — matches glfwGetCursorPos coordinates, so
+  // use this (not the framebuffer size) for any mouse → world unprojection.
+  void getWindowSize(int& o_w, int& o_h) const {
+    glfwGetWindowSize(m_window, &o_w, &o_h);
   }
 
 private:

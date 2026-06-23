@@ -1,5 +1,7 @@
 #include "visualization/Camera.h"
+#include "visualization/Gebco.h"
 #include "visualization/GlobeView.h"
+#include "visualization/RegionView.h"
 #include "visualization/Ui.h"
 #include "visualization/Window.h"
 
@@ -14,7 +16,7 @@
 // Application state
 // ────────────────────────────────────────────────────────────────────────────
 
-enum class AppState { REGION_SELECT, SIMULATING };
+enum class AppState { REGION_SELECT, REGION_PREVIEW, SIMULATING };
 
 static AppState g_state = AppState::REGION_SELECT;
 
@@ -24,6 +26,12 @@ static AppState g_state = AppState::REGION_SELECT;
 
 static tsunami_lab::visualization::Camera* g_camera = nullptr;
 static tsunami_lab::visualization::GlobeView* g_globeView = nullptr;
+static tsunami_lab::visualization::RegionView* g_regionView = nullptr;
+
+// Path to the local GEBCO grid (resolved/downloaded at startup).
+static std::string g_gebcoPath;
+// Set when a region read fails, so the UI can show feedback.
+static std::string g_regionError;
 
 static bool g_mouseLeft = false;
 static bool g_mouseMiddle = false;
@@ -95,6 +103,15 @@ static void setCameraGlobeView(tsunami_lab::visualization::Camera& cam) {
   cam.setAzimuth(0.0f);
   cam.setElevation(1.5f); // nearly top-down (avoids lookAt singularity at π/2)
   cam.setDistance(300.0f);
+}
+
+static void setCameraRegionView(tsunami_lab::visualization::Camera& cam) {
+  // The region mesh is normalised to ~200 world units across and centred at
+  // the origin; an angled 3/4 view shows the relief.
+  cam.setTarget(glm::vec3(0.0f, 0.0f, 0.0f));
+  cam.setAzimuth(0.0f);
+  cam.setElevation(0.7f);
+  cam.setDistance(330.0f);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -188,17 +205,77 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
 
     ImGui::Spacing();
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.65f, 0.2f, 1));
-    if (ImGui::Button("Simulieren  >>", ImVec2(-1, 0))) {
-      // TODO: trigger GebcoLoader + SolverThread here (Phase 4/5)
-      g_state = AppState::SIMULATING;
+    if (ImGui::Button("Bathymetrie laden  >>", ImVec2(-1, 0))) {
+      g_regionError.clear();
+      if (g_gebcoPath.empty()) {
+        g_regionError = "Keine GEBCO-Daten verfügbar.";
+      } else {
+        tsunami_lab::visualization::gebco::Region l_reg;
+        if (tsunami_lab::visualization::gebco::readRegion(g_gebcoPath, sel,
+                                                          l_reg) &&
+            g_regionView && g_regionView->load(l_reg)) {
+          g_state = AppState::REGION_PREVIEW;
+          if (g_camera)
+            setCameraRegionView(*g_camera);
+        } else {
+          g_regionError = "Laden der Bathymetrie fehlgeschlagen.";
+        }
+      }
     }
     ImGui::PopStyleColor();
+
+    if (!g_regionError.empty())
+      ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s", g_regionError.c_str());
 
     ImGui::Spacing();
     if (ImGui::Button("Auswahl löschen", ImVec2(-1, 0)))
       globeView.clearSelection();
   } else {
     ImGui::TextDisabled("(noch keine Auswahl)");
+  }
+
+  ImGui::End();
+}
+
+static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
+  ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
+  ImGui::SetNextWindowSize(ImVec2(300, 0), ImGuiCond_Always);
+  ImGui::Begin("##region_panel", nullptr,
+               ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                   ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
+
+  ImGui::TextColored(ImVec4(0.2f, 0.8f, 1, 1), "Bathymetrie-Vorschau");
+  ImGui::Separator();
+
+  ImGui::Text("Lon: %.2f° – %.2f°", regionView.lonMin, regionView.lonMax);
+  ImGui::Text("Lat: %.2f° – %.2f°", regionView.latMin, regionView.latMax);
+  ImGui::Text("Gitter: %d × %d", regionView.gridW, regionView.gridH);
+  ImGui::Spacing();
+
+  ImGui::TextWrapped("Linksklick + Ziehen:  Drehen\n"
+                     "Mittelklick + Ziehen: Verschieben\n"
+                     "Scrollrad:            Zoom");
+  ImGui::Spacing();
+
+  ImGui::SeparatorText("Darstellung");
+  ImGui::SliderFloat("Überhöhung", &regionView.vertExaggeration, 1.0f, 100.0f,
+                     "%.0f×");
+  ImGui::Checkbox("Meeresspiegel anzeigen", &regionView.showSea);
+
+  ImGui::Spacing();
+  ImGui::SeparatorText("Weiter");
+  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.65f, 0.2f, 1));
+  if (ImGui::Button("Simulieren  >>", ImVec2(-1, 0))) {
+    // TODO: trigger SolverThread on this region's bathymetry (Phase 5)
+    g_state = AppState::SIMULATING;
+  }
+  ImGui::PopStyleColor();
+
+  ImGui::Spacing();
+  if (ImGui::Button("← Zurück zur Gebietsauswahl", ImVec2(-1, 0))) {
+    g_state = AppState::REGION_SELECT;
+    if (g_camera)
+      setCameraGlobeView(*g_camera);
   }
 
   ImGui::End();
@@ -229,14 +306,20 @@ static void drawSimulatingUi() {
 // ────────────────────────────────────────────────────────────────────────────
 
 int main() {
+  // Resolve (and, on first run, download) the GEBCO grid before opening the
+  // window — the one-time download prints progress to the terminal.
+  g_gebcoPath = tsunami_lab::visualization::gebco::ensureAvailable();
+
   tsunami_lab::visualization::Window l_window(1280, 720,
                                               "Tsunami Lab — Gebietsauswahl");
   tsunami_lab::visualization::Camera l_camera;
   tsunami_lab::visualization::GlobeView l_globe;
+  tsunami_lab::visualization::RegionView l_region;
   tsunami_lab::visualization::Ui l_ui;
 
   g_camera = &l_camera;
   g_globeView = &l_globe;
+  g_regionView = &l_region;
 
   glfwSetMouseButtonCallback(l_window.handle(), onMouseButton);
   glfwSetCursorPosCallback(l_window.handle(), onCursorPos);
@@ -247,9 +330,10 @@ int main() {
   std::printf("OpenGL %s\n", glGetString(GL_VERSION));
   glEnable(GL_DEPTH_TEST);
 
-  // Initialise globe view (loads GEBCO data)
+  // Initialise globe overview (subsampled GEBCO) + region preview resources.
   std::printf("Lade GEBCO-Daten …\n");
-  l_globe.init("data/GEBCO_2025.nc");
+  l_globe.init(g_gebcoPath.empty() ? nullptr : g_gebcoPath.c_str());
+  l_region.init();
   std::printf("Fertig.\n");
 
   // Set camera for flat-map globe view
@@ -258,26 +342,34 @@ int main() {
   while (!l_window.shouldClose()) {
     l_window.pollEvents();
 
-    int l_w, l_h;
-    l_window.getSize(l_w, l_h);
-    g_screenW = l_w;
-    g_screenH = l_h;
-    glViewport(0, 0, l_w, l_h);
+    // Framebuffer size (pixels) drives the viewport; window size (logical
+    // points) drives mouse→world unprojection so it matches the cursor coords.
+    int l_fbW, l_fbH;
+    l_window.getSize(l_fbW, l_fbH);
+    int l_winW, l_winH;
+    l_window.getWindowSize(l_winW, l_winH);
+    g_screenW = l_winW;
+    g_screenH = l_winH;
+    glViewport(0, 0, l_fbW, l_fbH);
     glClearColor(0.06f, 0.09f, 0.14f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // ── Build VP matrix ────────────────────────────────────────────────────
-    float aspect = (l_h > 0) ? (float)l_w / (float)l_h : 1.0f;
+    float aspect = (l_winH > 0) ? (float)l_winW / (float)l_winH : 1.0f;
     glm::mat4 vp = l_camera.projection(aspect) * l_camera.view();
 
     // ── Draw ───────────────────────────────────────────────────────────────
     if (g_state == AppState::REGION_SELECT)
       l_globe.draw(vp);
+    else if (g_state == AppState::REGION_PREVIEW)
+      l_region.draw(vp);
 
     // ── ImGui ──────────────────────────────────────────────────────────────
     l_ui.beginFrame();
     if (g_state == AppState::REGION_SELECT)
       drawGlobeUi(l_globe);
+    else if (g_state == AppState::REGION_PREVIEW)
+      drawRegionUi(l_region);
     else
       drawSimulatingUi();
     l_ui.endFrame();

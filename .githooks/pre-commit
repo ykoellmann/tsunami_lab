@@ -60,17 +60,28 @@ else
   warn "cppcheck not found — skipping static analysis (install via brew: brew install cppcheck)"
 fi
 
-# --- Unit Tests ---
-if command -v scons &>/dev/null; then
-  echo -e "\n${BOLD}Unit Tests (scons mode=debug)${NC}"
-  if scons mode=debug --quiet 2>&1 && ./build/tests 2>&1; then
+# --- Unit Tests (CMake) ---
+# The project builds with CMake; build the 'tests' target if a configured build
+# tree is available, otherwise run an existing binary, otherwise skip. Mirrors
+# CI without wedging local commits when the toolchain isn't in PATH.
+echo -e "\n${BOLD}Unit Tests (CMake)${NC}"
+if command -v cmake &>/dev/null && [[ -f build/CMakeCache.txt ]] && \
+   cmake --build build --target tests &>/dev/null; then
+  if ./build/tests; then
+    ok "unit tests"
+  else
+    fail "unit tests failed"
+    ERRORS=1
+  fi
+elif [[ -x ./build/tests ]]; then
+  if ./build/tests; then
     ok "unit tests"
   else
     fail "unit tests failed"
     ERRORS=1
   fi
 else
-  warn "scons not found — skipping unit tests (install via pip: pip install scons)"
+  warn "no CMake build tree / tests binary — skipping (build with: cmake --build build --target tests)"
 fi
 
 echo ""
