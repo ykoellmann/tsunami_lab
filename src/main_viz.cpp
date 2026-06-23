@@ -318,6 +318,12 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
   ImGui::Spacing();
 
   ImGui::SeparatorText("Darstellung");
+  using Field = tsunami_lab::visualization::RegionView::Field;
+  int l_field = (regionView.field == Field::Displacement) ? 1 : 0;
+  ImGui::RadioButton("Bathymetrie", &l_field, 0);
+  ImGui::SameLine();
+  ImGui::RadioButton("Displacement", &l_field, 1);
+  regionView.field = (l_field == 1) ? Field::Displacement : Field::Bathymetry;
   ImGui::SliderFloat("Überhöhung", &regionView.vertExaggeration, 1.0f, 100.0f,
                      "%.0f×");
   ImGui::Checkbox("Meeresspiegel anzeigen", &regionView.showSea);

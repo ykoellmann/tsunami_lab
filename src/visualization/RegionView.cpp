@@ -21,15 +21,19 @@ layout(location = 1) in float aElev; // metres
 layout(location = 2) in float aDisp; // vertical seafloor displacement, metres
 
 uniform mat4 uVP;
-uniform float uScaleY; // metres → world units (already incl. exaggeration)
+uniform float uScaleY;     // metres → world units for elevation (incl. exagg.)
+uniform float uDispScaleY; // metres → world units for displacement
+uniform int uMode;         // 0 = bathymetry, 1 = displacement
 
 out float vElev;
 out float vDisp;
 out vec3 vWorld;
 
 void main() {
-    // Displacement uses the same vertical scale as the relief.
-    vec3 world = vec3(aXZ.x, (aElev + aDisp) * uScaleY, aXZ.y);
+    // Bathymetry mode shows the deformed seabed (relief + displacement);
+    // displacement mode shows the displacement field on its own.
+    float y = (uMode == 0) ? (aElev + aDisp) * uScaleY : aDisp * uDispScaleY;
+    vec3 world = vec3(aXZ.x, y, aXZ.y);
     vWorld = world;
     vElev = aElev;
     vDisp = aDisp;
@@ -44,6 +48,9 @@ in float vDisp;
 in vec3 vWorld;
 out vec4 fragColor;
 
+uniform int uMode;       // 0 = bathymetry, 1 = displacement
+uniform float uDispRange; // peak |displacement| for normalising the colormap
+
 vec3 colormap(float h) {
     if (h < 0.0) {
         float t = clamp(h / -6000.0, 0.0, 1.0);
@@ -54,19 +61,32 @@ vec3 colormap(float h) {
     }
 }
 
+// Diverging colormap: blue for subsidence, red for uplift, pale at zero.
+vec3 displColormap(float d) {
+    float t = (uDispRange > 0.0) ? clamp(d / uDispRange, -1.0, 1.0) : 0.0;
+    vec3 zero = vec3(0.93, 0.93, 0.88);
+    return (t >= 0.0) ? mix(zero, vec3(0.80, 0.18, 0.12), t)
+                      : mix(zero, vec3(0.12, 0.30, 0.80), -t);
+}
+
 void main() {
     vec3 n = normalize(cross(dFdx(vWorld), dFdy(vWorld)));
     if (n.y < 0.0) n = -n;
     vec3 lightDir = normalize(vec3(0.35, 1.0, 0.25));
     float diff = max(dot(n, lightDir), 0.0) * 0.65 + 0.35;
-    vec3 base = colormap(vElev) * diff;
 
-    // Tint the deformed seafloor so the source is visible: warm for uplift,
-    // cool for subsidence, fading out where the displacement is negligible.
-    float m = clamp(abs(vDisp) / 5.0, 0.0, 1.0);
-    vec3 tint = (vDisp >= 0.0) ? vec3(0.95, 0.35, 0.15)
-                               : vec3(0.55, 0.20, 0.85);
-    fragColor = vec4(mix(base, tint, 0.55 * m), 1.0);
+    vec3 base;
+    if (uMode == 0) {
+        base = colormap(vElev) * diff;
+        // Tint the deformed seafloor: warm for uplift, cool for subsidence.
+        float m = clamp(abs(vDisp) / 5.0, 0.0, 1.0);
+        vec3 tint = (vDisp >= 0.0) ? vec3(0.95, 0.35, 0.15)
+                                   : vec3(0.55, 0.20, 0.85);
+        base = mix(base, tint, 0.55 * m);
+    } else {
+        base = displColormap(vDisp) * diff;
+    }
+    fragColor = vec4(base, 1.0);
 }
 )GLSL";
 
@@ -237,17 +257,24 @@ void RegionView::applyDisplacement(
 
   const size_t l_n = m_xz.size() / 2;
   std::vector<float> l_disp(l_n);
+  float l_peak = 0.0f;
   for (size_t l_v = 0; l_v < l_n; l_v++) {
     // Local east/north offset from the click point, in metres. World Z runs
-    // south→north as -lat, so +north = -Δz.
+    // south to north as -lat, so +north = -dz.
     double l_east = ((double)m_xz[l_v * 2 + 0] - i_worldX) / m_scaleXZ;
     double l_north = -((double)m_xz[l_v * 2 + 1] - i_worldZ) / m_scaleXZ;
     l_disp[l_v] = (float)i_model.verticalDisplacement(l_east, l_north);
+    l_peak = std::max(l_peak, std::abs(l_disp[l_v]));
   }
 
   glBindBuffer(GL_ARRAY_BUFFER, m_vbDisp);
   glBufferSubData(GL_ARRAY_BUFFER, 0,
                   (GLsizeiptr)(l_disp.size() * sizeof(float)), l_disp.data());
+
+  // Map the peak to a fixed on-screen height so the field is always visible.
+  constexpr float k_targetHeight = 30.0f;
+  m_dispPeak = l_peak;
+  m_dispScaleY = (l_peak > 0.0f) ? k_targetHeight / l_peak : 0.0f;
   m_hasDispl = true;
 }
 
@@ -258,6 +285,8 @@ void RegionView::clearDisplacement() {
   glBindBuffer(GL_ARRAY_BUFFER, m_vbDisp);
   glBufferSubData(GL_ARRAY_BUFFER, 0,
                   (GLsizeiptr)(l_zero.size() * sizeof(float)), l_zero.data());
+  m_dispPeak = 0.0f;
+  m_dispScaleY = 0.0f;
   m_hasDispl = false;
 }
 
@@ -268,6 +297,10 @@ void RegionView::draw(const glm::mat4& i_vp) const {
   m_terrShader.use();
   m_terrShader.setMat4("uVP", i_vp);
   m_terrShader.setFloat("uScaleY", m_scaleY * vertExaggeration);
+  m_terrShader.setFloat("uDispScaleY",
+                        m_dispScaleY * (vertExaggeration / 25.0f));
+  m_terrShader.setFloat("uDispRange", m_dispPeak);
+  m_terrShader.setInt("uMode", field == Field::Displacement ? 1 : 0);
   glBindVertexArray(m_vao);
   glDrawElements(GL_TRIANGLES, m_idxCnt, GL_UNSIGNED_INT, nullptr);
   glBindVertexArray(0);

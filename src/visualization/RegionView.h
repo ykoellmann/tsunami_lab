@@ -17,6 +17,9 @@ namespace visualization {
 // degrees were selected); vertical exaggeration is applied live in the shader.
 class RegionView {
 public:
+  // Which field the relief surface visualises.
+  enum class Field { Bathymetry, Displacement };
+
   // Build GPU programs and the static sea-level plane. Needs a current GL
   // context.
   void init();
@@ -50,6 +53,8 @@ public:
   float vertExaggeration = 25.0f;
   // Draw a translucent plane at y = 0 (sea level) for coastline reference.
   bool showSea = true;
+  // Selects whether draw() shows the bathymetry or the displacement field.
+  Field field = Field::Bathymetry;
 
   // Geographic bounds of the currently loaded region (for the UI).
   double lonMin = 0, lonMax = 0, latMin = 0, latMax = 0;
@@ -73,6 +78,10 @@ private:
   std::vector<float> m_xz;
   float m_scaleXZ = 1.0f;
   bool m_hasDispl = false;
+  // Peak |displacement| in metres and the scale mapping it to a fixed on-screen
+  // height, keeping the field visible regardless of amplitude.
+  float m_dispPeak = 0.0f;
+  float m_dispScaleY = 0.0f;
 
   GLuint m_seaVao = 0;
   GLuint m_seaVbo = 0;
