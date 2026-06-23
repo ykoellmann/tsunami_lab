@@ -140,7 +140,7 @@ invocation looks like:
 
 .. code-block:: bash
 
-   ./tsunami_lab -n 200 -t 5 -p DamBreak2d -c ressources/example.stations_config.xml
+   ./tsunami_lab -n 200 -t 5 -p DamBreak2d -c resources/example.stations_config.xml
 
 Unit Tests
 -----------
@@ -226,7 +226,7 @@ We place three stations at :math:`r \in \{15, 25, 35\}\,\text{m}` from the
 origin along :math:`y = 0` and run:
 
 * **2D** — circular dam break as described above, with station output every
-  :math:`0.1\,\text{s}` (via ``ressources/comparison_stations.xml``).
+  :math:`0.1\,\text{s}` (via ``resources/comparison_stations.xml``).
 * **1D** — ``DamBreak`` with :math:`h_L = 10\,\text{m}`, :math:`h_R = 5\,\text{m}`,
   dam at :math:`x = 10\,\text{m}` (the circle boundary), domain
   :math:`[0, 100]\,\text{m}`, :math:`\Delta x = 0.5\,\text{m}`.

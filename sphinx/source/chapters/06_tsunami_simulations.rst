@@ -14,7 +14,7 @@ size follows as :math:`d_{xy} = \text{domain width} / n`, with :math:`n_y`
 chosen so that cells stay square. All runs use **outflow** boundaries on all
 sides and a fixed end time of :math:`20{,}000\,\text{s}`.
 
-A station near Sōma is configured in ``ressources/soma_stations.xml`` and
+A station near Sōma is configured in ``resources/soma_stations.xml`` and
 recorded via ``-c``.
 
 Bug Fixes
@@ -203,7 +203,7 @@ Tsunami Arrival at Sōma (6.2.2)
 
 **Rule-of-thumb estimate.** Using :math:`\lambda \approx \sqrt{g\,h}` along
 the bathymetry cut from the epicenter to Sōma
-(``ressources/tohoku_bathymetry_profile.csv``) and integrating the travel time
+(``resources/tohoku_bathymetry_profile.csv``) and integrating the travel time
 :math:`\tau = \int \mathrm{d}s / \lambda` over the ocean part of the cut
 (epicenter at :math:`\approx 119\,\text{km}`, lon 142.37° E) gives
 

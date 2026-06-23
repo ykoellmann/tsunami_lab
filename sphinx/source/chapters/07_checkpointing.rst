@@ -65,8 +65,8 @@ The 2011 M 9.1 Tohoku event was run at 1000 m resolution
 
    ./build/tsunami_lab -n 2700 -t 7200 -k 5 \
        -p TsunamiEvent2d \
-       ressources/chile/output/tohoku_gebco20_ucsb3_250m_bath.nc \
-       ressources/chile/output/tohoku_gebco20_ucsb3_250m_displ.nc
+       resources/chile/output/tohoku_gebco20_ucsb3_250m_bath.nc \
+       resources/chile/output/tohoku_gebco20_ucsb3_250m_displ.nc
 
 .. figure:: ../../../visualizations/course_output.webp
    :name: fig:coarse_output

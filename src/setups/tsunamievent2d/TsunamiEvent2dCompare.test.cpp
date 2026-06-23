@@ -19,9 +19,9 @@
 
 namespace {
 const char* kBathPath =
-    "ressources/artificial_tsunami_2d/artificialtsunami_bathymetry_1000.nc";
+    "resources/artificial_tsunami_2d/artificialtsunami_bathymetry_1000.nc";
 const char* kDisplPath =
-    "ressources/artificial_tsunami_2d/artificialtsunami_displ_1000.nc";
+    "resources/artificial_tsunami_2d/artificialtsunami_displ_1000.nc";
 
 bool fileExists(const char* i_path) {
   std::ifstream l_f(i_path);

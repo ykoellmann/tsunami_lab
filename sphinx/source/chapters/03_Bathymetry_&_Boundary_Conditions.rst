@@ -193,7 +193,7 @@ coastlines and the profile line overlaid.
 
 For the domain between :math:`p_1 = (141.024949, 37.316569)` and
 :math:`p_2 = (146.0, 37.316569)` at 250 m sampling, the extraction
-yields 1903 data points. The profile CSV is stored in ``ressources/``,
+yields 1903 data points. The profile CSV is stored in ``resources/``,
 map visualizations go to ``simulations/visualizations/<name>/``.
 
 CSV Reader (3.4.2)
@@ -231,7 +231,7 @@ We run the simulation with:
 
    ./build/tsunami_lab -n 1000 -d 440000 -t 3600 \
      --bc-left reflecting \
-     -p TsunamiEvent ressources/tohoku_bathymetry_profile.csv
+     -p TsunamiEvent resources/tohoku_bathymetry_profile.csv
 
 With the default displacement amplitude of 10 m, the wave is barely visible in
 the visualization. This is physically expected: in the open ocean (depth

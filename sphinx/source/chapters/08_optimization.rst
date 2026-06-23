@@ -64,8 +64,8 @@ a checkpoint of the Chile scenario:
 .. code-block:: bash
 
    ./build/tsunami_lab -n 500 -t 1000 -p TsunamiEvent2d \
-       ressources/chile/output/chile_gebco20_usgs_250m_bath_fixed.nc \
-       ressources/chile/output/chile_gebco20_usgs_250m_displ_fixed.nc
+       resources/chile/output/chile_gebco20_usgs_250m_bath_fixed.nc \
+       resources/chile/output/chile_gebco20_usgs_250m_displ_fixed.nc
 
 Resulting domain: :math:`500 \times 421 = 210{,}500` cells at a cell size of
 :math:`7000\,\text{m}`.  Both runs resumed from the same checkpoint at

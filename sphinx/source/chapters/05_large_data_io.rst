@@ -109,8 +109,8 @@ Run the artificial-tsunami input
 .. code-block:: bash
 
    ./build/tsunami_lab -n 500 -t 1000 -p TsunamiEvent2d \
-       ressources/artificial_tsunami_2d/artificialtsunami_bathymetry_1000.nc \
-       ressources/artificial_tsunami_2d/artificialtsunami_displ_1000.nc
+       resources/artificial_tsunami_2d/artificialtsunami_bathymetry_1000.nc \
+       resources/artificial_tsunami_2d/artificialtsunami_displ_1000.nc
 
 .. figure:: ../../../simulations/visualizations/large_data_io/swimming_pool.webp
    :align: center

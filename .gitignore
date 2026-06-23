@@ -12,7 +12,7 @@
 build/
 */build/*
 
-ressources/chile
+resources/chile
 /submission
 
 # Doxygen generated docs
@@ -37,8 +37,8 @@ data/*.nc
 data/*.pdf
 data/tmp/
 
-/ressources/*_bathymetry_profile.csv
-!/ressources/tohoku_bathymetry_profile.csv
+/resources/*_bathymetry_profile.csv
+!/resources/tohoku_bathymetry_profile.csv
 
 # Generated outputs (maps, profiles)
 output/
@@ -53,4 +53,4 @@ simulations/*
 !simulations/visualizations/
 !simulations/visualizations/**
 
-ressources/tsunami_simulations
+resources/tsunami_simulations
