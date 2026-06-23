@@ -86,6 +86,7 @@ add_library(solver_lib STATIC
   src/setups/artificialtsunami2d/ArtificialTsunami2d.cpp
   src/setups/tsunamievent2d/TsunamiEvent2d.cpp
   src/setups/checkpoint/CheckPoint.cpp
+  src/displacement/GaussianDisplacement.cpp
   src/io/netcdf/NetCDF.cpp
   src/io/csv/Csv.cpp
   src/io/stations/Stations.cpp
@@ -120,6 +121,7 @@ add_executable(tests
   src/setups/tsunamievent2d/TsunamiEvent2d.test.cpp
   src/setups/tsunamievent2d/TsunamiEvent2dCompare.test.cpp
   src/setups/checkpoint/CheckPoint.test.cpp
+  src/displacement/GaussianDisplacement.test.cpp
   src/io/stations/Stations.test.cpp
   src/io/netcdf/NetCDF.test.cpp
 )
