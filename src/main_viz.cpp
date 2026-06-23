@@ -1,3 +1,4 @@
+#include "displacement/GaussianDisplacement.h"
 #include "visualization/Camera.h"
 #include "visualization/Gebco.h"
 #include "visualization/GlobeView.h"
@@ -38,6 +39,52 @@ static bool g_mouseMiddle = false;
 static double g_lastX = 0, g_lastY = 0;
 static int g_screenW = 1280, g_screenH = 720;
 
+// Distinguishes a click (place displacement) from a drag (rotate) in the
+// region preview.
+static double g_pressX = 0, g_pressY = 0;
+static float g_dragDist = 0.0f;
+
+// Gaussian displacement parameters, adjustable in the preview UI.
+static float g_displAmplitude = 5.0f; // peak uplift (m)
+static float g_displSigma = 15000.0f; // characteristic radius (m)
+static double g_epiLon = 0, g_epiLat = 0;
+
+// Intersect the ray through pixel (i_mx, i_my) with the y=0 sea-level plane and
+// return the world (x, z) hit point.
+static glm::vec2
+regionUnproject(float i_mx,
+                float i_my,
+                int i_w,
+                int i_h,
+                const tsunami_lab::visualization::Camera& i_cam) {
+  float l_aspect = (i_h > 0) ? (float)i_w / (float)i_h : 1.0f;
+  float l_ndcX = (2.0f * i_mx / (float)i_w) - 1.0f;
+  float l_ndcY = 1.0f - (2.0f * i_my / (float)i_h);
+  glm::mat4 l_invVP = glm::inverse(i_cam.projection(l_aspect) * i_cam.view());
+  glm::vec4 l_near = l_invVP * glm::vec4(l_ndcX, l_ndcY, -1.0f, 1.0f);
+  glm::vec4 l_far = l_invVP * glm::vec4(l_ndcX, l_ndcY, 1.0f, 1.0f);
+  l_near /= l_near.w;
+  l_far /= l_far.w;
+  glm::vec3 l_dir = glm::normalize(glm::vec3(l_far) - glm::vec3(l_near));
+  if (std::abs(l_dir.y) < 1e-6f)
+    return {0.0f, 0.0f};
+  float l_t = -l_near.y / l_dir.y;
+  glm::vec3 l_world = glm::vec3(l_near) + l_t * l_dir;
+  return {l_world.x, l_world.z};
+}
+
+// Place a Gaussian displacement at the clicked spot in the region preview.
+static void placeDisplacement(float i_mx, float i_my) {
+  if (!g_regionView || !g_regionView->loaded() || !g_camera)
+    return;
+  glm::vec2 l_world =
+      regionUnproject(i_mx, i_my, g_screenW, g_screenH, *g_camera);
+  tsunami_lab::displacement::GaussianDisplacement l_model(g_displAmplitude,
+                                                          g_displSigma);
+  g_regionView->applyDisplacement(l_world.x, l_world.y, l_model);
+  g_regionView->worldToLonLat(l_world.x, l_world.y, g_epiLon, g_epiLat);
+}
+
 static void onMouseButton(GLFWwindow*, int i_btn, int i_act, int) {
   if (ImGui::GetIO().WantCaptureMouse)
     return;
@@ -52,6 +99,15 @@ static void onMouseButton(GLFWwindow*, int i_btn, int i_act, int) {
                                   g_screenH, *g_camera);
       else
         g_globeView->onMouseRelease();
+    } else if (g_state == AppState::REGION_PREVIEW) {
+      if (pressed) {
+        g_pressX = g_lastX;
+        g_pressY = g_lastY;
+        g_dragDist = 0.0f;
+      } else if (g_dragDist < 5.0f) {
+        // Released without dragging: treat as a click and place a source.
+        placeDisplacement((float)g_lastX, (float)g_lastY);
+      }
     }
   }
   if (i_btn == GLFW_MOUSE_BUTTON_MIDDLE)
@@ -77,8 +133,10 @@ static void onCursorPos(GLFWwindow*, double i_x, double i_y) {
       g_camera->onMapPan(dx, dy);
   } else {
     // Simulation view: normal arcball
-    if (g_mouseLeft)
+    if (g_mouseLeft) {
+      g_dragDist += std::abs(dx) + std::abs(dy);
       g_camera->onMouseDrag(dx, dy);
+    }
     if (g_mouseMiddle)
       g_camera->onMiddleDrag(dx, dy);
   }
@@ -263,6 +321,19 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
   ImGui::SliderFloat("Überhöhung", &regionView.vertExaggeration, 1.0f, 100.0f,
                      "%.0f×");
   ImGui::Checkbox("Meeresspiegel anzeigen", &regionView.showSea);
+
+  ImGui::Spacing();
+  ImGui::SeparatorText("Erdbebenquelle");
+  ImGui::TextWrapped("Klick auf das Gelände: Gauss-Auslenkung setzen");
+  ImGui::SliderFloat("Amplitude (m)", &g_displAmplitude, -20.0f, 20.0f, "%.1f");
+  ImGui::SliderFloat("Radius (m)", &g_displSigma, 1000.0f, 100000.0f, "%.0f");
+  if (regionView.hasDisplacement()) {
+    ImGui::Text("Epizentrum: %.2f°, %.2f°", g_epiLon, g_epiLat);
+    if (ImGui::Button("Auslenkung entfernen", ImVec2(-1, 0)))
+      regionView.clearDisplacement();
+  } else {
+    ImGui::TextDisabled("(noch keine Auslenkung)");
+  }
 
   ImGui::Spacing();
   ImGui::SeparatorText("Weiter");
