@@ -446,10 +446,10 @@ int main() {
         l_ky = l_speed;
 
       if (l_kx != 0.0f || l_ky != 0.0f) {
-        if (g_state == AppState::REGION_SELECT)
+        if (g_state == AppState::REGION_SELECT ||
+            g_state == AppState::REGION_PREVIEW ||
+            g_state == AppState::SIMULATING)
           g_camera->onMapPan(-l_kx, -l_ky);
-        else if (g_state == AppState::REGION_PREVIEW)
-          g_camera->onMouseDrag(l_kx, l_ky);
       }
     }
 
