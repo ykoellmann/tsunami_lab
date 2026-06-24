@@ -33,6 +33,11 @@ static tsunami_lab::visualization::RegionView* g_regionView = nullptr;
 static std::string g_gebcoPath;
 // Set when a region read fails, so the UI can show feedback.
 static std::string g_regionError;
+// Max samples per axis when reading GEBCO for the bathymetry view.
+// 0 = native resolution (no stride); positive = cap (faster for large areas).
+static int g_bathMaxDim = 0;
+// Last selection that was successfully loaded (used by the region-view reload).
+static tsunami_lab::visualization::BBox g_loadedSel;
 
 static bool g_mouseLeft = false;
 static bool g_mouseMiddle = false;
@@ -270,9 +275,10 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
         g_regionError = "Keine GEBCO-Daten verfügbar.";
       } else {
         tsunami_lab::visualization::gebco::Region l_reg;
-        if (tsunami_lab::visualization::gebco::readRegion(g_gebcoPath, sel,
-                                                          l_reg) &&
+        if (tsunami_lab::visualization::gebco::readRegion(
+                g_gebcoPath, sel, l_reg, g_bathMaxDim) &&
             g_regionView && g_regionView->load(l_reg)) {
+          g_loadedSel = sel;
           g_state = AppState::REGION_PREVIEW;
           if (g_camera)
             setCameraRegionView(*g_camera);
@@ -313,8 +319,32 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
 
   ImGui::TextWrapped("Linksklick + Ziehen:  Drehen\n"
                      "Mittelklick + Ziehen: Verschieben\n"
-                     "WASD / Pfeiltasten:   Drehen\n"
+                     "WASD / Pfeiltasten:   Verschieben\n"
                      "Scrollrad:            Zoom");
+  ImGui::Spacing();
+
+  ImGui::SeparatorText("Auflösung");
+  {
+    bool l_native = (g_bathMaxDim == 0);
+    if (ImGui::Checkbox("Nativ (volle GEBCO-Auflösung)", &l_native))
+      g_bathMaxDim = l_native ? 0 : 4000;
+    if (!l_native) {
+      ImGui::SetNextItemWidth(-1);
+      ImGui::SliderInt("Max. Samples", &g_bathMaxDim, 500, 16000);
+    }
+    if (ImGui::Button("Neu laden", ImVec2(-1, 0)) && g_loadedSel.valid() &&
+        !g_gebcoPath.empty()) {
+      tsunami_lab::visualization::gebco::Region l_reg;
+      if (tsunami_lab::visualization::gebco::readRegion(
+              g_gebcoPath, g_loadedSel, l_reg, g_bathMaxDim) &&
+          regionView.load(l_reg))
+        regionView.clearDisplacement();
+      else
+        g_regionError = "Neu laden fehlgeschlagen.";
+    }
+    if (!g_regionError.empty())
+      ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s", g_regionError.c_str());
+  }
   ImGui::Spacing();
 
   ImGui::SeparatorText("Darstellung");
