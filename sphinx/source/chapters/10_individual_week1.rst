@@ -28,10 +28,23 @@ geocodes place names and centres the camera accordingly.
 
    Globe view, region selection over the Sumatra/Java subduction zone.
 
+**GEBCO data.**
+On first launch the visualizer ensures the GEBCO_2026 global bathymetry grid
+(15 arc-second ice-surface, ~7.5 GB NetCDF) is available locally, downloading
+and unzipping it automatically if the file is missing.  When a region is
+selected, only that window is read straight from the grid as a NetCDF hyperslab
+at native resolution — the multi-gigabyte file is never loaded into memory in
+full — with adaptive striding so very large selections stay within a manageable
+vertex budget.
+
 **Region preview.**
-After a region is selected, its bathymetry is loaded at native resolution and
-displayed as a shaded 3D terrain mesh.  Vertical exaggeration and a sea-level
-plane can be toggled in the sidebar.
+The extracted region is rendered as a shaded 3D terrain mesh.  Its horizontal
+extent is normalised to a fixed world size so that any selection fits the
+camera, while vertical exaggeration is applied live in the vertex shader without
+rebuilding the mesh.  Hill shading is derived per-fragment from screen-space
+derivatives of the surface; an elevation colormap and a translucent sea-level
+plane (both toggleable in the sidebar) make the coastline and water depth easy
+to read.
 
 .. figure:: ../_images/individual_phase/region_preview.png
    :alt: 3D bathymetry terrain preview of the selected region
@@ -65,7 +78,10 @@ Individual Contributions
 - **Yannik Köllmann:** CMake build system, OpenGL foundation (window, camera,
   shaders), globe view with mouse-driven region selection and city search,
   keyboard shortcuts.
-- **Jan Vogt:** GEBCO downloader and grid reader, 3D region terrain renderer.
+- **Jan Vogt:** Automatic GEBCO_2026 download and native-resolution region
+  reader (NetCDF hyperslab, adaptive striding); 3D bathymetry terrain renderer
+  with live vertical exaggeration, screen-space hill shading and a sea-level
+  plane
 - **Mika Brückner:** Project plan and pitch presentation; ``GaussianDisplacement``
   model with unit tests; click-to-place displacement in the region preview;
   bathymetry/displacement view toggle with diverging colormap.
