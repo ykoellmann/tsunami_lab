@@ -305,7 +305,6 @@ void RegionView::draw(const glm::mat4& i_vp) const {
   glDrawElements(GL_TRIANGLES, m_idxCnt, GL_UNSIGNED_INT, nullptr);
   glBindVertexArray(0);
 
-
   if (showSea && m_seaVao && field == Field::Bathymetry) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
