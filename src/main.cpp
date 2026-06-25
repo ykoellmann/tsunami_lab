@@ -568,9 +568,8 @@ int main(int i_argc, char* i_argv[]) {
              : static_cast<tsunami_lab::patches::WavePropagation*>(
                    new tsunami_lab::patches::WavePropagation1d(l_nx));
 
-  // maximum observed height in the setup
-  tsunami_lab::t_real l_hMax =
-      std::numeric_limits<tsunami_lab::t_real>::lowest();
+  // maximum wave speed observed in the initial state: max(|u| + sqrt(g*h))
+  tsunami_lab::t_real l_speedMax = 0;
 
   // set up solver — sample setup at cell centers
   for (tsunami_lab::t_idx l_cy = 0; l_cy < l_ny; l_cy++) {
@@ -581,11 +580,19 @@ int main(int i_argc, char* i_argv[]) {
 
       // get initial values of the setup
       tsunami_lab::t_real l_h = l_setup->getHeight(l_x, l_y);
-      l_hMax = std::max(l_h, l_hMax);
 
       tsunami_lab::t_real l_hu = l_setup->getMomentumX(l_x, l_y);
       tsunami_lab::t_real l_hv = l_setup->getMomentumY(l_x, l_y);
       tsunami_lab::t_real l_b = l_setup->getBathymetry(l_x, l_y);
+
+      if (l_h > 0) {
+        tsunami_lab::t_real l_u = l_hu / l_h;
+        tsunami_lab::t_real l_v = l_hv / l_h;
+        tsunami_lab::t_real l_speed =
+            std::max(std::abs(l_u), std::abs(l_v)) +
+            std::sqrt(tsunami_lab::g * l_h);
+        l_speedMax = std::max(l_speedMax, l_speed);
+      }
 
       // set initial values in wave propagation solver
       l_waveProp->setHeight(l_cx, l_cy, l_h);
@@ -601,12 +608,14 @@ int main(int i_argc, char* i_argv[]) {
   // derive constant time step. on restart we re-use the dt stored at
   // checkpoint creation so the time-step grid matches; otherwise it's
   // computed from the initial state's maximum wave speed.
+  // In 2D the unsplit scheme applies X- and Y-sweeps with the same dt,
+  // so the combined CFL is CFL_x + CFL_y. Halving dt keeps CFL_2D = 0.5.
   tsunami_lab::t_real l_dt = 0;
   if (l_appendMode && l_dtCheckpoint > 0) {
     l_dt = l_dtCheckpoint;
   } else {
-    tsunami_lab::t_real l_speedMax = std::sqrt(tsunami_lab::g * l_hMax);
-    l_dt = 0.5f * l_dxy / l_speedMax;
+    tsunami_lab::t_real l_cflFactor = l_is2d ? 0.25f : 0.5f;
+    l_dt = l_cflFactor * l_dxy / l_speedMax;
   }
 
   // derive scaling for a time step
