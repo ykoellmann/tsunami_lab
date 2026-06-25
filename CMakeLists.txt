@@ -57,6 +57,10 @@ else()
   add_compile_options(-Wno-unknown-pragmas)
 endif()
 
+# ---------- threads (SolverThread background loop) ----------
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 # ---------- NetCDF ----------
 find_program(NC_CONFIG nc-config REQUIRED)
 execute_process(COMMAND ${NC_CONFIG} --prefix
@@ -87,13 +91,14 @@ add_library(solver_lib STATIC
   src/setups/tsunamievent2d/TsunamiEvent2d.cpp
   src/setups/checkpoint/CheckPoint.cpp
   src/displacement/GaussianDisplacement.cpp
+  src/visualization/SolverThread.cpp
   src/io/netcdf/NetCDF.cpp
   src/io/csv/Csv.cpp
   src/io/stations/Stations.cpp
 )
 target_include_directories(solver_lib PUBLIC src ${NETCDF_INCLUDE})
 target_link_directories(solver_lib PUBLIC ${NETCDF_LIBDIR})
-target_link_libraries(solver_lib PUBLIC netcdf pugixml)
+target_link_libraries(solver_lib PUBLIC netcdf pugixml Threads::Threads)
 if(ENABLE_OMP)
   target_link_libraries(solver_lib PUBLIC OpenMP::OpenMP_CXX)
 endif()
@@ -122,6 +127,7 @@ add_executable(tests
   src/setups/tsunamievent2d/TsunamiEvent2dCompare.test.cpp
   src/setups/checkpoint/CheckPoint.test.cpp
   src/displacement/GaussianDisplacement.test.cpp
+  src/visualization/SolverThread.test.cpp
   src/io/stations/Stations.test.cpp
   src/io/netcdf/NetCDF.test.cpp
 )
