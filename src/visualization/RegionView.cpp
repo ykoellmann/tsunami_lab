@@ -118,7 +118,8 @@ layout(location = 1) in float aBath; // metres (negative under water)
 layout(location = 2) in float aH;    // water column, metres
 
 uniform mat4 uVP;
-uniform float uScaleY; // metres → world units (incl. exaggeration)
+uniform float uScaleY;     // metres → world units (incl. terrain exaggeration)
+uniform float uWaveExagg;  // additional multiplier for wave anomaly
 
 out float vEta; // surface elevation rel. to sea level, metres
 out float vH;
@@ -126,9 +127,17 @@ out vec3 vWorld;
 
 void main() {
     float eta = aBath + aH;
-    vEta = eta;
+    // Land vertices have eta = b > 0; interpolating across ocean–land edges
+    // would colour the boundary white. Snap to 0 before interpolation.
+    float posEta = (aH >= 0.01) ? eta : 0.0;
+    vEta = posEta;
     vH = aH;
-    vec3 world = vec3(aXZ.x, eta * uScaleY, aXZ.y);
+    // Reduce exaggeration toward 1x in shallow water: shoaling already
+    // amplifies the wave there, so full uWaveExagg creates extreme spikes.
+    float depth = max(0.0, -aBath);
+    float depthScale = clamp(depth / 500.0, 0.0, 1.0);
+    float effExagg = 1.0 + (uWaveExagg - 1.0) * depthScale;
+    vec3 world = vec3(aXZ.x, posEta * uScaleY * effExagg, aXZ.y);
     vWorld = world;
     gl_Position = uVP * vec4(world, 1.0);
 }
@@ -448,7 +457,10 @@ void RegionView::updateWater(const float* i_h) {
   float l_peak = 0.0f;
   for (size_t l_k = 0; l_k < l_n; l_k++) {
     m_waterH[l_k] = i_h[l_k];
-    if (i_h[l_k] >= 0.01f)
+    // Exclude shallow cells: shoaling produces extreme eta there and would
+    // collapse the colour scale for the open-ocean signal.
+    const float l_depth = -m_simBath[l_k];
+    if (i_h[l_k] >= 0.01f && l_depth > 500.0f)
       l_peak = std::max(l_peak, std::abs(m_simBath[l_k] + i_h[l_k]));
   }
   // Floor keeps the colour scale stable when the sea is near rest.
@@ -483,6 +495,7 @@ void RegionView::draw(const glm::mat4& i_vp) const {
     m_waterShader.use();
     m_waterShader.setMat4("uVP", i_vp);
     m_waterShader.setFloat("uScaleY", m_scaleY * vertExaggeration);
+    m_waterShader.setFloat("uWaveExagg", waveExaggeration);
     m_waterShader.setFloat("uAnom", m_waterAnom);
     glBindVertexArray(m_waterVao);
     glDrawElements(GL_TRIANGLES, m_waterIdxCnt, GL_UNSIGNED_INT, nullptr);

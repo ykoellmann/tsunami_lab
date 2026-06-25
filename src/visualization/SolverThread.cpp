@@ -47,7 +47,6 @@ void SolverThread::start() {
   if (m_running.load())
     return;
 
-  // dt = cfl · dx / maxSpeed  ⇒  scaling = dt/dx = cfl / maxSpeed.
   // 0.45 keeps a margin below the CFL limit of the dimensionally-split scheme.
   constexpr t_real l_cfl = t_real(0.45);
   const t_real l_speedMax = maxWaveSpeed();
@@ -66,15 +65,11 @@ void SolverThread::stop() {
 }
 
 void SolverThread::run() {
-  // De-strided frame: the solver stores interior cells with ghost-cell padding
-  // (row stride getStride()); the buffer expects contiguous nx*ny values.
   std::vector<t_real> l_frame(m_nx * m_ny);
   const t_idx l_stride = m_solver.getStride();
-  const double l_dt = (double)m_scaling * (double)m_dxy; // sim seconds per step
-
-  // Wall-clock target for the next step, advanced by l_dt / timeScale each step
-  // when pacing is enabled (resynced if the solver falls behind).
-  std::chrono::steady_clock::time_point l_next = std::chrono::steady_clock::now();
+  const double l_dt = (double)m_scaling * (double)m_dxy;
+  std::chrono::steady_clock::time_point l_next =
+      std::chrono::steady_clock::now();
 
   while (m_running.load()) {
     const auto l_t0 = std::chrono::steady_clock::now();
@@ -90,8 +85,6 @@ void SolverThread::run() {
 
     m_buffer.write(l_frame.data(), m_nx * m_ny);
 
-    // Smoothed compute time per step (excludes the pacing sleep below), so the
-    // UI can show the largest sustainable time scale.
     const double l_comp =
         std::chrono::duration<double>(std::chrono::steady_clock::now() - l_t0)
             .count();

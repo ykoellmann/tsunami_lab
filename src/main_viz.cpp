@@ -18,17 +18,13 @@
 #include <string>
 #include <vector>
 
-// ────────────────────────────────────────────────────────────────────────────
 // Application state
-// ────────────────────────────────────────────────────────────────────────────
 
 enum class AppState { REGION_SELECT, REGION_PREVIEW };
 
 static AppState g_state = AppState::REGION_SELECT;
 
-// ────────────────────────────────────────────────────────────────────────────
 // Global input state (filled by GLFW callbacks)
-// ────────────────────────────────────────────────────────────────────────────
 
 static tsunami_lab::visualization::Camera* g_camera = nullptr;
 static tsunami_lab::visualization::GlobeView* g_globeView = nullptr;
@@ -111,9 +107,7 @@ static void placeDisplacement(float i_mx, float i_my) {
   g_regionView->worldToLonLat(l_world.x, l_world.y, g_epiLon, g_epiLat);
 }
 
-// ────────────────────────────────────────────────────────────────────────────
 // Live simulation setup
-// ────────────────────────────────────────────────────────────────────────────
 
 // Bilinear sample of a row-major w×h grid at fractional (i_fx, i_fy), clamped.
 static float sampleGrid(
@@ -162,8 +156,7 @@ static void simGridFor(double i_widthM,
   o_nx = std::max<t_idx>(2, (t_idx)std::llround(i_widthM / o_dxy));
   o_ny = std::max<t_idx>(2, (t_idx)std::llround(i_heightM / o_dxy));
   if (o_nx > k_cap || o_ny > k_cap) {
-    const double l_f =
-        std::max((double)o_nx / k_cap, (double)o_ny / k_cap);
+    const double l_f = std::max((double)o_nx / k_cap, (double)o_ny / k_cap);
     o_dxy *= l_f;
     o_nx = std::max<t_idx>(2, (t_idx)std::llround(i_widthM / o_dxy));
     o_ny = std::max<t_idx>(2, (t_idx)std::llround(i_heightM / o_dxy));
@@ -215,15 +208,15 @@ static bool buildSimSetup(tsunami_lab::t_idx& o_nx,
                                                           g_displSigma);
 
   for (t_idx l_j = 0; l_j < l_ny; l_j++) {
-    const double l_lat =
-        l_src.latMin + (double)l_j * (l_src.latMax - l_src.latMin) /
-                           (double)(l_ny - 1);
-    const double l_fy = (l_lat - l_src.latMin) /
-                        (l_src.latMax - l_src.latMin) * (double)(l_src.h - 1);
+    const double l_lat = l_src.latMin + (double)l_j *
+                                            (l_src.latMax - l_src.latMin) /
+                                            (double)(l_ny - 1);
+    const double l_fy = (l_lat - l_src.latMin) / (l_src.latMax - l_src.latMin) *
+                        (double)(l_src.h - 1);
     for (t_idx l_i = 0; l_i < l_nx; l_i++) {
-      const double l_lon =
-          l_src.lonMin + (double)l_i * (l_src.lonMax - l_src.lonMin) /
-                             (double)(l_nx - 1);
+      const double l_lon = l_src.lonMin + (double)l_i *
+                                              (l_src.lonMax - l_src.lonMin) /
+                                              (double)(l_nx - 1);
       const double l_fx = (l_lon - l_src.lonMin) /
                           (l_src.lonMax - l_src.lonMin) * (double)(l_src.w - 1);
 
@@ -355,9 +348,7 @@ static void onScroll(GLFWwindow*, double, double i_dy) {
     g_camera->onScroll((float)i_dy);
 }
 
-// ────────────────────────────────────────────────────────────────────────────
 // Camera helpers
-// ────────────────────────────────────────────────────────────────────────────
 
 static void setCameraGlobeView(tsunami_lab::visualization::Camera& cam) {
   // With azimuth=0 and the lat-negation in the vertex shader (Z = -lat):
@@ -378,9 +369,7 @@ static void setCameraRegionView(tsunami_lab::visualization::Camera& cam) {
   cam.setDistance(330.0f);
 }
 
-// ────────────────────────────────────────────────────────────────────────────
 // ImGui panels
-// ────────────────────────────────────────────────────────────────────────────
 
 static std::future<std::pair<float, float>> g_geocodeFuture;
 static bool g_geocodeRunning = false;
@@ -410,7 +399,6 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
                      "Scrollrad:            Zoom");
   ImGui::Spacing();
 
-  // ── City search ──────────────────────────────────────────────────────────
   ImGui::SeparatorText("Stadtsuche");
   static char cityBuf[128] = {};
   bool doSearch = false;
@@ -453,12 +441,10 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
   if (!g_geocodeError.empty())
     ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s", g_geocodeError.c_str());
 
-  // ── Selection size limit ─────────────────────────────────────────────────
   ImGui::Spacing();
   ImGui::SeparatorText("Einstellungen");
   ImGui::SliderFloat("Max. Ausdehnung (°)", &globeView.maxSelDeg, 2.0f, 45.0f);
 
-  // ── Globe resolution ─────────────────────────────────────────────────────
   using GV = tsunami_lab::visualization::GlobeView;
   ImGui::SliderInt("Detailgrad (Welt)", &g_globeMaxDim, GV::MIN_LON_SAMPLES,
                    GV::MAX_LON_SAMPLES);
@@ -468,7 +454,6 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
       globeView.setResolution(g_globeMaxDim);
   }
 
-  // ── Selection info ───────────────────────────────────────────────────────
   ImGui::Spacing();
   ImGui::SeparatorText("Auswahl");
   if (globeView.hasSelection()) {
@@ -567,6 +552,8 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
   regionView.field = (l_field == 1) ? Field::Displacement : Field::Bathymetry;
   ImGui::SliderFloat("Überhöhung", &regionView.vertExaggeration, 1.0f, 100.0f,
                      "%.0f×");
+  ImGui::SliderFloat("Wellen-Überhöhung", &regionView.waveExaggeration, 1.0f,
+                     5000.0f, "%.0f×", ImGuiSliderFlags_Logarithmic);
   ImGui::Checkbox("Meeresspiegel anzeigen", &regionView.showSea);
 
   ImGui::Spacing();
@@ -624,7 +611,8 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
       const double l_max = g_sim->maxTimeScale();
       if (l_max > 0.0 && g_simSpeed > l_max * 1.05)
         ImGui::TextColored(ImVec4(1, 0.6f, 0.2f, 1),
-                           "CPU schafft nur ~%.0f× – Rest wird gekappt.", l_max);
+                           "CPU schafft nur ~%.0f× – Rest wird gekappt.",
+                           l_max);
     }
   }
   if (!simRunning()) {
@@ -652,9 +640,7 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
   ImGui::End();
 }
 
-// ────────────────────────────────────────────────────────────────────────────
 // Main
-// ────────────────────────────────────────────────────────────────────────────
 
 int main() {
   // Resolve (and, on first run, download) the GEBCO grid before opening the
@@ -699,7 +685,6 @@ int main() {
     float l_dt = (float)(l_now - g_lastFrameTime);
     g_lastFrameTime = l_now;
 
-    // ── Keyboard camera pan/orbit (WASD + arrow keys) ──────────────────────
     if (!ImGui::GetIO().WantCaptureKeyboard && g_camera) {
       float l_speed = 200.0f * l_dt;
       float l_kx = 0.0f, l_ky = 0.0f;
@@ -736,21 +721,17 @@ int main() {
     glClearColor(0.06f, 0.09f, 0.14f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // ── Build VP matrix ────────────────────────────────────────────────────
     float aspect = (l_winH > 0) ? (float)l_winW / (float)l_winH : 1.0f;
     glm::mat4 vp = l_camera.projection(aspect) * l_camera.view();
 
-    // ── Pull the latest simulation frame onto the water surface ─────────────
     if (simRunning() && g_simBuf->swap())
       l_region.updateWater(g_simBuf->front());
 
-    // ── Draw ───────────────────────────────────────────────────────────────
     if (g_state == AppState::REGION_SELECT)
       l_globe.draw(vp);
     else
       l_region.draw(vp);
 
-    // ── ImGui ──────────────────────────────────────────────────────────────
     l_ui.beginFrame();
     if (g_state == AppState::REGION_SELECT)
       drawGlobeUi(l_globe);

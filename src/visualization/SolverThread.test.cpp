@@ -6,8 +6,8 @@
  * solver. Grids are square (nx == ny) because WavePropagation2d's flat
  * indexing is only collision-free for square grids.
  **/
-#include "SimBuffer.h"
 #include "SolverThread.h"
+#include "SimBuffer.h"
 
 #include <catch2/catch.hpp>
 #include <chrono>
@@ -103,11 +103,11 @@ TEST_CASE("SolverThread advances a still lake with a bump and publishes it.",
   REQUIRE(l_sim.running());
   REQUIRE(l_sim.scaling() > 0.0f); // CFL step was derived
 
-  // Wait until the loop has advanced a few steps (timeout guards against hangs).
+  // Wait until the loop has advanced a few steps (timeout guards against
+  // hangs).
   const auto l_deadline =
       std::chrono::steady_clock::now() + std::chrono::seconds(2);
-  while (l_sim.steps() < 20 &&
-         std::chrono::steady_clock::now() < l_deadline) {
+  while (l_sim.steps() < 20 && std::chrono::steady_clock::now() < l_deadline) {
     std::this_thread::sleep_for(std::chrono::milliseconds(2));
   }
   l_sim.stop();
