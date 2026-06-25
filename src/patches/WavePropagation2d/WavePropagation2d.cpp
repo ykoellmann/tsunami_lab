@@ -58,6 +58,7 @@ void tsunami_lab::patches::WavePropagation2d::setGhostOutflow() {
     l_h[l_ghost] = l_h[l_inner];
     l_hu[l_ghost] = l_hu[l_inner];
     l_hv[l_ghost] = l_hv[l_inner];
+    m_b[l_ghost] = m_b[l_inner];
   }
 
   // Right ghost column (x = m_nCells_x+1): copy from x = m_nCells_x
@@ -67,6 +68,7 @@ void tsunami_lab::patches::WavePropagation2d::setGhostOutflow() {
     l_h[l_ghost] = l_h[l_inner];
     l_hu[l_ghost] = l_hu[l_inner];
     l_hv[l_ghost] = l_hv[l_inner];
+    m_b[l_ghost] = m_b[l_inner];
   }
 
   // Bottom ghost row (y=0): copy from y=1
@@ -76,6 +78,7 @@ void tsunami_lab::patches::WavePropagation2d::setGhostOutflow() {
     l_h[l_ghost] = l_h[l_inner];
     l_hu[l_ghost] = l_hu[l_inner];
     l_hv[l_ghost] = l_hv[l_inner];
+    m_b[l_ghost] = m_b[l_inner];
   }
 
   // Top ghost row (y = m_nCells_y+1): copy from y = m_nCells_y
@@ -85,6 +88,7 @@ void tsunami_lab::patches::WavePropagation2d::setGhostOutflow() {
     l_h[l_ghost] = l_h[l_inner];
     l_hu[l_ghost] = l_hu[l_inner];
     l_hv[l_ghost] = l_hv[l_inner];
+    m_b[l_ghost] = m_b[l_inner];
   }
 }
 
