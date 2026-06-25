@@ -1,5 +1,5 @@
 10. Individual Phase Week 1 — Real-Time OpenGL Visualization
-======================================================
+============================================================
 
 Overview
 --------
@@ -60,12 +60,18 @@ vertex and uploaded to a separate GPU buffer.  Uplifted areas are tinted
 orange-red, subsiding areas purple-blue.  A sidebar toggle switches between the
 combined bathymetry view and a displacement-only view with a diverging colormap.
 
-.. figure:: ../_images/individual_phase/displacement.png
+.. figure:: ../_images/individual_phase/displacement_overlay.png
    :alt: Region preview with a Gaussian seafloor displacement
    :width: 80%
 
    Gaussian displacement, uplifted seafloor
    highlighted in orange-red.
+
+.. figure:: ../_images/individual_phase/displacement.png
+   :alt: Gaussian seafloor displacement preview
+   :width: 80%
+
+   Gaussian displacement, uplifted seafloor
 
 **Build integration.**
 The project migrated from SCons to CMake to integrate the required OpenGL
