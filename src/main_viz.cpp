@@ -36,6 +36,10 @@ static std::string g_regionError;
 // Max samples per axis when reading GEBCO for the bathymetry view.
 // 0 = native resolution (no stride); positive = cap (faster for large areas).
 static int g_bathMaxDim = 0;
+// Longitude sample count for the whole-globe terrain mesh (bound to the
+// resolution slider in the globe view).
+static int g_globeMaxDim =
+    tsunami_lab::visualization::GlobeView::DEFAULT_LON_SAMPLES;
 // Last selection that was successfully loaded (used by the region-view reload).
 static tsunami_lab::visualization::BBox g_loadedSel;
 
@@ -256,6 +260,16 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
   ImGui::Spacing();
   ImGui::SeparatorText("Einstellungen");
   ImGui::SliderFloat("Max. Ausdehnung (°)", &globeView.maxSelDeg, 2.0f, 45.0f);
+
+  // ── Globe resolution ─────────────────────────────────────────────────────
+  using GV = tsunami_lab::visualization::GlobeView;
+  ImGui::SliderInt("Detailgrad (Welt)", &g_globeMaxDim, GV::MIN_LON_SAMPLES,
+                   GV::MAX_LON_SAMPLES);
+  ImGui::TextDisabled("Welt-Gitter: bis ~%d Punkte breit", g_globeMaxDim);
+  if (g_globeMaxDim != globeView.resolution()) {
+    if (ImGui::Button("Auflösung anwenden", ImVec2(-1, 0)))
+      globeView.setResolution(g_globeMaxDim);
+  }
 
   // ── Selection info ───────────────────────────────────────────────────────
   ImGui::Spacing();

@@ -81,8 +81,19 @@ void GlobeView::init(const char* i_gebcoPath) {
   m_terrShader.build(k_terrVert, k_terrFrag);
   m_selShader.build(k_selVert, k_selFrag);
   initSelectionVao();
-  if (i_gebcoPath)
-    loadGebco(i_gebcoPath);
+  if (i_gebcoPath) {
+    m_gebcoPath = i_gebcoPath;
+    loadGebco(m_gebcoPath.c_str(), m_lonSamples);
+  }
+}
+
+void GlobeView::setResolution(int i_lonSamples) {
+  i_lonSamples =
+      std::max(MIN_LON_SAMPLES, std::min(MAX_LON_SAMPLES, i_lonSamples));
+  if (i_lonSamples == m_lonSamples || m_gebcoPath.empty())
+    return;
+  m_lonSamples = i_lonSamples;
+  loadGebco(m_gebcoPath.c_str(), m_lonSamples);
 }
 
 GlobeView::~GlobeView() {
@@ -102,33 +113,41 @@ GlobeView::~GlobeView() {
 // GEBCO loading
 // ---------------------------------------------------------------------------
 
-void GlobeView::loadGebco(const char* i_path) {
-  // Subsample to 720×360 (0.5° resolution).
-  // GEBCO 2025: lat[43200] from +90→-90, lon[86400] from -180→+180
-  // elevation(lat, lon) stored as short int.
-  constexpr int kW = 720;
-  constexpr int kH = 360;
-  constexpr int kStr = 120; // 86400/720 = 43200/360 = 120
-
+void GlobeView::loadGebco(const char* i_path, int i_lonSamples) {
+  // Globally subsample GEBCO so the longitude axis holds ~i_lonSamples points;
+  // the latitude axis uses the same stride (half as many points over 180°).
+  // GEBCO 2025: lat from +90→-90, lon from -180→+180, elevation(lat, lon).
   int ncid = -1;
   if (nc_open(i_path, NC_NOWRITE, &ncid) != NC_NOERR) {
     std::fprintf(stderr, "GlobeView: cannot open %s\n", i_path);
     return;
   }
 
-  int varid = -1;
-  if (nc_inq_varid(ncid, "elevation", &varid) != NC_NOERR) {
-    std::fprintf(stderr, "GlobeView: 'elevation' variable not found\n");
+  int latDim = -1, lonDim = -1, varid = -1;
+  size_t nLat = 0, nLon = 0;
+  if (nc_inq_dimid(ncid, "lat", &latDim) != NC_NOERR ||
+      nc_inq_dimid(ncid, "lon", &lonDim) != NC_NOERR ||
+      nc_inq_dimlen(ncid, latDim, &nLat) != NC_NOERR ||
+      nc_inq_dimlen(ncid, lonDim, &nLon) != NC_NOERR ||
+      nc_inq_varid(ncid, "elevation", &varid) != NC_NOERR || nLat < 2 ||
+      nLon < 2) {
+    std::fprintf(stderr, "GlobeView: GEBCO dimensions/'elevation' not found\n");
     nc_close(ncid);
     return;
   }
 
+  // Stride so the longitude axis is capped at i_lonSamples samples.
+  const long stride =
+      std::max<long>(1, ((long)nLon + i_lonSamples - 1) / i_lonSamples);
+  const int kW = (int)(((long)nLon - 1) / stride + 1);
+  const int kH = (int)(((long)nLat - 1) / stride + 1);
+
   std::vector<short> raw((size_t)kW * kH);
   size_t start[2] = {0, 0};
   size_t count[2] = {(size_t)kH, (size_t)kW};
-  ptrdiff_t stride[2] = {kStr, kStr};
+  ptrdiff_t strd[2] = {stride, stride};
 
-  if (nc_get_vars_short(ncid, varid, start, count, stride, raw.data()) !=
+  if (nc_get_vars_short(ncid, varid, start, count, strd, raw.data()) !=
       NC_NOERR) {
     std::fprintf(stderr, "GlobeView: failed to read elevation data\n");
     nc_close(ncid);
@@ -141,6 +160,8 @@ void GlobeView::loadGebco(const char* i_path) {
   for (int k = 0; k < kW * kH; k++)
     elev[k] = (float)raw[k];
 
+  std::fprintf(stderr, "[GEBCO] Welt-Gitter: %d×%d (Stride %ld).\n", kW, kH,
+               stride);
   buildTerrainMesh(elev.data(), kW, kH);
 }
 
@@ -182,6 +203,15 @@ void GlobeView::buildTerrainMesh(const float* i_elev, int i_w, int i_h) {
     }
   }
   m_terrIdxCnt = (GLsizei)idx.size();
+
+  // Free any previously built mesh so setResolution() can rebuild without leak.
+  if (m_terrVao) {
+    glDeleteVertexArrays(1, &m_terrVao);
+    glDeleteBuffers(1, &m_terrVbPos);
+    glDeleteBuffers(1, &m_terrVbElv);
+    glDeleteBuffers(1, &m_terrEbo);
+    m_terrVao = m_terrVbPos = m_terrVbElv = m_terrEbo = 0;
+  }
 
   glGenVertexArrays(1, &m_terrVao);
   glGenBuffers(1, &m_terrVbPos);
