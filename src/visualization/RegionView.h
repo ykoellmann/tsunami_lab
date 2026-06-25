@@ -44,7 +44,6 @@ public:
 
   bool hasDisplacement() const { return m_hasDispl; }
 
-  // ── Live simulation overlay ───────────────────────────────────────────────
   // Build a water surface at the simulation resolution (i_nx × i_ny) spanning
   // the current region footprint. i_bath holds the sim-grid bathymetry in
   // metres (row-major, contiguous), used to reconstruct the surface elevation
@@ -68,6 +67,7 @@ public:
 
   // Vertical exaggeration, applied per-frame as a uniform (no mesh rebuild).
   float vertExaggeration = 25.0f;
+  float waveExaggeration = 500.0f;
   // Draw a translucent plane at y = 0 (sea level) for coastline reference.
   bool showSea = true;
   // Selects whether draw() shows the bathymetry or the displacement field.
@@ -106,7 +106,6 @@ private:
   // True vertical scale (metres → world units) before exaggeration.
   float m_scaleY = 1.0f;
 
-  // ── Live water surface (simulation overlay) ───────────────────────────────
   Shader m_waterShader;
   GLuint m_waterVao = 0;
   GLuint m_waterVbXZ = 0;   // vec2 (x, z) world position
@@ -119,8 +118,8 @@ private:
   bool m_simulating = false;
   // Peak |surface anomaly| of the latest frame, for colour normalisation.
   float m_waterAnom = 1.0f;
-  std::vector<float> m_waterH;    // scratch for the per-vertex height upload
-  std::vector<float> m_simBath;   // sim-grid bathymetry (CPU copy, for anomaly)
+  std::vector<float> m_waterH;  // scratch for the per-vertex height upload
+  std::vector<float> m_simBath; // sim-grid bathymetry (CPU copy, for anomaly)
 };
 
 } // namespace visualization

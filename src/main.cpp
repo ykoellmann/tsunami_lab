@@ -588,9 +588,8 @@ int main(int i_argc, char* i_argv[]) {
       if (l_h > 0) {
         tsunami_lab::t_real l_u = l_hu / l_h;
         tsunami_lab::t_real l_v = l_hv / l_h;
-        tsunami_lab::t_real l_speed =
-            std::max(std::abs(l_u), std::abs(l_v)) +
-            std::sqrt(tsunami_lab::g * l_h);
+        tsunami_lab::t_real l_speed = std::max(std::abs(l_u), std::abs(l_v)) +
+                                      std::sqrt(tsunami_lab::g * l_h);
         l_speedMax = std::max(l_speedMax, l_speed);
       }
 
