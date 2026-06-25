@@ -1,6 +1,7 @@
 #ifndef TSUNAMI_LAB_VISUALIZATION_REGIONVIEW_H
 #define TSUNAMI_LAB_VISUALIZATION_REGIONVIEW_H
 
+#include "../constants.h"
 #include "Gebco.h"
 #include "Shader.h"
 #include "displacement/DisplacementModel.h"
@@ -42,6 +43,22 @@ public:
   void clearDisplacement();
 
   bool hasDisplacement() const { return m_hasDispl; }
+
+  // ── Live simulation overlay ───────────────────────────────────────────────
+  // Build a water surface at the simulation resolution (i_nx × i_ny) spanning
+  // the current region footprint. i_bath holds the sim-grid bathymetry in
+  // metres (row-major, contiguous), used to reconstruct the surface elevation
+  // (bathymetry + water column) per vertex. Call after load().
+  void beginSimulation(t_idx i_nx, t_idx i_ny, const float* i_bath);
+
+  // Upload a new water-height frame (i_h: nx*ny contiguous water columns in
+  // metres). No-op unless beginSimulation() ran.
+  void updateWater(const float* i_h);
+
+  // Stop drawing the water surface (returns to the static bathymetry view).
+  void endSimulation() { m_simulating = false; }
+
+  bool simulating() const { return m_simulating; }
 
   // Convert a world (x, z) point to geographic (lon, lat) degrees.
   void worldToLonLat(float i_worldX,
@@ -88,6 +105,22 @@ private:
 
   // True vertical scale (metres → world units) before exaggeration.
   float m_scaleY = 1.0f;
+
+  // ── Live water surface (simulation overlay) ───────────────────────────────
+  Shader m_waterShader;
+  GLuint m_waterVao = 0;
+  GLuint m_waterVbXZ = 0;   // vec2 (x, z) world position
+  GLuint m_waterVbBath = 0; // float bathymetry (metres) per vertex
+  GLuint m_waterVbH = 0;    // float water column (metres) per vertex, dynamic
+  GLuint m_waterEbo = 0;
+  GLsizei m_waterIdxCnt = 0;
+  t_idx m_simNx = 0;
+  t_idx m_simNy = 0;
+  bool m_simulating = false;
+  // Peak |surface anomaly| of the latest frame, for colour normalisation.
+  float m_waterAnom = 1.0f;
+  std::vector<float> m_waterH;    // scratch for the per-vertex height upload
+  std::vector<float> m_simBath;   // sim-grid bathymetry (CPU copy, for anomaly)
 };
 
 } // namespace visualization

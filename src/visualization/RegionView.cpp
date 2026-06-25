@@ -107,14 +107,67 @@ void main() {
 }
 )GLSL";
 
+// Live water surface: y is the surface elevation (bathymetry + water column)
+// in metres, scaled like the terrain. The fragment stage colours by the
+// surface anomaly relative to sea level and discards dry (land) cells so the
+// seabed shows through.
+static const char* k_waterVert = R"GLSL(
+#version 330 core
+layout(location = 0) in vec2 aXZ;
+layout(location = 1) in float aBath; // metres (negative under water)
+layout(location = 2) in float aH;    // water column, metres
+
+uniform mat4 uVP;
+uniform float uScaleY; // metres → world units (incl. exaggeration)
+
+out float vEta; // surface elevation rel. to sea level, metres
+out float vH;
+out vec3 vWorld;
+
+void main() {
+    float eta = aBath + aH;
+    vEta = eta;
+    vH = aH;
+    vec3 world = vec3(aXZ.x, eta * uScaleY, aXZ.y);
+    vWorld = world;
+    gl_Position = uVP * vec4(world, 1.0);
+}
+)GLSL";
+
+static const char* k_waterFrag = R"GLSL(
+#version 330 core
+in float vEta;
+in float vH;
+in vec3 vWorld;
+out vec4 fragColor;
+
+uniform float uAnom; // peak |anomaly| for colour normalisation
+
+void main() {
+    if (vH < 0.01) discard; // dry cell: let the seabed show
+
+    vec3 n = normalize(cross(dFdx(vWorld), dFdy(vWorld)));
+    if (n.y < 0.0) n = -n;
+    float diff = max(dot(n, normalize(vec3(0.35, 1.0, 0.25))), 0.0) * 0.4 + 0.6;
+
+    float t = (uAnom > 0.0) ? clamp(vEta / uAnom, -1.0, 1.0) : 0.0;
+    vec3 calm = vec3(0.10, 0.42, 0.72);
+    vec3 c = (t >= 0.0) ? mix(calm, vec3(0.95, 0.90, 0.95), t)
+                        : mix(calm, vec3(0.02, 0.10, 0.32), -t);
+    fragColor = vec4(c * diff, 0.78);
+}
+)GLSL";
+
 // ---------------------------------------------------------------------------
 
 void RegionView::init() {
   m_terrShader.build(k_terrVert, k_terrFrag);
   m_seaShader.build(k_seaVert, k_seaFrag);
+  m_waterShader.build(k_waterVert, k_waterFrag);
 
-  // Sea-level plane: covers a bit more than the normalised terrain extent.
-  const float k_s = 130.0f;
+  // Sea-level plane. Placeholder extent here; load() resizes it to match the
+  // selected bathymetry footprint exactly.
+  const float k_s = 100.0f;
   const float l_quad[8] = {-k_s, -k_s, k_s, -k_s, -k_s, k_s, k_s, k_s};
   glGenVertexArrays(1, &m_seaVao);
   glGenBuffers(1, &m_seaVbo);
@@ -231,6 +284,17 @@ bool RegionView::load(const gebco::Region& i_region) {
                (GLsizeiptr)(l_idx.size() * sizeof(unsigned int)), l_idx.data(),
                GL_STATIC_DRAW);
 
+  // Resize the sea-level plane to the exact horizontal footprint of this
+  // region. The terrain spans ±(0.5 · sideM · scaleXZ) on each axis, so the
+  // larger side reaches ±100 and the smaller side proportionally less.
+  const float l_seaHalfX = (float)(0.5 * l_widthM * l_scaleXZ);
+  const float l_seaHalfZ = (float)(0.5 * l_heightM * l_scaleXZ);
+  const float l_sea[8] = {-l_seaHalfX, -l_seaHalfZ, l_seaHalfX, -l_seaHalfZ,
+                          -l_seaHalfX, l_seaHalfZ,  l_seaHalfX, l_seaHalfZ};
+  glBindBuffer(GL_ARRAY_BUFFER, m_seaVbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(l_sea), l_sea, GL_STATIC_DRAW);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+
   glBindVertexArray(0);
   return true;
 }
@@ -290,6 +354,112 @@ void RegionView::clearDisplacement() {
   m_hasDispl = false;
 }
 
+void RegionView::beginSimulation(t_idx i_nx, t_idx i_ny, const float* i_bath) {
+  if (i_nx < 2 || i_ny < 2 || i_bath == nullptr)
+    return;
+  m_simNx = i_nx;
+  m_simNy = i_ny;
+
+  // Same lon/lat → world mapping as the terrain mesh, so the water aligns.
+  const double l_latC = 0.5 * (latMin + latMax);
+  const double l_lonC = 0.5 * (lonMin + lonMax);
+  const double l_mPerLat = 111132.0;
+  const double l_mPerLon = 111320.0 * std::cos(glm::radians(l_latC));
+
+  const size_t l_n = (size_t)i_nx * i_ny;
+  std::vector<float> l_xz(l_n * 2);
+  m_simBath.assign(i_bath, i_bath + l_n);
+  for (t_idx l_j = 0; l_j < i_ny; l_j++) {
+    const double l_lat =
+        latMin + (double)l_j * (latMax - latMin) / (double)(i_ny - 1);
+    for (t_idx l_i = 0; l_i < i_nx; l_i++) {
+      const double l_lon =
+          lonMin + (double)l_i * (lonMax - lonMin) / (double)(i_nx - 1);
+      const double l_x = (l_lon - l_lonC) * l_mPerLon * m_scaleXZ;
+      const double l_z = -(l_lat - l_latC) * l_mPerLat * m_scaleXZ;
+      const size_t l_k = (size_t)l_j * i_nx + l_i;
+      l_xz[l_k * 2 + 0] = (float)l_x;
+      l_xz[l_k * 2 + 1] = (float)l_z;
+    }
+  }
+
+  std::vector<unsigned int> l_idx((size_t)(i_nx - 1) * (i_ny - 1) * 6);
+  size_t l_c = 0;
+  for (t_idx l_j = 0; l_j < i_ny - 1; l_j++) {
+    for (t_idx l_i = 0; l_i < i_nx - 1; l_i++) {
+      unsigned int l_v00 = (unsigned int)(l_j * i_nx + l_i);
+      unsigned int l_v01 = l_v00 + 1;
+      unsigned int l_v10 = l_v00 + (unsigned int)i_nx;
+      unsigned int l_v11 = l_v10 + 1;
+      l_idx[l_c++] = l_v00;
+      l_idx[l_c++] = l_v10;
+      l_idx[l_c++] = l_v01;
+      l_idx[l_c++] = l_v10;
+      l_idx[l_c++] = l_v11;
+      l_idx[l_c++] = l_v01;
+    }
+  }
+  m_waterIdxCnt = (GLsizei)l_idx.size();
+  m_waterH.assign(l_n, 0.0f);
+
+  if (m_waterVao == 0) {
+    glGenVertexArrays(1, &m_waterVao);
+    glGenBuffers(1, &m_waterVbXZ);
+    glGenBuffers(1, &m_waterVbBath);
+    glGenBuffers(1, &m_waterVbH);
+    glGenBuffers(1, &m_waterEbo);
+  }
+
+  glBindVertexArray(m_waterVao);
+
+  glBindBuffer(GL_ARRAY_BUFFER, m_waterVbXZ);
+  glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(l_xz.size() * sizeof(float)),
+               l_xz.data(), GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+  glEnableVertexAttribArray(0);
+
+  glBindBuffer(GL_ARRAY_BUFFER, m_waterVbBath);
+  glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(m_simBath.size() * sizeof(float)),
+               m_simBath.data(), GL_STATIC_DRAW);
+  glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
+  glEnableVertexAttribArray(1);
+
+  glBindBuffer(GL_ARRAY_BUFFER, m_waterVbH);
+  glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(m_waterH.size() * sizeof(float)),
+               m_waterH.data(), GL_DYNAMIC_DRAW);
+  glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
+  glEnableVertexAttribArray(2);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_waterEbo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+               (GLsizeiptr)(l_idx.size() * sizeof(unsigned int)), l_idx.data(),
+               GL_STATIC_DRAW);
+
+  glBindVertexArray(0);
+  m_waterAnom = 1.0f;
+  m_simulating = true;
+}
+
+void RegionView::updateWater(const float* i_h) {
+  if (!m_simulating || m_waterVao == 0 || i_h == nullptr)
+    return;
+  const size_t l_n = (size_t)m_simNx * m_simNy;
+
+  float l_peak = 0.0f;
+  for (size_t l_k = 0; l_k < l_n; l_k++) {
+    m_waterH[l_k] = i_h[l_k];
+    if (i_h[l_k] >= 0.01f)
+      l_peak = std::max(l_peak, std::abs(m_simBath[l_k] + i_h[l_k]));
+  }
+  // Floor keeps the colour scale stable when the sea is near rest.
+  m_waterAnom = std::max(0.05f, l_peak);
+
+  glBindBuffer(GL_ARRAY_BUFFER, m_waterVbH);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizeiptr)(l_n * sizeof(float)),
+                  m_waterH.data());
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
 void RegionView::draw(const glm::mat4& i_vp) const {
   if (m_idxCnt == 0)
     return;
@@ -305,7 +475,21 @@ void RegionView::draw(const glm::mat4& i_vp) const {
   glDrawElements(GL_TRIANGLES, m_idxCnt, GL_UNSIGNED_INT, nullptr);
   glBindVertexArray(0);
 
-  if (showSea && m_seaVao && field == Field::Bathymetry) {
+  // Live water surface replaces the flat sea plane while simulating.
+  if (m_simulating && m_waterVao && field == Field::Bathymetry) {
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
+    m_waterShader.use();
+    m_waterShader.setMat4("uVP", i_vp);
+    m_waterShader.setFloat("uScaleY", m_scaleY * vertExaggeration);
+    m_waterShader.setFloat("uAnom", m_waterAnom);
+    glBindVertexArray(m_waterVao);
+    glDrawElements(GL_TRIANGLES, m_waterIdxCnt, GL_UNSIGNED_INT, nullptr);
+    glBindVertexArray(0);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+  } else if (showSea && m_seaVao && field == Field::Bathymetry) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_FALSE);
@@ -330,6 +514,13 @@ RegionView::~RegionView() {
   if (m_seaVao) {
     glDeleteVertexArrays(1, &m_seaVao);
     glDeleteBuffers(1, &m_seaVbo);
+  }
+  if (m_waterVao) {
+    glDeleteVertexArrays(1, &m_waterVao);
+    glDeleteBuffers(1, &m_waterVbXZ);
+    glDeleteBuffers(1, &m_waterVbBath);
+    glDeleteBuffers(1, &m_waterVbH);
+    glDeleteBuffers(1, &m_waterEbo);
   }
 }
 

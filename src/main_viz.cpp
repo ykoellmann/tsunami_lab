@@ -3,21 +3,26 @@
 #include "visualization/Gebco.h"
 #include "visualization/GlobeView.h"
 #include "visualization/RegionView.h"
+#include "visualization/SimBuffer.h"
+#include "visualization/SolverThread.h"
 #include "visualization/Ui.h"
 #include "visualization/Window.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <future>
 #include <imgui.h>
+#include <memory>
 #include <string>
+#include <vector>
 
 // ────────────────────────────────────────────────────────────────────────────
 // Application state
 // ────────────────────────────────────────────────────────────────────────────
 
-enum class AppState { REGION_SELECT, REGION_PREVIEW, SIMULATING };
+enum class AppState { REGION_SELECT, REGION_PREVIEW };
 
 static AppState g_state = AppState::REGION_SELECT;
 
@@ -58,6 +63,18 @@ static float g_displAmplitude = 5.0f; // peak uplift (m)
 static float g_displSigma = 15000.0f; // characteristic radius (m)
 static double g_epiLon = 0, g_epiLat = 0;
 
+// Live simulation (created on "Simulieren", destroyed on stop / leaving view).
+static std::unique_ptr<tsunami_lab::visualization::SimBuffer> g_simBuf;
+static std::unique_ptr<tsunami_lab::visualization::SolverThread> g_sim;
+// Simulation resolution: edge length of one cell in metres. The cell count
+// follows from the region size. Capped per axis (see simGridFor) so a fine
+// resolution on a huge region cannot blow up the grid.
+static float g_simCellSize = 1000.0f;
+// Playback speed: simulated seconds advanced per real second.
+static float g_simSpeed = 120.0f;
+// When set, the playback speed follows the largest rate the CPU can sustain.
+static bool g_simAutoSpeed = false;
+
 // Intersect the ray through pixel (i_mx, i_my) with the y=0 sea-level plane and
 // return the world (x, z) hit point.
 static glm::vec2
@@ -94,6 +111,185 @@ static void placeDisplacement(float i_mx, float i_my) {
   g_regionView->worldToLonLat(l_world.x, l_world.y, g_epiLon, g_epiLat);
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Live simulation setup
+// ────────────────────────────────────────────────────────────────────────────
+
+// Bilinear sample of a row-major w×h grid at fractional (i_fx, i_fy), clamped.
+static float sampleGrid(
+    const std::vector<float>& i_a, int i_w, int i_h, double i_fx, double i_fy) {
+  i_fx = std::min(std::max(i_fx, 0.0), (double)(i_w - 1));
+  i_fy = std::min(std::max(i_fy, 0.0), (double)(i_h - 1));
+  int l_x0 = (int)i_fx, l_y0 = (int)i_fy;
+  int l_x1 = std::min(l_x0 + 1, i_w - 1), l_y1 = std::min(l_y0 + 1, i_h - 1);
+  double l_tx = i_fx - l_x0, l_ty = i_fy - l_y0;
+  float l_v00 = i_a[(size_t)l_y0 * i_w + l_x0];
+  float l_v01 = i_a[(size_t)l_y0 * i_w + l_x1];
+  float l_v10 = i_a[(size_t)l_y1 * i_w + l_x0];
+  float l_v11 = i_a[(size_t)l_y1 * i_w + l_x1];
+  double l_top = l_v00 * (1 - l_tx) + l_v01 * l_tx;
+  double l_bot = l_v10 * (1 - l_tx) + l_v11 * l_tx;
+  return (float)(l_top * (1 - l_ty) + l_bot * l_ty);
+}
+
+// Metric width/height (metres) of a lon/lat box at its centre latitude.
+static void regionMetres(double i_lonMin,
+                         double i_lonMax,
+                         double i_latMin,
+                         double i_latMax,
+                         double& o_widthM,
+                         double& o_heightM) {
+  const double l_latC = 0.5 * (i_latMin + i_latMax);
+  const double l_mPerLat = 111132.0;
+  const double l_mPerLon = 111320.0 * std::cos(l_latC * M_PI / 180.0);
+  o_widthM = (i_lonMax - i_lonMin) * l_mPerLon;
+  o_heightM = (i_latMax - i_latMin) * l_mPerLat;
+}
+
+// Grid (nx × ny) and effective cell size for a region of the given metric size
+// at the requested resolution i_cellSize (m). If the resulting grid would
+// exceed the per-axis cap, the cell size is coarsened so the grid stays square
+// and bounded; o_dxy then reports the effective resolution actually used.
+static void simGridFor(double i_widthM,
+                       double i_heightM,
+                       float i_cellSize,
+                       tsunami_lab::t_idx& o_nx,
+                       tsunami_lab::t_idx& o_ny,
+                       double& o_dxy) {
+  using tsunami_lab::t_idx;
+  constexpr t_idx k_cap = 4000; // safety ceiling per axis
+  o_dxy = std::max(1.0, (double)i_cellSize);
+  o_nx = std::max<t_idx>(2, (t_idx)std::llround(i_widthM / o_dxy));
+  o_ny = std::max<t_idx>(2, (t_idx)std::llround(i_heightM / o_dxy));
+  if (o_nx > k_cap || o_ny > k_cap) {
+    const double l_f =
+        std::max((double)o_nx / k_cap, (double)o_ny / k_cap);
+    o_dxy *= l_f;
+    o_nx = std::max<t_idx>(2, (t_idx)std::llround(i_widthM / o_dxy));
+    o_ny = std::max<t_idx>(2, (t_idx)std::llround(i_heightM / o_dxy));
+  }
+}
+
+// Resamples the selected region onto a square-cell grid and builds the initial
+// bathymetry + water column (still water to sea level, plus the placed quake
+// uplift). Returns false if the GEBCO read fails.
+static bool buildSimSetup(tsunami_lab::t_idx& o_nx,
+                          tsunami_lab::t_idx& o_ny,
+                          float& o_dxy,
+                          std::vector<float>& o_bath,
+                          std::vector<float>& o_height) {
+  using namespace tsunami_lab;
+  namespace gv = tsunami_lab::visualization;
+
+  if (g_gebcoPath.empty() || !g_loadedSel.valid())
+    return false;
+
+  gv::gebco::Region l_src;
+  if (!gv::gebco::readRegion(g_gebcoPath, g_loadedSel, l_src, 1200) ||
+      l_src.w < 2 || l_src.h < 2)
+    return false;
+
+  const double l_latC = 0.5 * (l_src.latMin + l_src.latMax);
+  const double l_mPerLat = 111132.0;
+  const double l_mPerLon = 111320.0 * std::cos(l_latC * M_PI / 180.0);
+  double l_widthM = 0.0, l_heightM = 0.0;
+  regionMetres(l_src.lonMin, l_src.lonMax, l_src.latMin, l_src.latMax, l_widthM,
+               l_heightM);
+  if (l_widthM <= 0.0 || l_heightM <= 0.0)
+    return false;
+
+  // Square cells at the requested resolution (cell size in metres); the grid
+  // count follows from the region size, capped per axis for real-time stepping.
+  double l_dxy = 0.0;
+  t_idx l_nx = 0, l_ny = 0;
+  simGridFor(l_widthM, l_heightM, g_simCellSize, l_nx, l_ny, l_dxy);
+
+  o_nx = l_nx;
+  o_ny = l_ny;
+  o_dxy = (float)l_dxy;
+  o_bath.assign((size_t)l_nx * l_ny, 0.0f);
+  o_height.assign((size_t)l_nx * l_ny, 0.0f);
+
+  const bool l_hasDisp = g_regionView && g_regionView->hasDisplacement();
+  tsunami_lab::displacement::GaussianDisplacement l_model(g_displAmplitude,
+                                                          g_displSigma);
+
+  for (t_idx l_j = 0; l_j < l_ny; l_j++) {
+    const double l_lat =
+        l_src.latMin + (double)l_j * (l_src.latMax - l_src.latMin) /
+                           (double)(l_ny - 1);
+    const double l_fy = (l_lat - l_src.latMin) /
+                        (l_src.latMax - l_src.latMin) * (double)(l_src.h - 1);
+    for (t_idx l_i = 0; l_i < l_nx; l_i++) {
+      const double l_lon =
+          l_src.lonMin + (double)l_i * (l_src.lonMax - l_src.lonMin) /
+                             (double)(l_nx - 1);
+      const double l_fx = (l_lon - l_src.lonMin) /
+                          (l_src.lonMax - l_src.lonMin) * (double)(l_src.w - 1);
+
+      const float l_b = sampleGrid(l_src.elev, l_src.w, l_src.h, l_fx, l_fy);
+      const size_t l_k = (size_t)l_j * l_nx + l_i;
+      o_bath[l_k] = l_b;
+
+      float l_h = (l_b < 0.0f) ? -l_b : 0.0f; // still water to sea level
+      if (l_hasDisp && l_b < 0.0f) {
+        const double l_east = (l_lon - g_epiLon) * l_mPerLon;
+        const double l_north = (l_lat - g_epiLat) * l_mPerLat;
+        l_h += (float)l_model.verticalDisplacement(l_east, l_north);
+        if (l_h < 0.0f)
+          l_h = 0.0f;
+      }
+      o_height[l_k] = l_h;
+    }
+  }
+  return true;
+}
+
+static void stopSimulation() {
+  if (g_sim) {
+    g_sim->stop();
+    g_sim.reset();
+  }
+  g_simBuf.reset();
+  if (g_regionView)
+    g_regionView->endSimulation();
+}
+
+static void startSimulation() {
+  using namespace tsunami_lab;
+  namespace gv = tsunami_lab::visualization;
+
+  stopSimulation();
+
+  t_idx l_nx = 0, l_ny = 0;
+  float l_dxy = 0.0f;
+  std::vector<float> l_bath, l_height;
+  if (!buildSimSetup(l_nx, l_ny, l_dxy, l_bath, l_height)) {
+    g_regionError = "Simulation: GEBCO-Setup fehlgeschlagen.";
+    return;
+  }
+
+  g_simBuf.reset(new gv::SimBuffer(l_nx, l_ny));
+  g_sim.reset(new gv::SolverThread(*g_simBuf, l_nx, l_ny, l_dxy));
+
+  patches::WavePropagation2d& l_solver = g_sim->solver();
+  for (t_idx l_j = 0; l_j < l_ny; l_j++)
+    for (t_idx l_i = 0; l_i < l_nx; l_i++) {
+      const size_t l_k = (size_t)l_j * l_nx + l_i;
+      l_solver.setBathymetry(l_i, l_j, l_bath[l_k]);
+      l_solver.setHeight(l_i, l_j, l_height[l_k]);
+      l_solver.setMomentumX(l_i, l_j, 0.0f);
+      l_solver.setMomentumY(l_i, l_j, 0.0f);
+    }
+
+  if (g_regionView)
+    g_regionView->beginSimulation(l_nx, l_ny, l_bath.data());
+  g_sim->setTimeScale(g_simSpeed);
+  g_sim->start();
+}
+
+static bool simRunning() { return g_sim && g_sim->running(); }
+
 static void onMouseButton(GLFWwindow*, int i_btn, int i_act, int) {
   if (ImGui::GetIO().WantCaptureMouse)
     return;
@@ -113,8 +309,9 @@ static void onMouseButton(GLFWwindow*, int i_btn, int i_act, int) {
         g_pressX = g_lastX;
         g_pressY = g_lastY;
         g_dragDist = 0.0f;
-      } else if (g_dragDist < 5.0f) {
+      } else if (g_dragDist < 5.0f && !simRunning()) {
         // Released without dragging: treat as a click and place a source.
+        // Disabled while a simulation is running (the field is live then).
         placeDisplacement((float)g_lastX, (float)g_lastY);
       }
     }
@@ -386,36 +583,67 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
   }
 
   ImGui::Spacing();
-  ImGui::SeparatorText("Weiter");
-  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.65f, 0.2f, 1));
-  if (ImGui::Button("Simulieren  >>", ImVec2(-1, 0))) {
-    // TODO: trigger SolverThread on this region's bathymetry (Phase 5)
-    g_state = AppState::SIMULATING;
+  ImGui::SeparatorText("Simulation");
+  ImGui::SliderFloat("Auflösung (m/Zelle)", &g_simCellSize, 50.0f, 20000.0f,
+                     "%.0f m", ImGuiSliderFlags_Logarithmic);
+  {
+    // Live preview of the resulting grid from the current selection bounds.
+    double l_w = 0.0, l_h = 0.0;
+    regionMetres(regionView.lonMin, regionView.lonMax, regionView.latMin,
+                 regionView.latMax, l_w, l_h);
+    tsunami_lab::t_idx l_pnx = 0, l_pny = 0;
+    double l_pdxy = 0.0;
+    simGridFor(l_w, l_h, g_simCellSize, l_pnx, l_pny, l_pdxy);
+    if (l_pdxy > g_simCellSize * 1.01)
+      ImGui::TextColored(ImVec4(1, 0.6f, 0.2f, 1),
+                         "→ %zu × %zu Zellen (begrenzt: eff. %.0f m)",
+                         (size_t)l_pnx, (size_t)l_pny, l_pdxy);
+    else
+      ImGui::TextDisabled("→ %zu × %zu Zellen", (size_t)l_pnx, (size_t)l_pny);
   }
-  ImGui::PopStyleColor();
+  ImGui::Checkbox("Zeitraffer automatisch (CPU-Limit)", &g_simAutoSpeed);
+  if (g_simAutoSpeed) {
+    // Couple playback to the largest rate the hardware sustains, so the wave
+    // never silently falls behind the requested speed.
+    const double l_max = simRunning() ? g_sim->maxTimeScale() : 0.0;
+    if (simRunning())
+      g_sim->setTimeScale(l_max); // 0 until measured ⇒ uncapped warm-up
+    ImGui::BeginDisabled();
+    ImGui::SliderFloat("Zeitraffer (Sim-s/s)", &g_simSpeed, 1.0f, 2000.0f,
+                       "%.0f×", ImGuiSliderFlags_Logarithmic);
+    ImGui::EndDisabled();
+    if (l_max > 0.0)
+      ImGui::Text("läuft bei ~%.0f× (CPU-Limit)", l_max);
+    else
+      ImGui::TextDisabled("(CPU-Limit wird gemessen …)");
+  } else {
+    ImGui::SliderFloat("Zeitraffer (Sim-s/s)", &g_simSpeed, 1.0f, 2000.0f,
+                       "%.0f×", ImGuiSliderFlags_Logarithmic);
+    if (simRunning()) {
+      g_sim->setTimeScale(g_simSpeed);
+      const double l_max = g_sim->maxTimeScale();
+      if (l_max > 0.0 && g_simSpeed > l_max * 1.05)
+        ImGui::TextColored(ImVec4(1, 0.6f, 0.2f, 1),
+                           "CPU schafft nur ~%.0f× – Rest wird gekappt.", l_max);
+    }
+  }
+  if (!simRunning()) {
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.65f, 0.2f, 1));
+    if (ImGui::Button("Simulieren  ▶", ImVec2(-1, 0)))
+      startSimulation();
+    ImGui::PopStyleColor();
+  } else {
+    ImGui::TextColored(ImVec4(0.2f, 0.8f, 1, 1), "läuft – %zu Schritte",
+                       (size_t)g_sim->steps());
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.2f, 0.15f, 1));
+    if (ImGui::Button("Stop  ■", ImVec2(-1, 0)))
+      stopSimulation();
+    ImGui::PopStyleColor();
+  }
 
   ImGui::Spacing();
   if (ImGui::Button("← Zurück zur Gebietsauswahl", ImVec2(-1, 0))) {
-    g_state = AppState::REGION_SELECT;
-    if (g_camera)
-      setCameraGlobeView(*g_camera);
-  }
-
-  ImGui::End();
-}
-
-static void drawSimulatingUi() {
-  ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
-  ImGui::SetNextWindowSize(ImVec2(280, 0), ImGuiCond_Always);
-  ImGui::Begin("##sim_panel", nullptr,
-               ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                   ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
-
-  ImGui::TextColored(ImVec4(0.2f, 0.8f, 1, 1), "Simulation");
-  ImGui::Separator();
-  ImGui::TextDisabled("(Simulation wird in Phase 5 implementiert)");
-  ImGui::Spacing();
-  if (ImGui::Button("← Zurück zur Gebietsauswahl", ImVec2(-1, 0))) {
+    stopSimulation();
     g_state = AppState::REGION_SELECT;
     if (g_camera)
       setCameraGlobeView(*g_camera);
@@ -491,8 +719,7 @@ int main() {
 
       if (l_kx != 0.0f || l_ky != 0.0f) {
         if (g_state == AppState::REGION_SELECT ||
-            g_state == AppState::REGION_PREVIEW ||
-            g_state == AppState::SIMULATING)
+            g_state == AppState::REGION_PREVIEW)
           g_camera->onMapPan(-l_kx, -l_ky);
       }
     }
@@ -513,25 +740,28 @@ int main() {
     float aspect = (l_winH > 0) ? (float)l_winW / (float)l_winH : 1.0f;
     glm::mat4 vp = l_camera.projection(aspect) * l_camera.view();
 
+    // ── Pull the latest simulation frame onto the water surface ─────────────
+    if (simRunning() && g_simBuf->swap())
+      l_region.updateWater(g_simBuf->front());
+
     // ── Draw ───────────────────────────────────────────────────────────────
     if (g_state == AppState::REGION_SELECT)
       l_globe.draw(vp);
-    else if (g_state == AppState::REGION_PREVIEW)
+    else
       l_region.draw(vp);
 
     // ── ImGui ──────────────────────────────────────────────────────────────
     l_ui.beginFrame();
     if (g_state == AppState::REGION_SELECT)
       drawGlobeUi(l_globe);
-    else if (g_state == AppState::REGION_PREVIEW)
-      drawRegionUi(l_region);
     else
-      drawSimulatingUi();
+      drawRegionUi(l_region);
     l_ui.endFrame();
 
     l_window.swapBuffers();
   }
 
+  stopSimulation();
   l_ui.shutdown();
   return 0;
 }
