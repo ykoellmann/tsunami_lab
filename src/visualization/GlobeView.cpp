@@ -14,72 +14,11 @@
 namespace tsunami_lab {
 namespace visualization {
 
-// ---------------------------------------------------------------------------
-// GLSL shaders (embedded as raw string literals)
-// ---------------------------------------------------------------------------
-
-static const char* k_terrVert = R"GLSL(
-#version 330 core
-layout(location = 0) in vec2 aPos;   // (lon, lat) in degrees
-layout(location = 1) in float aElev; // metres
-
-uniform mat4 uVP;
-
-out float vElev;
-
-void main() {
-    vElev = aElev;
-    // Negate lat so that north (+lat) maps to -Z; with azimuth=0 this puts
-    // north at the top of the screen and east to the right.
-    gl_Position = uVP * vec4(aPos.x, 0.0, -aPos.y, 1.0);
-}
-)GLSL";
-
-static const char* k_terrFrag = R"GLSL(
-#version 330 core
-in float vElev;
-out vec4 fragColor;
-
-void main() {
-    float h = vElev;
-    vec3 c;
-    if (h < 0.0) {
-        float t = clamp(h / -6000.0, 0.0, 1.0);
-        c = mix(vec3(0.05, 0.18, 0.45), vec3(0.18, 0.52, 0.78), t);
-    } else {
-        float t = clamp(h / 3000.0, 0.0, 1.0);
-        c = mix(vec3(0.30, 0.58, 0.22), vec3(0.58, 0.42, 0.22), t);
-    }
-    fragColor = vec4(c, 1.0);
-}
-)GLSL";
-
-static const char* k_selVert = R"GLSL(
-#version 330 core
-layout(location = 0) in vec2 aPos; // (lon, lat)
-uniform mat4 uVP;
-void main() {
-    // Slightly above y=0 to avoid z-fighting with terrain; same lat negation as terrain.
-    gl_Position = uVP * vec4(aPos.x, 0.05, -aPos.y, 1.0);
-}
-)GLSL";
-
-static const char* k_selFrag = R"GLSL(
-#version 330 core
-uniform vec4 uColor;
-out vec4 fragColor;
-void main() {
-    fragColor = uColor;
-}
-)GLSL";
-
-// ---------------------------------------------------------------------------
-// init / teardown
-// ---------------------------------------------------------------------------
-
 void GlobeView::init(const char* i_gebcoPath) {
-  m_terrShader.build(k_terrVert, k_terrFrag);
-  m_selShader.build(k_selVert, k_selFrag);
+  m_terrShader.buildFromFiles(SHADER_DIR "/globe_terrain.vert",
+                              SHADER_DIR "/globe_terrain.frag");
+  m_selShader.buildFromFiles(SHADER_DIR "/globe_selection.vert",
+                             SHADER_DIR "/globe_selection.frag");
   initSelectionVao();
   if (i_gebcoPath) {
     m_gebcoPath = i_gebcoPath;
@@ -109,10 +48,6 @@ GlobeView::~GlobeView() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// GEBCO loading
-// ---------------------------------------------------------------------------
-
 void GlobeView::loadGebco(const char* i_path, int i_lonSamples) {
   // Globally subsample GEBCO so the longitude axis holds ~i_lonSamples points;
   // the latitude axis uses the same stride (half as many points over 180°).
@@ -136,7 +71,6 @@ void GlobeView::loadGebco(const char* i_path, int i_lonSamples) {
     return;
   }
 
-  // Stride so the longitude axis is capped at i_lonSamples samples.
   const long stride =
       std::max<long>(1, ((long)nLon + i_lonSamples - 1) / i_lonSamples);
   const int kW = (int)(((long)nLon - 1) / stride + 1);
@@ -155,7 +89,6 @@ void GlobeView::loadGebco(const char* i_path, int i_lonSamples) {
   }
   nc_close(ncid);
 
-  // Convert to float
   std::vector<float> elev((size_t)kW * kH);
   for (int k = 0; k < kW * kH; k++)
     elev[k] = (float)raw[k];
@@ -166,15 +99,9 @@ void GlobeView::loadGebco(const char* i_path, int i_lonSamples) {
 }
 
 void GlobeView::buildTerrainMesh(const float* i_elev, int i_w, int i_h) {
-  // Position VBO: (lon, lat) pairs
-  // Elevation VBO: float
-  // GEBCO lat[0] = +90 (north) → Z = 90
-  // GEBCO lat[kH-1] = -90 (south) → Z = -90
-
   const int nVerts = i_w * i_h;
   std::vector<float> pos((size_t)nVerts * 2);
   for (int j = 0; j < i_h; j++) {
-    // GEBCO 2025 stores lat south-to-north: lat[0]≈-90, lat[N-1]≈+90
     float lat = -90.0f + j * (180.0f / (i_h - 1));
     for (int i = 0; i < i_w; i++) {
       float lon = -180.0f + i * (360.0f / (i_w - 1));
@@ -183,7 +110,6 @@ void GlobeView::buildTerrainMesh(const float* i_elev, int i_w, int i_h) {
     }
   }
 
-  // Index buffer: two CCW triangles per quad
   const int nQuadsW = i_w - 1;
   const int nQuadsH = i_h - 1;
   std::vector<unsigned int> idx((size_t)nQuadsW * nQuadsH * 6);
@@ -254,12 +180,7 @@ void GlobeView::initSelectionVao() {
   glBindVertexArray(0);
 }
 
-// ---------------------------------------------------------------------------
-// Drawing
-// ---------------------------------------------------------------------------
-
 void GlobeView::draw(const glm::mat4& i_vp) const {
-  // --- Terrain ---
   if (m_terrVao) {
     m_terrShader.use();
     m_terrShader.setMat4("uVP", i_vp);
@@ -268,7 +189,6 @@ void GlobeView::draw(const glm::mat4& i_vp) const {
     glBindVertexArray(0);
   }
 
-  // --- Selection rectangle ---
   if ((m_selecting || m_hasSelection) && m_selVao) {
     uploadSelectionRect();
 
@@ -281,15 +201,12 @@ void GlobeView::draw(const glm::mat4& i_vp) const {
 
     glBindVertexArray(m_selVao);
 
-    // Filled interior: semi-transparent yellow
     m_selShader.setVec4("uColor", glm::vec4(1.0f, 0.85f, 0.1f, 0.22f));
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    // Border: solid bright yellow, 2 px wide
     glLineWidth(2.0f);
     m_selShader.setVec4("uColor", glm::vec4(1.0f, 0.9f, 0.0f, 1.0f));
-    // Vertices stored as [SW=0, SE=1, NW=2, NE=3]; correct outline order:
-    // SW→SE→NE→NW→SW
+    // Vertices: SW=0, SE=1, NW=2, NE=3; outline order: SW→SE→NE→NW→SW
     const unsigned int lineIdx[5] = {0, 1, 3, 2, 0};
     glDrawElements(GL_LINE_STRIP, 5, GL_UNSIGNED_INT, lineIdx);
 
@@ -300,7 +217,6 @@ void GlobeView::draw(const glm::mat4& i_vp) const {
 }
 
 void GlobeView::uploadSelectionRect() const {
-  // Determine bounding box from anchor and current drag end
   float lonMin = std::min(m_selA.x, m_selB.x);
   float lonMax = std::max(m_selA.x, m_selB.x);
   float latMin = std::min(m_selA.y, m_selB.y);
@@ -316,10 +232,6 @@ void GlobeView::uploadSelectionRect() const {
   glBindBuffer(GL_ARRAY_BUFFER, m_selVbo);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
 }
-
-// ---------------------------------------------------------------------------
-// Input handling
-// ---------------------------------------------------------------------------
 
 glm::vec2 GlobeView::unproject(
     float i_mx, float i_my, int i_w, int i_h, const Camera& i_cam) const {
@@ -342,12 +254,11 @@ glm::vec2 GlobeView::unproject(
 
   float t = -orig.y / dir.y;
   glm::vec3 world = orig + t * dir;
-  // Z = -lat in world space (see vertex shader), so invert back.
-  return {world.x, -world.z}; // (lon, lat)
+  // Z = -lat in world space (see vertex shader)
+  return {world.x, -world.z};
 }
 
 glm::vec2 GlobeView::clampSelEnd(glm::vec2 i_end) const {
-  // Clamp to max selection size relative to anchor
   auto clampAxis = [&](float anchor, float end, float maxHalf) {
     float diff = end - anchor;
     if (diff > maxHalf)
@@ -360,7 +271,6 @@ glm::vec2 GlobeView::clampSelEnd(glm::vec2 i_end) const {
   float lon = clampAxis(m_selA.x, i_end.x, maxSelDeg);
   float lat = clampAxis(m_selA.y, i_end.y, maxSelDeg);
 
-  // Clamp to valid lon/lat ranges
   lon = std::min(180.0f, std::max(-180.0f, lon));
   lat = std::min(90.0f, std::max(-90.0f, lat));
   return {lon, lat};
@@ -378,7 +288,6 @@ void GlobeView::onMousePress(
 void GlobeView::onMouseRelease() {
   if (m_selecting) {
     m_selecting = false;
-    // Only keep the selection if it has non-zero area
     BBox sel = getSelection();
     m_hasSelection =
         sel.valid() && sel.lonSpan() > 0.1f && sel.latSpan() > 0.1f;
@@ -402,10 +311,6 @@ BBox GlobeView::getSelection() const {
   return b;
 }
 
-// ---------------------------------------------------------------------------
-// City geocoding (Nominatim via system curl, blocking, max 5 s timeout)
-// ---------------------------------------------------------------------------
-
 std::pair<float, float> GlobeView::geocodeCity(const std::string& i_city) {
   // Basic URL encode: replace spaces with +
   std::string query = i_city;
@@ -426,7 +331,6 @@ std::pair<float, float> GlobeView::geocodeCity(const std::string& i_city) {
   (void)l_nRead;
   pclose(pipe);
 
-  // Extract "lat":"..." and "lon":"..." from first JSON element
   auto extractField = [&](const char* key) -> float {
     std::string search = std::string("\"") + key + "\":\"";
     const char* p = std::strstr(buf, search.c_str());

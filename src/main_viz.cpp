@@ -443,7 +443,7 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
 
   ImGui::Spacing();
   ImGui::SeparatorText("Einstellungen");
-  ImGui::SliderFloat("Max. Ausdehnung (°)", &globeView.maxSelDeg, 2.0f, 45.0f);
+  ImGui::SliderFloat("Max. Ausdehnung (°)", &globeView.maxSelDeg, 2.0f, 500.0f);
 
   using GV = tsunami_lab::visualization::GlobeView;
   ImGui::SliderInt("Detailgrad (Welt)", &g_globeMaxDim, GV::MIN_LON_SAMPLES,
