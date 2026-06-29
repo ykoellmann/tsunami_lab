@@ -173,6 +173,8 @@ if(ENABLE_VIZ)
     src/visualization/RegionView.cpp
   )
   target_include_directories(tsunami_lab_viz PRIVATE src thirdparty/glad/include)
+  target_compile_definitions(tsunami_lab_viz PRIVATE
+    SHADER_DIR="${CMAKE_SOURCE_DIR}/src/visualization/shaders")
   target_link_libraries(tsunami_lab_viz PRIVATE solver_lib glad imgui glfw OpenGL::GL glm::glm)
 
   if(APPLE)

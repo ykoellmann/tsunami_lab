@@ -7,175 +7,14 @@
 namespace tsunami_lab {
 namespace visualization {
 
-// ---------------------------------------------------------------------------
-// Shaders
-// ---------------------------------------------------------------------------
-
-// Terrain: y is reconstructed from elevation × (scaleY × exaggeration), so the
-// exaggeration slider is live. The fragment stage derives a per-face normal
-// from screen-space derivatives of the world position for cheap hill shading.
-static const char* k_terrVert = R"GLSL(
-#version 330 core
-layout(location = 0) in vec2 aXZ;    // (x, z) world position
-layout(location = 1) in float aElev; // metres
-layout(location = 2) in float aDisp; // vertical seafloor displacement, metres
-
-uniform mat4 uVP;
-uniform float uScaleY;     // metres → world units for elevation (incl. exagg.)
-uniform float uDispScaleY; // metres → world units for displacement
-uniform int uMode;         // 0 = bathymetry, 1 = displacement
-
-out float vElev;
-out float vDisp;
-out vec3 vWorld;
-
-void main() {
-    // Bathymetry mode shows the deformed seabed (relief + displacement);
-    // displacement mode shows the displacement field on its own.
-    float y = (uMode == 0) ? (aElev + aDisp) * uScaleY : aDisp * uDispScaleY;
-    vec3 world = vec3(aXZ.x, y, aXZ.y);
-    vWorld = world;
-    vElev = aElev;
-    vDisp = aDisp;
-    gl_Position = uVP * vec4(world, 1.0);
-}
-)GLSL";
-
-static const char* k_terrFrag = R"GLSL(
-#version 330 core
-in float vElev;
-in float vDisp;
-in vec3 vWorld;
-out vec4 fragColor;
-
-uniform int uMode;       // 0 = bathymetry, 1 = displacement
-uniform float uDispRange; // peak |displacement| for normalising the colormap
-
-vec3 colormap(float h) {
-    if (h < 0.0) {
-        float t = clamp(h / -6000.0, 0.0, 1.0);
-        return mix(vec3(0.05, 0.18, 0.45), vec3(0.22, 0.55, 0.80), 1.0 - t);
-    } else {
-        float t = clamp(h / 3000.0, 0.0, 1.0);
-        return mix(vec3(0.30, 0.58, 0.22), vec3(0.62, 0.45, 0.25), t);
-    }
-}
-
-// Diverging colormap: blue for subsidence, red for uplift, pale at zero.
-vec3 displColormap(float d) {
-    float t = (uDispRange > 0.0) ? clamp(d / uDispRange, -1.0, 1.0) : 0.0;
-    vec3 zero = vec3(0.93, 0.93, 0.88);
-    return (t >= 0.0) ? mix(zero, vec3(0.80, 0.18, 0.12), t)
-                      : mix(zero, vec3(0.12, 0.30, 0.80), -t);
-}
-
-void main() {
-    vec3 n = normalize(cross(dFdx(vWorld), dFdy(vWorld)));
-    if (n.y < 0.0) n = -n;
-    vec3 lightDir = normalize(vec3(0.35, 1.0, 0.25));
-    float diff = max(dot(n, lightDir), 0.0) * 0.65 + 0.35;
-
-    vec3 base;
-    if (uMode == 0) {
-        base = colormap(vElev) * diff;
-        // Tint the deformed seafloor: warm for uplift, cool for subsidence.
-        float m = clamp(abs(vDisp) / 5.0, 0.0, 1.0);
-        vec3 tint = (vDisp >= 0.0) ? vec3(0.95, 0.35, 0.15)
-                                   : vec3(0.55, 0.20, 0.85);
-        base = mix(base, tint, 0.55 * m);
-    } else {
-        base = displColormap(vDisp) * diff;
-    }
-    fragColor = vec4(base, 1.0);
-}
-)GLSL";
-
-static const char* k_seaVert = R"GLSL(
-#version 330 core
-layout(location = 0) in vec2 aXZ;
-uniform mat4 uVP;
-void main() {
-    gl_Position = uVP * vec4(aXZ.x, 0.0, aXZ.y, 1.0);
-}
-)GLSL";
-
-static const char* k_seaFrag = R"GLSL(
-#version 330 core
-out vec4 fragColor;
-void main() {
-    fragColor = vec4(0.15, 0.45, 0.75, 0.35);
-}
-)GLSL";
-
-// Live water surface: y is the surface elevation (bathymetry + water column)
-// in metres, scaled like the terrain. The fragment stage colours by the
-// surface anomaly relative to sea level and discards dry (land) cells so the
-// seabed shows through.
-static const char* k_waterVert = R"GLSL(
-#version 330 core
-layout(location = 0) in vec2 aXZ;
-layout(location = 1) in float aBath; // metres (negative under water)
-layout(location = 2) in float aH;    // water column, metres
-
-uniform mat4 uVP;
-uniform float uScaleY;     // metres → world units (incl. terrain exaggeration)
-uniform float uWaveExagg;  // additional multiplier for wave anomaly
-
-out float vEta; // surface elevation rel. to sea level, metres
-out float vH;
-out vec3 vWorld;
-
-void main() {
-    float eta = aBath + aH;
-    // Land vertices have eta = b > 0; interpolating across ocean–land edges
-    // would colour the boundary white. Snap to 0 before interpolation.
-    float posEta = (aH >= 0.01) ? eta : 0.0;
-    vEta = posEta;
-    vH = aH;
-    // Reduce exaggeration toward 1x in shallow water: shoaling already
-    // amplifies the wave there, so full uWaveExagg creates extreme spikes.
-    float depth = max(0.0, -aBath);
-    float depthScale = clamp(depth / 500.0, 0.0, 1.0);
-    float effExagg = 1.0 + (uWaveExagg - 1.0) * depthScale;
-    vec3 world = vec3(aXZ.x, posEta * uScaleY * effExagg, aXZ.y);
-    vWorld = world;
-    gl_Position = uVP * vec4(world, 1.0);
-}
-)GLSL";
-
-static const char* k_waterFrag = R"GLSL(
-#version 330 core
-in float vEta;
-in float vH;
-in vec3 vWorld;
-out vec4 fragColor;
-
-uniform float uAnom; // peak |anomaly| for colour normalisation
-
-void main() {
-    if (vH < 0.01) discard; // dry cell: let the seabed show
-
-    vec3 n = normalize(cross(dFdx(vWorld), dFdy(vWorld)));
-    if (n.y < 0.0) n = -n;
-    float diff = max(dot(n, normalize(vec3(0.35, 1.0, 0.25))), 0.0) * 0.4 + 0.6;
-
-    float t = (uAnom > 0.0) ? clamp(vEta / uAnom, -1.0, 1.0) : 0.0;
-    vec3 calm = vec3(0.10, 0.42, 0.72);
-    vec3 c = (t >= 0.0) ? mix(calm, vec3(0.95, 0.90, 0.95), t)
-                        : mix(calm, vec3(0.02, 0.10, 0.32), -t);
-    fragColor = vec4(c * diff, 0.78);
-}
-)GLSL";
-
-// ---------------------------------------------------------------------------
-
 void RegionView::init() {
-  m_terrShader.build(k_terrVert, k_terrFrag);
-  m_seaShader.build(k_seaVert, k_seaFrag);
-  m_waterShader.build(k_waterVert, k_waterFrag);
+  m_terrShader.buildFromFiles(SHADER_DIR "/region_terrain.vert",
+                              SHADER_DIR "/region_terrain.frag");
+  m_seaShader.buildFromFiles(SHADER_DIR "/region_sea.vert",
+                             SHADER_DIR "/region_sea.frag");
+  m_waterShader.buildFromFiles(SHADER_DIR "/region_water.vert",
+                               SHADER_DIR "/region_water.frag");
 
-  // Sea-level plane. Placeholder extent here; load() resizes it to match the
-  // selected bathymetry footprint exactly.
   const float k_s = 100.0f;
   const float l_quad[8] = {-k_s, -k_s, k_s, -k_s, -k_s, k_s, k_s, k_s};
   glGenVertexArrays(1, &m_seaVao);
@@ -213,7 +52,7 @@ bool RegionView::load(const gebco::Region& i_region) {
 
   // Normalise so the larger horizontal side spans 200 world units.
   const double l_scaleXZ = 200.0 / l_maxM;
-  m_scaleY = (float)l_scaleXZ; // exaggeration multiplied in at draw time
+  m_scaleY = (float)l_scaleXZ;
   m_scaleXZ = (float)l_scaleXZ;
 
   std::vector<float> l_xz((size_t)l_w * l_h * 2);
@@ -233,7 +72,6 @@ bool RegionView::load(const gebco::Region& i_region) {
     }
   }
 
-  // Two triangles per quad.
   std::vector<unsigned int> l_idx((size_t)(l_w - 1) * (l_h - 1) * 6);
   size_t l_c = 0;
   for (int j = 0; j < l_h - 1; j++) {
@@ -252,8 +90,6 @@ bool RegionView::load(const gebco::Region& i_region) {
   }
   m_idxCnt = (GLsizei)l_idx.size();
 
-  // Keep the horizontal positions for displacement (re)evaluation; a fresh
-  // region starts with no displacement applied.
   m_xz = l_xz;
   m_hasDispl = false;
   std::vector<float> l_disp((size_t)l_w * l_h, 0.0f);
@@ -281,7 +117,6 @@ bool RegionView::load(const gebco::Region& i_region) {
   glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
   glEnableVertexAttribArray(1);
 
-  // Per-vertex displacement, initialised to zero.
   glBindBuffer(GL_ARRAY_BUFFER, m_vbDisp);
   glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(l_disp.size() * sizeof(float)),
                l_disp.data(), GL_DYNAMIC_DRAW);
@@ -294,8 +129,7 @@ bool RegionView::load(const gebco::Region& i_region) {
                GL_STATIC_DRAW);
 
   // Resize the sea-level plane to the exact horizontal footprint of this
-  // region. The terrain spans ±(0.5 · sideM · scaleXZ) on each axis, so the
-  // larger side reaches ±100 and the smaller side proportionally less.
+  // region.
   const float l_seaHalfX = (float)(0.5 * l_widthM * l_scaleXZ);
   const float l_seaHalfZ = (float)(0.5 * l_heightM * l_scaleXZ);
   const float l_sea[8] = {-l_seaHalfX, -l_seaHalfZ, l_seaHalfX, -l_seaHalfZ,
@@ -487,7 +321,6 @@ void RegionView::draw(const glm::mat4& i_vp) const {
   glDrawElements(GL_TRIANGLES, m_idxCnt, GL_UNSIGNED_INT, nullptr);
   glBindVertexArray(0);
 
-  // Live water surface replaces the flat sea plane while simulating.
   if (m_simulating && m_waterVao && field == Field::Bathymetry) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

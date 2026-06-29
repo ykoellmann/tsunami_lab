@@ -2,8 +2,10 @@
 #define TSUNAMI_LAB_VISUALIZATION_SHADER_H
 
 #include <cstdio>
+#include <fstream>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
+#include <sstream>
 #include <string>
 
 namespace tsunami_lab {
@@ -11,6 +13,23 @@ namespace visualization {
 
 class Shader {
 public:
+  void buildFromFiles(const char* i_vertPath, const char* i_fragPath) {
+    auto readFile = [](const char* i_path) -> std::string {
+      std::ifstream f(i_path);
+      if (!f.is_open()) {
+        std::fprintf(stderr, "Shader: cannot open %s\n", i_path);
+        return {};
+      }
+      std::ostringstream ss;
+      ss << f.rdbuf();
+      return ss.str();
+    };
+    std::string l_vert = readFile(i_vertPath);
+    std::string l_frag = readFile(i_fragPath);
+    if (!l_vert.empty() && !l_frag.empty())
+      build(l_vert.c_str(), l_frag.c_str());
+  }
+
   void build(const char* i_vert, const char* i_frag) {
     GLuint l_vs = compile(GL_VERTEX_SHADER, i_vert);
     GLuint l_fs = compile(GL_FRAGMENT_SHADER, i_frag);
