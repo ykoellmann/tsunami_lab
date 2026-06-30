@@ -32,6 +32,8 @@ public:
   void updateWater(const float* i_h);
   void endSimulation() { m_simulating = false; }
   bool simulating() const { return m_simulating; }
+  // Current colour-scale reference: |surface anomaly| mapped to the warm end.
+  float waterAnom() const { return m_waterAnom; }
 
   void worldToLonLat(float i_worldX,
                      float i_worldZ,
@@ -39,7 +41,7 @@ public:
                      double& o_lat) const;
 
   float vertExaggeration = 25.0f;
-  float waveExaggeration = 500.0f;
+  float waveExaggeration = 50.0f;
   bool showSea = true;
   Field field = Field::Bathymetry;
 

@@ -279,7 +279,11 @@ void RegionView::beginSimulation(t_idx i_nx, t_idx i_ny, const float* i_bath) {
                GL_STATIC_DRAW);
 
   glBindVertexArray(0);
-  m_waterAnom = 1.0f;
+  // Seed the colour scale from the earthquake displacement: the open-ocean
+  // surface anomaly never much exceeds the initial uplift, so this gives a
+  // stable reference from the very first frame instead of starting tiny and
+  // rescaling upward.
+  m_waterAnom = std::max(0.05f, m_dispPeak);
   m_simulating = true;
 }
 
@@ -297,8 +301,10 @@ void RegionView::updateWater(const float* i_h) {
     if (i_h[l_k] >= 0.01f && l_depth > 500.0f)
       l_peak = std::max(l_peak, std::abs(m_simBath[l_k] + i_h[l_k]));
   }
-  // Floor keeps the colour scale stable when the sea is near rest.
-  m_waterAnom = std::max(0.05f, l_peak);
+  // Latch the running maximum: the colour scale only ever grows, never
+  // shrinks frame-to-frame. A scale that rescaled every frame made identical
+  // wave heights flicker between colours as the global peak rose and fell.
+  m_waterAnom = std::max(m_waterAnom, l_peak);
 
   glBindBuffer(GL_ARRAY_BUFFER, m_waterVbH);
   glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizeiptr)(l_n * sizeof(float)),

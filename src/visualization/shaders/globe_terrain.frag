@@ -2,15 +2,25 @@
 in float vElev;
 out vec4 fragColor;
 
-void main() {
-    float h = vElev;
-    vec3 c;
+// Hypsometric tint with fixed elevation breakpoints, identical to the region
+// view's colormap so both screens read the same height the same way.
+vec3 colormap(float h) {
     if (h < 0.0) {
-        float t = clamp(h / -6000.0, 0.0, 1.0);
-        c = mix(vec3(0.05, 0.18, 0.45), vec3(0.18, 0.52, 0.78), t);
+        float d = -h; // depth, metres
+        if (d < 200.0)  return mix(vec3(0.51, 0.74, 0.86), vec3(0.33, 0.62, 0.83), d / 200.0);
+        if (d < 1000.0) return mix(vec3(0.33, 0.62, 0.83), vec3(0.18, 0.45, 0.76), (d - 200.0) / 800.0);
+        if (d < 3000.0) return mix(vec3(0.18, 0.45, 0.76), vec3(0.09, 0.28, 0.58), (d - 1000.0) / 2000.0);
+        return mix(vec3(0.09, 0.28, 0.58), vec3(0.03, 0.13, 0.38), clamp((d - 3000.0) / 3000.0, 0.0, 1.0));
     } else {
-        float t = clamp(h / 3000.0, 0.0, 1.0);
-        c = mix(vec3(0.30, 0.58, 0.22), vec3(0.58, 0.42, 0.22), t);
+        if (h < 100.0)  return mix(vec3(0.27, 0.55, 0.27), vec3(0.45, 0.66, 0.32), h / 100.0);
+        if (h < 300.0)  return mix(vec3(0.45, 0.66, 0.32), vec3(0.72, 0.73, 0.39), (h - 100.0) / 200.0);
+        if (h < 600.0)  return mix(vec3(0.72, 0.73, 0.39), vec3(0.78, 0.66, 0.45), (h - 300.0) / 300.0);
+        if (h < 1200.0) return mix(vec3(0.78, 0.66, 0.45), vec3(0.62, 0.48, 0.36), (h - 600.0) / 600.0);
+        if (h < 2500.0) return mix(vec3(0.62, 0.48, 0.36), vec3(0.48, 0.40, 0.36), (h - 1200.0) / 1300.0);
+        return mix(vec3(0.48, 0.40, 0.36), vec3(0.95, 0.95, 0.96), clamp((h - 2500.0) / 1500.0, 0.0, 1.0));
     }
-    fragColor = vec4(c, 1.0);
+}
+
+void main() {
+    fragColor = vec4(colormap(vElev), 1.0);
 }
