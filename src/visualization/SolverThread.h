@@ -37,6 +37,10 @@ public:
 
   t_idx steps() const { return m_steps.load(); }
 
+  double simTime() const {
+    return (double)m_steps.load() * (double)m_scaling * (double)m_dxy;
+  }
+
   t_real scaling() const { return m_scaling; }
 
   // Simulated seconds to advance per wall-clock second; 0 = uncapped.
