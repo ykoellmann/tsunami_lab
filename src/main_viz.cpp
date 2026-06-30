@@ -621,8 +621,24 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
       startSimulation();
     ImGui::PopStyleColor();
   } else {
-    ImGui::TextColored(ImVec4(0.2f, 0.8f, 1, 1), "läuft – %zu Schritte",
-                       (size_t)g_sim->steps());
+    {
+      const double l_simT = g_sim->simTime();
+      const int l_h = (int)(l_simT / 3600.0);
+      const int l_m = (int)(l_simT / 60.0) % 60;
+      const int l_s = (int)l_simT % 60;
+      ImGui::TextColored(ImVec4(0.2f, 0.8f, 1, 1), "läuft – %zu Schritte",
+                         (size_t)g_sim->steps());
+      if (l_h > 0)
+        ImGui::TextColored(ImVec4(1, 0.85f, 0.1f, 1),
+                           "Seit Erdbeben: %d h %02d min %02d s", l_h, l_m,
+                           l_s);
+      else if (l_m > 0)
+        ImGui::TextColored(ImVec4(1, 0.85f, 0.1f, 1),
+                           "Seit Erdbeben: %d min %02d s", l_m, l_s);
+      else
+        ImGui::TextColored(ImVec4(1, 0.85f, 0.1f, 1), "Seit Erdbeben: %.1f s",
+                           l_simT);
+    }
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.2f, 0.15f, 1));
     if (ImGui::Button("Stop  ■", ImVec2(-1, 0)))
       stopSimulation();
