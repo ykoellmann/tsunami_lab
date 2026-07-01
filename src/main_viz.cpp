@@ -694,10 +694,9 @@ static void drawHLegend(const char* i_id,
     const float l_x1 = l_p.x + i_stops[l_i + 1].t * l_barW;
     if (l_x1 <= l_x0)
       continue; // zero-width segment (e.g. the coastline at sea level)
-    l_dl->AddRectFilledMultiColor(ImVec2(l_x0, l_p.y),
-                                  ImVec2(l_x1, l_p.y + l_barH), i_stops[l_i].c,
-                                  i_stops[l_i + 1].c, i_stops[l_i + 1].c,
-                                  i_stops[l_i].c);
+    l_dl->AddRectFilledMultiColor(
+        ImVec2(l_x0, l_p.y), ImVec2(l_x1, l_p.y + l_barH), i_stops[l_i].c,
+        i_stops[l_i + 1].c, i_stops[l_i + 1].c, i_stops[l_i].c);
   }
   ImGui::Dummy(ImVec2(l_barW, l_barH));
 
@@ -712,24 +711,24 @@ static void drawHLegend(const char* i_id,
 // Terrain colour scale, anchored to the bottom-right corner. Stops mirror
 // colormap() in region_terrain.frag / globe_terrain.frag, positioned by their
 // elevation across the fixed [-6000, +4000] m domain (sea level at t = 0.6).
-static void drawBathyLegend(
-    const tsunami_lab::visualization::RegionView& regionView) {
+static void
+drawBathyLegend(const tsunami_lab::visualization::RegionView& regionView) {
   using Field = tsunami_lab::visualization::RegionView::Field;
   if (!regionView.loaded() || regionView.field != Field::Bathymetry)
     return;
 
   static const LegendStop l_stops[] = {
-      {0.00f, IM_COL32(8, 33, 97, 255)},     // -6000 deep ocean
-      {0.30f, IM_COL32(23, 71, 148, 255)},   // -3000
-      {0.50f, IM_COL32(46, 115, 194, 255)},  // -1000
-      {0.58f, IM_COL32(84, 158, 212, 255)},  // -200 shelf
-      {0.60f, IM_COL32(130, 189, 219, 255)}, // 0 shallow (coast)
-      {0.60f, IM_COL32(69, 140, 69, 255)},   // 0 lowland green (coast)
-      {0.61f, IM_COL32(115, 168, 82, 255)},  // 100
-      {0.63f, IM_COL32(184, 186, 99, 255)},  // 300
-      {0.66f, IM_COL32(199, 168, 115, 255)}, // 600
-      {0.72f, IM_COL32(158, 122, 92, 255)},  // 1200
-      {0.85f, IM_COL32(122, 102, 92, 255)},  // 2500
+      {0.00f, IM_COL32(8, 33, 97, 255)},      // -6000 deep ocean
+      {0.30f, IM_COL32(23, 71, 148, 255)},    // -3000
+      {0.50f, IM_COL32(46, 115, 194, 255)},   // -1000
+      {0.58f, IM_COL32(84, 158, 212, 255)},   // -200 shelf
+      {0.60f, IM_COL32(130, 189, 219, 255)},  // 0 shallow (coast)
+      {0.60f, IM_COL32(69, 140, 69, 255)},    // 0 lowland green (coast)
+      {0.61f, IM_COL32(115, 168, 82, 255)},   // 100
+      {0.63f, IM_COL32(184, 186, 99, 255)},   // 300
+      {0.66f, IM_COL32(199, 168, 115, 255)},  // 600
+      {0.72f, IM_COL32(158, 122, 92, 255)},   // 1200
+      {0.85f, IM_COL32(122, 102, 92, 255)},   // 2500
       {1.00f, IM_COL32(242, 242, 245, 255)}}; // 4000 snow
   const int l_n = (int)(sizeof(l_stops) / sizeof(l_stops[0]));
 
@@ -742,8 +741,8 @@ static void drawBathyLegend(
 
 // Wave colour scale, stacked just above the terrain legend during simulation.
 // The gradient mirrors jet() in region_water.frag.
-static void drawWaveLegend(
-    const tsunami_lab::visualization::RegionView& regionView) {
+static void
+drawWaveLegend(const tsunami_lab::visualization::RegionView& regionView) {
   using Field = tsunami_lab::visualization::RegionView::Field;
   if (!regionView.simulating() || regionView.field != Field::Bathymetry)
     return;
@@ -757,9 +756,8 @@ static void drawWaveLegend(
   std::snprintf(l_buf, sizeof(l_buf), "%.2f m", regionView.waterAnom());
 
   const ImGuiIO& l_io = ImGui::GetIO();
-  const ImVec2 l_pos(
-      l_io.DisplaySize.x - k_legW - k_legPad,
-      l_io.DisplaySize.y - 2.0f * k_legH - k_legGap - k_legPad);
+  const ImVec2 l_pos(l_io.DisplaySize.x - k_legW - k_legPad,
+                     l_io.DisplaySize.y - 2.0f * k_legH - k_legGap - k_legPad);
   drawHLegend("##wave_legend", l_pos, "Wellenhöhe (Anomalie)", l_stops, 6,
               "0 m", l_buf);
 }
