@@ -21,6 +21,7 @@ Documentation and reports for the Tsunami Lab at Friedrich Schiller University J
    chapters/08_optimization
    chapters/09_parallelization
    chapters/10_individual_week1
+   chapters/11_individual_week2
 
 Code Documentation
 ==================
