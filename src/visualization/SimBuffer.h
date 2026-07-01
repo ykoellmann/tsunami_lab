@@ -23,12 +23,16 @@ public:
     m_buf[1].assign(i_nx * i_ny, t_real(0));
   }
 
-  // Producer: copies a frame into the back buffer and marks it ready.
-  void write(const t_real* i_src, t_idx i_n) {
-    std::lock_guard<std::mutex> l_lock(m_mtx);
+  // Producer: tries to copy a frame; skips (returns false) if the render
+  // thread holds the mutex, so the solver never blocks on the renderer.
+  bool write(const t_real* i_src, t_idx i_n) {
+    std::unique_lock<std::mutex> l_lock(m_mtx, std::try_to_lock);
+    if (!l_lock.owns_lock())
+      return false;
     t_idx l_n = std::min<t_idx>(i_n, m_buf[m_back].size());
     std::copy(i_src, i_src + l_n, m_buf[m_back].begin());
     m_dirty = true;
+    return true;
   }
 
   // Consumer: swaps the latest frame to the front. Returns true if fresh.
