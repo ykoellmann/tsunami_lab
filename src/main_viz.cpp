@@ -474,8 +474,10 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
     static float s_lonMin = 0, s_lonMax = 0, s_latMin = 0, s_latMax = 0;
     if (globeView.hasSelection() && !ImGui::IsAnyItemActive()) {
       tsunami_lab::visualization::BBox l_cur = globeView.getSelection();
-      s_lonMin = l_cur.lonMin; s_lonMax = l_cur.lonMax;
-      s_latMin = l_cur.latMin; s_latMax = l_cur.latMax;
+      s_lonMin = l_cur.lonMin;
+      s_lonMax = l_cur.lonMax;
+      s_latMin = l_cur.latMin;
+      s_latMax = l_cur.latMax;
     }
 
     bool l_changed = false;
@@ -497,11 +499,15 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
     l_changed |= ImGui::InputFloat("##latMax", &s_latMax, 0, 0, "%.2f°");
 
     if (l_changed) {
-      s_lonMin = std::max(s_lonMin, -180.0f); s_lonMax = std::min(s_lonMax, 180.0f);
-      s_latMin = std::max(s_latMin,  -90.0f); s_latMax = std::min(s_latMax,  90.0f);
+      s_lonMin = std::max(s_lonMin, -180.0f);
+      s_lonMax = std::min(s_lonMax, 180.0f);
+      s_latMin = std::max(s_latMin, -90.0f);
+      s_latMax = std::min(s_latMax, 90.0f);
       tsunami_lab::visualization::BBox l_nb;
-      l_nb.lonMin = s_lonMin; l_nb.lonMax = s_lonMax;
-      l_nb.latMin = s_latMin; l_nb.latMax = s_latMax;
+      l_nb.lonMin = s_lonMin;
+      l_nb.lonMax = s_lonMax;
+      l_nb.latMin = s_latMin;
+      l_nb.latMax = s_latMax;
       if (l_nb.valid())
         globeView.setSelection(l_nb);
     }
@@ -533,7 +539,8 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
       ImGui::PopStyleColor();
 
       if (!g_regionError.empty())
-        ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s", g_regionError.c_str());
+        ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s",
+                           g_regionError.c_str());
 
       ImGui::Spacing();
       if (ImGui::Button("Auswahl löschen", ImVec2(-1, 0)))
@@ -803,24 +810,26 @@ drawWaveLegend(const tsunami_lab::visualization::RegionView& regionView) {
   if (!regionView.simulating() || regionView.field != Field::Bathymetry)
     return;
 
-  // Diverging colormap: negative (trough) left half, positive (crest) right half.
-  // Mirrors wavemap() in region_water.frag; t in [0,1] maps to [-anom, +anom].
+  // Diverging colormap: negative (trough) left half, positive (crest) right
+  // half. Mirrors wavemap() in region_water.frag; t in [0,1] maps to [-anom,
+  // +anom].
   static const LegendStop l_stops[] = {
-      {0.000f, IM_COL32( 58,   5,  55, 255)}, // dark purple  (trough peak)
-      {0.125f, IM_COL32(140,  13, 140, 255)}, // deep violet
-      {0.250f, IM_COL32(107,  31, 199, 255)}, // violet
-      {0.375f, IM_COL32( 56,  71, 209, 255)}, // indigo
-      {0.500f, IM_COL32( 33,  87, 204, 255)}, // calm blue     (zero / sea level)
-      {0.600f, IM_COL32( 26, 158, 224, 255)}, // cyan
-      {0.700f, IM_COL32( 51, 204, 107, 255)}, // green
-      {0.800f, IM_COL32(242, 224,  51, 255)}, // yellow
-      {0.900f, IM_COL32(247, 133,  31, 255)}, // orange
-      {1.000f, IM_COL32(209,  26,  23, 255)}, // red           (crest peak)
+      {0.000f, IM_COL32(58, 5, 55, 255)},    // dark purple  (trough peak)
+      {0.125f, IM_COL32(140, 13, 140, 255)}, // deep violet
+      {0.250f, IM_COL32(107, 31, 199, 255)}, // violet
+      {0.375f, IM_COL32(56, 71, 209, 255)},  // indigo
+      {0.500f, IM_COL32(33, 87, 204, 255)},  // calm blue     (zero / sea level)
+      {0.600f, IM_COL32(26, 158, 224, 255)}, // cyan
+      {0.700f, IM_COL32(51, 204, 107, 255)}, // green
+      {0.800f, IM_COL32(242, 224, 51, 255)}, // yellow
+      {0.900f, IM_COL32(247, 133, 31, 255)}, // orange
+      {1.000f, IM_COL32(209, 26, 23, 255)},  // red           (crest peak)
   };
 
   char l_neg[32], l_pos_buf[32];
   std::snprintf(l_neg, sizeof(l_neg), "-%.2f m", regionView.waterAnom());
-  std::snprintf(l_pos_buf, sizeof(l_pos_buf), "+%.2f m", regionView.waterAnom());
+  std::snprintf(l_pos_buf, sizeof(l_pos_buf), "+%.2f m",
+                regionView.waterAnom());
 
   const ImGuiIO& l_io = ImGui::GetIO();
   const ImVec2 l_pos(l_io.DisplaySize.x - k_legW - k_legPad,
