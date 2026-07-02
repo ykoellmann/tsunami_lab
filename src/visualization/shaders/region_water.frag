@@ -1,6 +1,5 @@
 #version 330 core
 in float vEta;
-in float vH;
 in vec3 vWorld;
 out vec4 fragColor;
 
@@ -23,8 +22,11 @@ vec3 jet(float t) {
 }
 
 void main() {
-    if (vH < 0.01) discard; // dry cell: let the seabed show
-
+    // No dry-cell discard: dry vertices are snapped to sea level (vEta = 0) in
+    // the vertex shader, so those cells render as calm water. Discarding them
+    // left a pale strip of bare shallow seabed along the coarse sim shoreline
+    // wherever it disagreed with the fine terrain's coast. Land above sea
+    // level occludes this sheet via the depth test.
     vec3 n = normalize(cross(dFdx(vWorld), dFdy(vWorld)));
     if (n.y < 0.0) n = -n;
     float diff = max(dot(n, normalize(vec3(0.35, 1.0, 0.25))), 0.0) * 0.4 + 0.6;

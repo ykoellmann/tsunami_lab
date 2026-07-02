@@ -6,6 +6,13 @@ out vec4 fragColor;
 
 uniform int uMode;        // 0 = bathymetry, 1 = displacement
 uniform float uDispRange; // peak |displacement| for normalising the colormap
+// Two-pass split, used only while a simulation runs: 0 = draw everything,
+// 1 = land only (elev >= 0), 2 = seabed only (elev < 0). The seabed pass is
+// drawn without depth writes so the water sheet always renders on top of it —
+// with depth writes, camera-facing underwater slopes poke in front of the
+// near-sea-level water surface and show as bare seabed, and nearly coplanar
+// shelf areas z-fight against it. Defaults to 0 (still preview unaffected).
+uniform int uClip;
 
 // Hypsometric tint with fixed elevation breakpoints: a given absolute height
 // always maps to the same colour, and low-lying land (e.g. Britain, mostly
@@ -37,6 +44,9 @@ vec3 displColormap(float d) {
 }
 
 void main() {
+    if (uClip == 1 && vElev < 0.0) discard;  // land pass: drop seabed
+    if (uClip == 2 && vElev >= 0.0) discard;  // seabed pass: drop land
+
     vec3 n = normalize(cross(dFdx(vWorld), dFdy(vWorld)));
     if (n.y < 0.0) n = -n;
     vec3 lightDir = normalize(vec3(0.35, 1.0, 0.25));
