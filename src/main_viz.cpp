@@ -1,4 +1,4 @@
-#include "displacement/GaussianDisplacement.h"
+#include "displacement/OkadaDisplacement.h"
 #include "visualization/Camera.h"
 #include "visualization/Gebco.h"
 #include "visualization/GlobeView.h"
@@ -54,10 +54,22 @@ static int g_screenW = 1280, g_screenH = 720;
 static double g_pressX = 0, g_pressY = 0;
 static float g_dragDist = 0.0f;
 
-// Gaussian displacement parameters, adjustable in the preview UI.
-static float g_displAmplitude = 5.0f; // peak uplift (m)
-static float g_displSigma = 15000.0f; // characteristic radius (m)
+// Okada rectangular-fault parameters, adjustable in the preview UI.
+static float g_displStrike = 0.0f;     // strike, clockwise from North (deg)
+static float g_displDip = 10.0f;       // dip (deg)
+static float g_displRake = 90.0f;      // rake (deg; 90 = pure thrust)
+static float g_displSlip = 5.0f;       // slip magnitude (m)
+static float g_displLength = 50000.0f; // along-strike length (m)
+static float g_displWidth = 25000.0f;  // down-dip width (m)
+static float g_displDepth = 10000.0f;  // depth of the top edge (m)
 static double g_epiLon = 0, g_epiLat = 0;
+
+// Build the Okada displacement model from the current UI parameters.
+static tsunami_lab::displacement::OkadaDisplacement makeDisplacementModel() {
+  return tsunami_lab::displacement::OkadaDisplacement(
+      g_displStrike, g_displDip, g_displRake, g_displSlip, g_displLength,
+      g_displWidth, g_displDepth);
+}
 
 // Live simulation (created on "Simulieren", destroyed on stop / leaving view).
 static std::unique_ptr<tsunami_lab::visualization::SimBuffer> g_simBuf;
@@ -95,14 +107,13 @@ regionUnproject(float i_mx,
   return {l_world.x, l_world.z};
 }
 
-// Place a Gaussian displacement at the clicked spot in the region preview.
+// Place an Okada fault displacement at the clicked spot in the region preview.
 static void placeDisplacement(float i_mx, float i_my) {
   if (!g_regionView || !g_regionView->loaded() || !g_camera)
     return;
   glm::vec2 l_world =
       regionUnproject(i_mx, i_my, g_screenW, g_screenH, *g_camera);
-  tsunami_lab::displacement::GaussianDisplacement l_model(g_displAmplitude,
-                                                          g_displSigma);
+  tsunami_lab::displacement::OkadaDisplacement l_model = makeDisplacementModel();
   g_regionView->applyDisplacement(l_world.x, l_world.y, l_model);
   g_regionView->worldToLonLat(l_world.x, l_world.y, g_epiLon, g_epiLat);
 }
@@ -204,8 +215,7 @@ static bool buildSimSetup(tsunami_lab::t_idx& o_nx,
   o_height.assign((size_t)l_nx * l_ny, 0.0f);
 
   const bool l_hasDisp = g_regionView && g_regionView->hasDisplacement();
-  tsunami_lab::displacement::GaussianDisplacement l_model(g_displAmplitude,
-                                                          g_displSigma);
+  tsunami_lab::displacement::OkadaDisplacement l_model = makeDisplacementModel();
 
   for (t_idx l_j = 0; l_j < l_ny; l_j++) {
     const double l_lat = l_src.latMin + (double)l_j *
@@ -594,9 +604,17 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
 
   ImGui::Spacing();
   ImGui::SeparatorText("Erdbebenquelle");
-  ImGui::TextWrapped("Klick auf das Gelände: Gauss-Auslenkung setzen");
-  ImGui::SliderFloat("Amplitude (m)", &g_displAmplitude, -20.0f, 20.0f, "%.1f");
-  ImGui::SliderFloat("Radius (m)", &g_displSigma, 1000.0f, 100000.0f, "%.0f");
+  ImGui::TextWrapped("Klick auf das Gelände: Okada-Verwerfung setzen");
+  ImGui::SliderFloat("Streichen (°)", &g_displStrike, 0.0f, 360.0f, "%.0f");
+  ImGui::SliderFloat("Einfallen (°)", &g_displDip, 1.0f, 89.0f, "%.0f");
+  ImGui::SliderFloat("Rake (°)", &g_displRake, -180.0f, 180.0f, "%.0f");
+  ImGui::SliderFloat("Versatz (m)", &g_displSlip, 0.0f, 30.0f, "%.1f");
+  ImGui::SliderFloat("Länge (m)", &g_displLength, 1000.0f, 500000.0f, "%.0f",
+                     ImGuiSliderFlags_Logarithmic);
+  ImGui::SliderFloat("Breite (m)", &g_displWidth, 1000.0f, 250000.0f, "%.0f",
+                     ImGuiSliderFlags_Logarithmic);
+  ImGui::SliderFloat("Tiefe (m)", &g_displDepth, 100.0f, 50000.0f, "%.0f",
+                     ImGuiSliderFlags_Logarithmic);
   if (regionView.hasDisplacement()) {
     ImGui::Text("Epizentrum: %.2f°, %.2f°", g_epiLon, g_epiLat);
     if (ImGui::Button("Auslenkung entfernen", ImVec2(-1, 0)))
