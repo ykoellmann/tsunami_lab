@@ -1,0 +1,90 @@
+/**
+ * @author Mika Brückner (mika.brueckner AT uni-jena.de)
+ *
+ * @section DESCRIPTION
+ * Unit tests for the Okada (1992) rectangular-fault seafloor displacement
+ * model (vertical component only).
+ **/
+#include "OkadaDisplacement.h"
+#include <catch2/catch.hpp>
+#include <cmath>
+
+using tsunami_lab::displacement::OkadaDisplacement;
+
+TEST_CASE("OkadaDisplacement: along-strike symmetry of a thrust fault",
+          "[OkadaDispl]") {
+  // strike=0 -> along-strike axis is east; a pure dip-slip (thrust) source is
+  // symmetric under reflection of the along-strike coordinate.
+  OkadaDisplacement l_model(0.0, 30.0, 90.0, 5.0, 10000.0, 5000.0, 2000.0);
+
+  REQUIRE(l_model.verticalDisplacement(3000.0, 1000.0) ==
+          Approx(l_model.verticalDisplacement(-3000.0, 1000.0)));
+  REQUIRE(l_model.verticalDisplacement(7000.0, -4000.0) ==
+          Approx(l_model.verticalDisplacement(-7000.0, -4000.0)));
+  REQUIRE(l_model.verticalDisplacement(500.0, 0.0) ==
+          Approx(l_model.verticalDisplacement(-500.0, 0.0)));
+}
+
+TEST_CASE("OkadaDisplacement: negligible displacement in the far field",
+          "[OkadaDispl]") {
+  OkadaDisplacement l_model(35.0, 20.0, 90.0, 8.0, 12000.0, 6000.0, 3000.0);
+
+  double l_far = 50.0 * l_model.influenceRadius();
+  REQUIRE(std::abs(l_model.verticalDisplacement(l_far, 0.0)) < 1e-4);
+  REQUIRE(std::abs(l_model.verticalDisplacement(0.0, l_far)) < 1e-4);
+  REQUIRE(std::abs(l_model.verticalDisplacement(l_far, l_far)) < 1e-4);
+}
+
+TEST_CASE("OkadaDisplacement: thrust fault uplifts the centre",
+          "[OkadaDispl]") {
+  // rake=90 is pure dip-slip thrust; the surface above the fault rises.
+  OkadaDisplacement l_model(0.0, 30.0, 90.0, 5.0, 10000.0, 5000.0, 2000.0);
+  REQUIRE(l_model.verticalDisplacement(0.0, 0.0) > 0.0);
+}
+
+TEST_CASE("OkadaDisplacement: deep compact fault is approximately Gaussian",
+          "[OkadaDispl]") {
+  // A small fault buried deep produces a smooth bell-shaped uplift footprint.
+  OkadaDisplacement l_model(0.0, 45.0, 90.0, 1.0, 1000.0, 1000.0, 20000.0);
+
+  const double l_sigma = 10000.0;
+  double l_peak = l_model.verticalDisplacement(0.0, 0.0);
+  double l_atSigma = l_model.verticalDisplacement(l_sigma, 0.0);
+
+  REQUIRE(l_peak > 0.0);
+
+  // Peak ratio at one sigma should match a Gaussian (exp(-1/2)) within 20%.
+  double l_ratio = l_atSigma / l_peak;
+  double l_gauss = std::exp(-0.5);
+  REQUIRE(std::abs(l_ratio - l_gauss) / l_gauss < 0.20);
+
+  // Monotone falloff away from the centre.
+  REQUIRE(l_model.verticalDisplacement(0.0, 0.0) >
+          l_model.verticalDisplacement(5000.0, 0.0));
+  REQUIRE(l_model.verticalDisplacement(5000.0, 0.0) >
+          l_model.verticalDisplacement(15000.0, 0.0));
+}
+
+TEST_CASE("OkadaDisplacement: finite for shallow near-vertical faults",
+          "[OkadaDispl]") {
+  // Near-vertical dip and a very shallow top edge stress every epsilon guard;
+  // no input may yield NaN or Inf.
+  double l_dips[] = {1.0, 45.0, 89.9, 90.0};
+  double l_rakes[] = {0.0, 45.0, 90.0, -90.0};
+  double l_depths[] = {100.0, 2000.0};
+
+  for (double l_dip : l_dips) {
+    for (double l_rake : l_rakes) {
+      for (double l_depth : l_depths) {
+        OkadaDisplacement l_model(15.0, l_dip, l_rake, 3.0, 8000.0, 4000.0,
+                                  l_depth);
+        for (double l_e = -10000.0; l_e <= 10000.0; l_e += 2500.0) {
+          for (double l_n = -10000.0; l_n <= 10000.0; l_n += 2500.0) {
+            double l_uz = l_model.verticalDisplacement(l_e, l_n);
+            REQUIRE(std::isfinite(l_uz));
+          }
+        }
+      }
+    }
+  }
+}
