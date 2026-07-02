@@ -76,16 +76,14 @@ void tsunami_lab::solvers::FWave::waveStrengths(t_real i_hL,
   l_rInv[1][0] = -l_detInv * i_waveSpeedL;
   l_rInv[1][1] = l_detInv;
 
-  t_real l_fluxL[2] = {0};
-  t_real l_fluxR[2] = {0};
-  t_real l_dxPsi[2] = {0};
-  flux(i_hL, i_huL, l_fluxL);
-  flux(i_hR, i_huR, l_fluxR);
-  deltaXPsi(i_hL, i_hR, i_bL, i_bR, l_dxPsi);
-
+  // 0.5*g*(eta_R-eta_L)*(h_L+h_R) is algebraically equivalent to
+  // (flux_R - flux_L) - deltaXPsi but is exactly zero when eta_R == eta_L,
+  // avoiding float cancellation error at steep coastal bathymetry gradients.
   t_real l_fluxJump[2] = {0};
-  l_fluxJump[0] = l_fluxR[0] - l_fluxL[0];
-  l_fluxJump[1] = l_fluxR[1] - l_fluxL[1] - l_dxPsi[1];
+  l_fluxJump[0] = i_huR - i_huL;
+  t_real l_etaL = i_hL + i_bL;
+  t_real l_etaR = i_hR + i_bR;
+  l_fluxJump[1] = 0.5f * m_g * (l_etaR - l_etaL) * (i_hL + i_hR);
 
   // compute wave strengths: alpha = R^{-1} * delta_f
   o_strengthL = l_rInv[0][0] * l_fluxJump[0];
