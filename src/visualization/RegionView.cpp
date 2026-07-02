@@ -316,6 +316,17 @@ void RegionView::draw(const glm::mat4& i_vp) const {
   if (m_idxCnt == 0)
     return;
 
+  // While a simulation runs, the wave mesh doubles as a gap-free water sheet:
+  // its dry cells are snapped to sea level instead of discarded (see
+  // region_water.vert/.frag). For that sheet to reliably cover every
+  // underwater pixel, the seabed must not write depth — otherwise camera-
+  // facing underwater slopes poke in front of the near-sea-level surface and
+  // show as bare seabed, and nearly coplanar shelf areas z-fight against it.
+  // So split the terrain into a land pass (writes depth, occludes water) and
+  // a seabed pass (colour only). The still preview keeps the original single
+  // pass (uClip = 0) — it never had this problem.
+  const bool l_simView = m_simulating && field == Field::Bathymetry;
+
   m_terrShader.use();
   m_terrShader.setMat4("uVP", i_vp);
   m_terrShader.setFloat("uScaleY", m_scaleY * vertExaggeration);
@@ -324,10 +335,20 @@ void RegionView::draw(const glm::mat4& i_vp) const {
   m_terrShader.setFloat("uDispRange", m_dispPeak);
   m_terrShader.setInt("uMode", field == Field::Displacement ? 1 : 0);
   glBindVertexArray(m_vao);
-  glDrawElements(GL_TRIANGLES, m_idxCnt, GL_UNSIGNED_INT, nullptr);
+  if (l_simView) {
+    m_terrShader.setInt("uClip", 1); // land only, writes depth
+    glDrawElements(GL_TRIANGLES, m_idxCnt, GL_UNSIGNED_INT, nullptr);
+    m_terrShader.setInt("uClip", 2); // seabed only, colour without depth write
+    glDepthMask(GL_FALSE);
+    glDrawElements(GL_TRIANGLES, m_idxCnt, GL_UNSIGNED_INT, nullptr);
+    glDepthMask(GL_TRUE);
+  } else {
+    m_terrShader.setInt("uClip", 0);
+    glDrawElements(GL_TRIANGLES, m_idxCnt, GL_UNSIGNED_INT, nullptr);
+  }
   glBindVertexArray(0);
 
-  if (m_simulating && m_waterVao && field == Field::Bathymetry) {
+  if (l_simView && m_waterVao) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_FALSE);

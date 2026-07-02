@@ -8,16 +8,17 @@ uniform float uScaleY;    // metres → world units (incl. terrain exaggeration)
 uniform float uWaveExagg; // additional multiplier for wave anomaly
 
 out float vEta; // surface elevation rel. to sea level, metres
-out float vH;
 out vec3 vWorld;
 
 void main() {
     float eta = aBath + aH;
-    // Land vertices have eta = b > 0; interpolating across ocean–land edges
-    // would colour the boundary white. Snap to 0 before interpolation.
+    // Dry vertices (land, or cells the coarse sim grid never wets) sit at sea
+    // level, so together with the wet cells the mesh forms a gap-free water
+    // sheet — land above sea level occludes it via the depth test. This also
+    // keeps ocean–land edges from interpolating land eta (= b > 0) into the
+    // water colour.
     float posEta = (aH >= 0.01) ? eta : 0.0;
     vEta = posEta;
-    vH = aH;
     // Reduce exaggeration toward 1x in shallow water: shoaling already
     // amplifies the wave there, so full uWaveExagg creates extreme spikes.
     float depth = max(0.0, -aBath);
