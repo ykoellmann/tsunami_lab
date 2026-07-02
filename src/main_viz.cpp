@@ -456,43 +456,79 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
 
   ImGui::Spacing();
   ImGui::SeparatorText("Auswahl");
-  if (globeView.hasSelection()) {
-    tsunami_lab::visualization::BBox sel = globeView.getSelection();
-    ImGui::Text("Lon: %.1f° – %.1f°  (%.1f°)", sel.lonMin, sel.lonMax,
-                sel.lonSpan());
-    ImGui::Text("Lat: %.1f° – %.1f°  (%.1f°)", sel.latMin, sel.latMax,
-                sel.latSpan());
+  {
+    // Persistent input buffer — synced from mouse selection when no field is
+    // being edited, so mouse drags and manual typing don't fight each other.
+    static float s_lonMin = 0, s_lonMax = 0, s_latMin = 0, s_latMax = 0;
+    if (globeView.hasSelection() && !ImGui::IsAnyItemActive()) {
+      tsunami_lab::visualization::BBox l_cur = globeView.getSelection();
+      s_lonMin = l_cur.lonMin; s_lonMax = l_cur.lonMax;
+      s_latMin = l_cur.latMin; s_latMax = l_cur.latMax;
+    }
 
-    ImGui::Spacing();
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.65f, 0.2f, 1));
-    if (ImGui::Button("Bathymetrie laden  >>", ImVec2(-1, 0))) {
-      g_regionError.clear();
-      if (g_gebcoPath.empty()) {
-        g_regionError = "Keine GEBCO-Daten verfügbar.";
-      } else {
-        tsunami_lab::visualization::gebco::Region l_reg;
-        if (tsunami_lab::visualization::gebco::readRegion(
-                g_gebcoPath, sel, l_reg, g_bathMaxDim) &&
-            g_regionView && g_regionView->load(l_reg)) {
-          g_loadedSel = sel;
-          g_state = AppState::REGION_PREVIEW;
-          if (g_camera)
-            setCameraRegionView(*g_camera);
+    bool l_changed = false;
+    const float l_half = ImGui::GetContentRegionAvail().x * 0.5f - 4;
+    ImGui::Text("Lon");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(l_half);
+    l_changed |= ImGui::InputFloat("##lonMin", &s_lonMin, 0, 0, "%.2f°");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(-1);
+    l_changed |= ImGui::InputFloat("##lonMax", &s_lonMax, 0, 0, "%.2f°");
+
+    ImGui::Text("Lat");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(l_half);
+    l_changed |= ImGui::InputFloat("##latMin", &s_latMin, 0, 0, "%.2f°");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(-1);
+    l_changed |= ImGui::InputFloat("##latMax", &s_latMax, 0, 0, "%.2f°");
+
+    if (l_changed) {
+      s_lonMin = std::max(s_lonMin, -180.0f); s_lonMax = std::min(s_lonMax, 180.0f);
+      s_latMin = std::max(s_latMin,  -90.0f); s_latMax = std::min(s_latMax,  90.0f);
+      tsunami_lab::visualization::BBox l_nb;
+      l_nb.lonMin = s_lonMin; l_nb.lonMax = s_lonMax;
+      l_nb.latMin = s_latMin; l_nb.latMax = s_latMax;
+      if (l_nb.valid())
+        globeView.setSelection(l_nb);
+    }
+
+    if (globeView.hasSelection()) {
+      tsunami_lab::visualization::BBox sel = globeView.getSelection();
+      ImGui::TextDisabled("Lon %.1f°  Lat %.1f°", sel.lonSpan(), sel.latSpan());
+
+      ImGui::Spacing();
+      ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.65f, 0.2f, 1));
+      if (ImGui::Button("Bathymetrie laden  >>", ImVec2(-1, 0))) {
+        g_regionError.clear();
+        if (g_gebcoPath.empty()) {
+          g_regionError = "Keine GEBCO-Daten verfügbar.";
         } else {
-          g_regionError = "Laden der Bathymetrie fehlgeschlagen.";
+          tsunami_lab::visualization::gebco::Region l_reg;
+          if (tsunami_lab::visualization::gebco::readRegion(
+                  g_gebcoPath, sel, l_reg, g_bathMaxDim) &&
+              g_regionView && g_regionView->load(l_reg)) {
+            g_loadedSel = sel;
+            g_state = AppState::REGION_PREVIEW;
+            if (g_camera)
+              setCameraRegionView(*g_camera);
+          } else {
+            g_regionError = "Laden der Bathymetrie fehlgeschlagen.";
+          }
         }
       }
+      ImGui::PopStyleColor();
+
+      if (!g_regionError.empty())
+        ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s", g_regionError.c_str());
+
+      ImGui::Spacing();
+      if (ImGui::Button("Auswahl löschen", ImVec2(-1, 0)))
+        globeView.clearSelection();
+    } else {
+      ImGui::TextDisabled("Werte eingeben oder Bereich auf Globus ziehen.");
     }
-    ImGui::PopStyleColor();
-
-    if (!g_regionError.empty())
-      ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s", g_regionError.c_str());
-
-    ImGui::Spacing();
-    if (ImGui::Button("Auswahl löschen", ImVec2(-1, 0)))
-      globeView.clearSelection();
-  } else {
-    ImGui::TextDisabled("(noch keine Auswahl)");
   }
 
   ImGui::End();
@@ -747,19 +783,30 @@ drawWaveLegend(const tsunami_lab::visualization::RegionView& regionView) {
   if (!regionView.simulating() || regionView.field != Field::Bathymetry)
     return;
 
+  // Diverging colormap: negative (trough) left half, positive (crest) right half.
+  // Mirrors wavemap() in region_water.frag; t in [0,1] maps to [-anom, +anom].
   static const LegendStop l_stops[] = {
-      {0.0f, IM_COL32(33, 87, 204, 255)},  {0.2f, IM_COL32(26, 158, 224, 255)},
-      {0.4f, IM_COL32(51, 204, 107, 255)}, {0.6f, IM_COL32(242, 224, 51, 255)},
-      {0.8f, IM_COL32(247, 133, 31, 255)}, {1.0f, IM_COL32(209, 26, 23, 255)}};
+      {0.000f, IM_COL32( 58,   5,  55, 255)}, // dark purple  (trough peak)
+      {0.125f, IM_COL32(140,  13, 140, 255)}, // deep violet
+      {0.250f, IM_COL32(107,  31, 199, 255)}, // violet
+      {0.375f, IM_COL32( 56,  71, 209, 255)}, // indigo
+      {0.500f, IM_COL32( 33,  87, 204, 255)}, // calm blue     (zero / sea level)
+      {0.600f, IM_COL32( 26, 158, 224, 255)}, // cyan
+      {0.700f, IM_COL32( 51, 204, 107, 255)}, // green
+      {0.800f, IM_COL32(242, 224,  51, 255)}, // yellow
+      {0.900f, IM_COL32(247, 133,  31, 255)}, // orange
+      {1.000f, IM_COL32(209,  26,  23, 255)}, // red           (crest peak)
+  };
 
-  char l_buf[32];
-  std::snprintf(l_buf, sizeof(l_buf), "%.2f m", regionView.waterAnom());
+  char l_neg[32], l_pos_buf[32];
+  std::snprintf(l_neg, sizeof(l_neg), "-%.2f m", regionView.waterAnom());
+  std::snprintf(l_pos_buf, sizeof(l_pos_buf), "+%.2f m", regionView.waterAnom());
 
   const ImGuiIO& l_io = ImGui::GetIO();
   const ImVec2 l_pos(l_io.DisplaySize.x - k_legW - k_legPad,
                      l_io.DisplaySize.y - 2.0f * k_legH - k_legGap - k_legPad);
-  drawHLegend("##wave_legend", l_pos, "Wellenhöhe (Anomalie)", l_stops, 6,
-              "0 m", l_buf);
+  drawHLegend("##wave_legend", l_pos, "Wellenhöhe (Anomalie)", l_stops, 10,
+              l_neg, l_pos_buf);
 }
 
 // Main
