@@ -28,6 +28,10 @@ Window::Window(int i_width, int i_height, const char* i_title) {
 #ifdef __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
+  // 4x MSAA: without it the dense terrain mesh (up to 1200² cells) collapses
+  // into sub-pixel triangles at far zoom, and brightly lit facets flicker as
+  // white speckles/streaks depending on which triangle wins each pixel.
+  glfwWindowHint(GLFW_SAMPLES, 4);
 
   m_window = glfwCreateWindow(i_width, i_height, i_title, nullptr, nullptr);
   if (!m_window) {

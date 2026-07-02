@@ -788,6 +788,7 @@ int main() {
 
   std::printf("OpenGL %s\n", glGetString(GL_VERSION));
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_MULTISAMPLE); // pairs with GLFW_SAMPLES in Window.cpp
 
   // Initialise globe overview (subsampled GEBCO) + region preview resources.
   std::printf("Lade GEBCO-Daten …\n");
