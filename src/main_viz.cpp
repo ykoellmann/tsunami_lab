@@ -113,7 +113,8 @@ static void placeDisplacement(float i_mx, float i_my) {
     return;
   glm::vec2 l_world =
       regionUnproject(i_mx, i_my, g_screenW, g_screenH, *g_camera);
-  tsunami_lab::displacement::OkadaDisplacement l_model = makeDisplacementModel();
+  tsunami_lab::displacement::OkadaDisplacement l_model =
+      makeDisplacementModel();
   g_regionView->applyDisplacement(l_world.x, l_world.y, l_model);
   g_regionView->worldToLonLat(l_world.x, l_world.y, g_epiLon, g_epiLat);
 }
@@ -215,7 +216,8 @@ static bool buildSimSetup(tsunami_lab::t_idx& o_nx,
   o_height.assign((size_t)l_nx * l_ny, 0.0f);
 
   const bool l_hasDisp = g_regionView && g_regionView->hasDisplacement();
-  tsunami_lab::displacement::OkadaDisplacement l_model = makeDisplacementModel();
+  tsunami_lab::displacement::OkadaDisplacement l_model =
+      makeDisplacementModel();
 
   for (t_idx l_j = 0; l_j < l_ny; l_j++) {
     const double l_lat = l_src.latMin + (double)l_j *
