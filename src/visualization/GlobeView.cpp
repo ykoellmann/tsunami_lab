@@ -311,6 +311,14 @@ BBox GlobeView::getSelection() const {
   return b;
 }
 
+void GlobeView::setSelection(const BBox& i_bbox) {
+  m_selA = {i_bbox.lonMin, i_bbox.latMin};
+  m_selB = {i_bbox.lonMax, i_bbox.latMax};
+  m_hasSelection = true;
+  m_selecting = false;
+  uploadSelectionRect();
+}
+
 std::pair<float, float> GlobeView::geocodeCity(const std::string& i_city) {
   // Basic URL encode: replace spaces with +
   std::string query = i_city;

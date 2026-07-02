@@ -35,6 +35,7 @@ public:
 
   bool hasSelection() const { return m_hasSelection; }
   BBox getSelection() const;
+  void setSelection(const BBox& i_bbox);
   void clearSelection() {
     m_hasSelection = false;
     m_selecting = false;
