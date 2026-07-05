@@ -3,6 +3,7 @@
 
 #include "../constants.h"
 #include "Gebco.h"
+#include "Lod.h"
 #include "Shader.h"
 #include "displacement/DisplacementModel.h"
 #include <glad/glad.h>
@@ -23,7 +24,7 @@ public:
   bool load(const gebco::Region& i_region);
   void draw(const glm::mat4& i_vp) const;
 
-  bool loaded() const { return m_idxCnt > 0; }
+  bool loaded() const { return m_numLods > 0; }
 
   void applyDisplacement(float i_worldX,
                          float i_worldZ,
@@ -52,6 +53,14 @@ public:
                      double& o_lon,
                      double& o_lat) const;
 
+  // Per-frame LOD hints, set by the main loop before draw(): camera orbit
+  // distance (world units) and framebuffer height (pixels). draw() uses them
+  // to pick an index-buffer level that keeps triangles at roughly pixel size —
+  // zoomed out, sub-pixel triangles would otherwise multiply the MSAA cost
+  // into unusable frame rates without adding any visible detail.
+  float lodCamDistance = 330.0f;
+  int lodViewportPx = 720;
+
   float vertExaggeration = 25.0f;
   float waveExaggeration = 50.0f;
   bool showSea = true;
@@ -71,8 +80,19 @@ private:
   GLuint m_vbXZ = 0;
   GLuint m_vbElv = 0;
   GLuint m_vbDisp = 0;
-  GLuint m_ebo = 0;
-  GLsizei m_idxCnt = 0;
+
+  // Index buffers at vertex stride 1, 2, 4, … over the same vertex data;
+  // level L quarters the triangle count of L-1 (~33 % extra memory in total).
+  static const int k_maxLod = lod::k_maxLevels;
+  GLuint m_ebos[k_maxLod] = {};
+  GLsizei m_idxCnts[k_maxLod] = {};
+  int m_numLods = 0;
+  float m_cellWorld = 0.0f; // world-unit size of one grid cell
+  // World XZ coords of the grid's first/last vertex and the elevation range,
+  // for frustum culling of off-screen grid rows/columns in draw().
+  float m_x0 = 0.0f, m_x1 = 0.0f, m_z0 = 0.0f, m_z1 = 0.0f;
+  float m_minElev = 0.0f, m_maxElev = 0.0f;
+
 
   std::vector<float> m_xz;
   float m_scaleXZ = 1.0f;
@@ -97,8 +117,10 @@ private:
   GLuint m_waterVbXZ = 0;
   GLuint m_waterVbBath = 0;
   GLuint m_waterVbH = 0;
-  GLuint m_waterEbo = 0;
-  GLsizei m_waterIdxCnt = 0;
+  GLuint m_waterEbos[k_maxLod] = {};
+  GLsizei m_waterIdxCnts[k_maxLod] = {};
+  int m_waterNumLods = 0;
+  float m_waterCellWorld = 0.0f;
   t_idx m_simNx = 0;
   t_idx m_simNy = 0;
   bool m_simulating = false;
