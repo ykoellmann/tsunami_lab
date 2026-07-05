@@ -1,4 +1,7 @@
 #include "displacement/OkadaDisplacement.h"
+#include "displacement/OkadaFactory.h"
+#include "displacement/WellsCoppersmith.h"
+#include "io/Slab2Reader.h"
 #include "visualization/Camera.h"
 #include "visualization/Gebco.h"
 #include "visualization/GlobeView.h"
@@ -11,6 +14,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <future>
 #include <imgui.h>
@@ -54,21 +58,61 @@ static int g_screenW = 1280, g_screenH = 720;
 static double g_pressX = 0, g_pressY = 0;
 static float g_dragDist = 0.0f;
 
-// Okada rectangular-fault parameters, adjustable in the preview UI.
-static float g_displStrike = 0.0f;     // strike, clockwise from North (deg)
-static float g_displDip = 10.0f;       // dip (deg)
-static float g_displRake = 90.0f;      // rake (deg; 90 = pure thrust)
-static float g_displSlip = 5.0f;       // slip magnitude (m)
-static float g_displLength = 50000.0f; // along-strike length (m)
-static float g_displWidth = 25000.0f;  // down-dip width (m)
-static float g_displDepth = 10000.0f;  // depth of the top edge (m)
-static double g_epiLon = 0, g_epiLat = 0;
+// Earthquake source: the user picks a click location and a moment magnitude,
+// and the fault geometry is derived from Wells & Coppersmith scaling plus the
+// local Slab2 subduction geometry.
+static float g_mw = 8.0f;                 // moment magnitude
+static double g_epiLon = 0, g_epiLat = 0; // epicentre (click location, deg)
+static float g_epiWorldX = 0.0f;          // epicentre in the region world frame
+static float g_epiWorldZ = 0.0f;
 
-// Build the Okada displacement model from the current UI parameters.
-static tsunami_lab::displacement::OkadaDisplacement makeDisplacementModel() {
-  return tsunami_lab::displacement::OkadaDisplacement(
-      g_displStrike, g_displDip, g_displRake, g_displSlip, g_displLength,
-      g_displWidth, g_displDepth);
+// Slab2 subduction-geometry reader (null when no grid is configured →
+// fallback).
+static std::unique_ptr<tsunami_lab::io::Slab2Reader> g_slab2;
+
+// When true, an earthquake can only be triggered inside Slab2 coverage; when
+// false, fallback parameters are used outside coverage.
+static bool g_restrictToSlab2 = true;
+
+// Fault orientation/depth used when no Slab2 grid is available.
+static constexpr double k_fallbackDepth = 20000.0; // 20 km (m)
+static constexpr double k_fallbackStrike = 0.0;    // deg
+static constexpr double k_fallbackDip = 15.0;      // deg
+static constexpr double k_rake = 90.0;             // pure thrust (fixed)
+
+// Slab2 sample at the current click (or fallback); valid == false ⇒ no
+// coverage.
+static bool g_hasClick = false;
+static tsunami_lab::io::Slab2Point g_slabPt = {0.0, 0.0, 0.0, false};
+
+// The displacement applied on "Trigger Tsunami"; null until triggered /
+// cleared.
+static std::unique_ptr<tsunami_lab::displacement::OkadaDisplacement>
+    g_displModel;
+
+// Builds the Okada displacement for the current magnitude and click location.
+// With a Slab2 grid loaded, the factory supplies depth/strike/dip where the
+// slab is present. Outside coverage the result depends on g_restrictToSlab2:
+// restricted → nullptr (no fault); unrestricted → fallback orientation/depth.
+static std::unique_ptr<tsunami_lab::displacement::OkadaDisplacement>
+buildDisplacementModel() {
+  namespace disp = tsunami_lab::displacement;
+  if (g_slab2) {
+    std::unique_ptr<disp::OkadaDisplacement> l_model =
+        disp::OkadaFactory::fromMagnitudeAndLocation(g_mw, g_epiLon, g_epiLat,
+                                                     *g_slab2, k_rake);
+    if (l_model)
+      return l_model; // inside Slab2 coverage
+    if (g_restrictToSlab2)
+      return nullptr; // outside coverage and restricted
+    // else fall through to fallback parameters
+  }
+
+  disp::WellsCoppersmith::FaultGeometry l_geo =
+      disp::WellsCoppersmith::fromMagnitude(g_mw);
+  return std::unique_ptr<disp::OkadaDisplacement>(new disp::OkadaDisplacement(
+      k_fallbackStrike, k_fallbackDip, k_rake, l_geo.slip, l_geo.length,
+      l_geo.width, k_fallbackDepth));
 }
 
 // Live simulation (created on "Simulieren", destroyed on stop / leaving view).
@@ -107,16 +151,40 @@ regionUnproject(float i_mx,
   return {l_world.x, l_world.z};
 }
 
-// Place an Okada fault displacement at the clicked spot in the region preview.
-static void placeDisplacement(float i_mx, float i_my) {
+// Record the clicked spot as the earthquake epicentre and sample the Slab2
+// geometry there. The displacement itself is applied later via "Trigger
+// Tsunami".
+static void onRegionClick(float i_mx, float i_my) {
   if (!g_regionView || !g_regionView->loaded() || !g_camera)
     return;
   glm::vec2 l_world =
       regionUnproject(i_mx, i_my, g_screenW, g_screenH, *g_camera);
-  tsunami_lab::displacement::OkadaDisplacement l_model =
-      makeDisplacementModel();
-  g_regionView->applyDisplacement(l_world.x, l_world.y, l_model);
+  g_epiWorldX = l_world.x;
+  g_epiWorldZ = l_world.y;
   g_regionView->worldToLonLat(l_world.x, l_world.y, g_epiLon, g_epiLat);
+
+  if (g_slab2)
+    g_slabPt = g_slab2->query(g_epiLon, g_epiLat);
+  else
+    g_slabPt = {k_fallbackDepth, k_fallbackStrike, k_fallbackDip, true};
+  g_hasClick = true;
+
+  // A new epicentre invalidates any previously applied displacement.
+  g_displModel.reset();
+  g_regionView->clearDisplacement();
+}
+
+// Build the Okada displacement for the current click + magnitude and apply it
+// to the region preview (which also seeds the simulation initial condition).
+static void triggerTsunami() {
+  if (!g_hasClick || !g_regionView)
+    return;
+  std::unique_ptr<tsunami_lab::displacement::OkadaDisplacement> l_model =
+      buildDisplacementModel();
+  if (!l_model)
+    return; // outside Slab2 coverage
+  g_regionView->applyDisplacement(g_epiWorldX, g_epiWorldZ, *l_model);
+  g_displModel = std::move(l_model);
 }
 
 // Live simulation setup
@@ -215,9 +283,8 @@ static bool buildSimSetup(tsunami_lab::t_idx& o_nx,
   o_bath.assign((size_t)l_nx * l_ny, 0.0f);
   o_height.assign((size_t)l_nx * l_ny, 0.0f);
 
-  const bool l_hasDisp = g_regionView && g_regionView->hasDisplacement();
-  tsunami_lab::displacement::OkadaDisplacement l_model =
-      makeDisplacementModel();
+  const bool l_hasDisp =
+      g_displModel && g_regionView && g_regionView->hasDisplacement();
 
   for (t_idx l_j = 0; l_j < l_ny; l_j++) {
     const double l_lat = l_src.latMin + (double)l_j *
@@ -240,7 +307,7 @@ static bool buildSimSetup(tsunami_lab::t_idx& o_nx,
       if (l_hasDisp && l_b < 0.0f) {
         const double l_east = (l_lon - g_epiLon) * l_mPerLon;
         const double l_north = (l_lat - g_epiLat) * l_mPerLat;
-        l_h += (float)l_model.verticalDisplacement(l_east, l_north);
+        l_h += (float)g_displModel->verticalDisplacement(l_east, l_north);
         if (l_h < 0.0f)
           l_h = 0.0f;
       }
@@ -315,9 +382,9 @@ static void onMouseButton(GLFWwindow*, int i_btn, int i_act, int) {
         g_pressY = g_lastY;
         g_dragDist = 0.0f;
       } else if (g_dragDist < 5.0f && !simRunning()) {
-        // Released without dragging: treat as a click and place a source.
+        // Released without dragging: treat as a click and pick an epicentre.
         // Disabled while a simulation is running (the field is live then).
-        placeDisplacement((float)g_lastX, (float)g_lastY);
+        onRegionClick((float)g_lastX, (float)g_lastY);
       }
     }
   }
@@ -529,6 +596,8 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
               g_regionView && g_regionView->load(l_reg)) {
             g_loadedSel = sel;
             g_state = AppState::REGION_PREVIEW;
+            if (g_slab2)
+              g_regionView->buildSlab2Overlay(*g_slab2);
             if (g_camera)
               setCameraRegionView(*g_camera);
           } else {
@@ -588,9 +657,12 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
       tsunami_lab::visualization::gebco::Region l_reg;
       if (tsunami_lab::visualization::gebco::readRegion(
               g_gebcoPath, g_loadedSel, l_reg, g_bathMaxDim) &&
-          regionView.load(l_reg))
+          regionView.load(l_reg)) {
         regionView.clearDisplacement();
-      else
+        g_displModel.reset();
+        if (g_slab2)
+          regionView.buildSlab2Overlay(*g_slab2);
+      } else
         g_regionError = "Neu laden fehlgeschlagen.";
     }
     if (!g_regionError.empty())
@@ -610,26 +682,71 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
   ImGui::SliderFloat("Wellen-Überhöhung", &regionView.waveExaggeration, 1.0f,
                      5000.0f, "%.0f×", ImGuiSliderFlags_Logarithmic);
   ImGui::Checkbox("Meeresspiegel anzeigen", &regionView.showSea);
+  ImGui::Checkbox("Show subduction zones", &regionView.showSlab2Overlay);
 
   ImGui::Spacing();
   ImGui::SeparatorText("Erdbebenquelle");
-  ImGui::TextWrapped("Klick auf das Gelände: Okada-Verwerfung setzen");
-  ImGui::SliderFloat("Streichen (°)", &g_displStrike, 0.0f, 360.0f, "%.0f");
-  ImGui::SliderFloat("Einfallen (°)", &g_displDip, 1.0f, 89.0f, "%.0f");
-  ImGui::SliderFloat("Rake (°)", &g_displRake, -180.0f, 180.0f, "%.0f");
-  ImGui::SliderFloat("Versatz (m)", &g_displSlip, 0.0f, 30.0f, "%.1f");
-  ImGui::SliderFloat("Länge (m)", &g_displLength, 1000.0f, 500000.0f, "%.0f",
-                     ImGuiSliderFlags_Logarithmic);
-  ImGui::SliderFloat("Breite (m)", &g_displWidth, 1000.0f, 250000.0f, "%.0f",
-                     ImGuiSliderFlags_Logarithmic);
-  ImGui::SliderFloat("Tiefe (m)", &g_displDepth, 100.0f, 50000.0f, "%.0f",
-                     ImGuiSliderFlags_Logarithmic);
-  if (regionView.hasDisplacement()) {
-    ImGui::Text("Epizentrum: %.2f°, %.2f°", g_epiLon, g_epiLat);
-    if (ImGui::Button("Auslenkung entfernen", ImVec2(-1, 0)))
-      regionView.clearDisplacement();
+  ImGui::TextWrapped("Klick auf das Gelände: Epizentrum wählen");
+
+  ImGui::Checkbox("Restrict to subduction zones", &g_restrictToSlab2);
+  if (!g_restrictToSlab2) {
+    ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.0f, 1.0f),
+                       "! Fallback parameters outside Slab2 coverage");
+    ImGui::Text("  depth=20km  strike=0deg  dip=15deg");
+  }
+
+  ImGui::SliderFloat("Magnitude (Mw)", &g_mw, 6.0f, 9.5f, "%.1f");
+
+  // Fault geometry derived from the magnitude (updates live as Mw changes).
+  namespace disp = tsunami_lab::displacement;
+  disp::WellsCoppersmith::FaultGeometry l_geo =
+      disp::WellsCoppersmith::fromMagnitude(g_mw);
+  ImGui::Text("Versatz: %.2f m", l_geo.slip);
+  ImGui::Text("Länge:   %.0f km", l_geo.length / 1000.0);
+  ImGui::Text("Breite:  %.0f km", l_geo.width / 1000.0);
+
+  if (g_slab2 == nullptr)
+    ImGui::TextColored(
+        ImVec4(1, 0.6f, 0.2f, 1),
+        "Slab2 nicht geladen — Fallback\n(Tiefe=20km, Streichen=0°, Dip=15°)");
+
+  // Depth/strike/dip come from Slab2 at the clicked location.
+  const bool l_inCoverage = g_hasClick && g_slabPt.valid;
+  if (l_inCoverage) {
+    ImGui::Text("Tiefe:     %.0f km  (Slab2)", g_slabPt.depth / 1000.0);
+    ImGui::Text("Streichen: %.0f°  (Slab2)", g_slabPt.strike);
+    ImGui::Text("Einfallen: %.0f°  (Slab2)", g_slabPt.dip);
+  } else if (g_hasClick) {
+    ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1),
+                       "Außerhalb der Slab2-Abdeckung");
   } else {
-    ImGui::TextDisabled("(noch keine Auslenkung)");
+    ImGui::Text("Tiefe:     –");
+    ImGui::Text("Streichen: –");
+    ImGui::Text("Einfallen: –");
+  }
+  ImGui::Text("Rake:      90° (fest)");
+
+  if (g_hasClick)
+    ImGui::Text("Epizentrum: %.2f°, %.2f°", g_epiLon, g_epiLat);
+
+  // Restricted mode needs Slab2 coverage; unrestricted mode allows a fault
+  // anywhere (fallback parameters are used outside coverage).
+  const bool l_canTrigger =
+      g_hasClick && !simRunning() && (!g_restrictToSlab2 || g_slabPt.valid);
+  ImGui::BeginDisabled(!l_canTrigger);
+  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.35f, 0.1f, 1));
+  if (ImGui::Button("Displacement generieren", ImVec2(-1, 0)))
+    triggerTsunami();
+  ImGui::PopStyleColor();
+  ImGui::EndDisabled();
+
+  if (regionView.hasDisplacement()) {
+    if (ImGui::Button("Displacement entfernen", ImVec2(-1, 0))) {
+      regionView.clearDisplacement();
+      g_displModel.reset();
+    }
+  } else if (!g_hasClick) {
+    ImGui::TextDisabled("(noch kein Epizentrum)");
   }
 
   ImGui::Spacing();
@@ -838,12 +955,58 @@ drawWaveLegend(const tsunami_lab::visualization::RegionView& regionView) {
               l_neg, l_pos_buf);
 }
 
+// Hover cursor feedback: a coloured ring at the mouse while it is over the
+// bathymetry. Green = inside Slab2 coverage; red = outside and restricted (no
+// fault possible); yellow = outside but fallback parameters would be used.
+static void
+drawCursorFeedback(const tsunami_lab::visualization::RegionView& i_region) {
+  if (g_state != AppState::REGION_PREVIEW || !i_region.loaded() || !g_camera)
+    return;
+  if (ImGui::GetIO().WantCaptureMouse || simRunning())
+    return; // over a panel, or the field is live (clicks disabled)
+
+  glm::vec2 l_world = regionUnproject((float)g_lastX, (float)g_lastY, g_screenW,
+                                      g_screenH, *g_camera);
+  double l_lon = 0.0, l_lat = 0.0;
+  i_region.worldToLonLat(l_world.x, l_world.y, l_lon, l_lat);
+  if (l_lon < i_region.lonMin || l_lon > i_region.lonMax ||
+      l_lat < i_region.latMin || l_lat > i_region.latMax)
+    return; // cursor is not over the region footprint
+
+  const bool l_valid = g_slab2 && g_slab2->query(l_lon, l_lat).valid;
+  ImU32 l_col;
+  if (l_valid)
+    l_col = IM_COL32(40, 220, 80, 255); // green: covered
+  else if (g_restrictToSlab2)
+    l_col = IM_COL32(230, 60, 50, 255); // red: no fault here
+  else
+    l_col = IM_COL32(240, 220, 40, 255); // yellow: fallback would apply
+
+  const ImVec2 l_p((float)g_lastX, (float)g_lastY);
+  ImDrawList* l_dl = ImGui::GetForegroundDrawList();
+  l_dl->AddCircle(l_p, 10.0f, l_col, 0, 2.5f);
+  l_dl->AddCircleFilled(l_p, 3.0f, l_col);
+}
+
 // Main
 
 int main() {
   // Resolve (and, on first run, download) the GEBCO grid before opening the
   // window — the one-time download prints progress to the terminal.
   g_gebcoPath = tsunami_lab::visualization::gebco::ensureAvailable();
+
+  // Slab2 subduction-geometry grids (global): enable click-driven Okada faults
+  // with realistic depth/strike/dip anywhere a slab exists. Downloaded from
+  // USGS ScienceBase on first run (like GEBCO). If unavailable, the source
+  // panel falls back to fixed values.
+  {
+    if (tsunami_lab::io::Slab2Reader::ensureAvailable()) {
+      g_slab2.reset(new tsunami_lab::io::Slab2Reader());
+      std::printf("Slab2: globale Grids geladen.\n");
+    } else {
+      std::printf("Slab2: nicht verfügbar — Fallback aktiv.\n");
+    }
+  }
 
   tsunami_lab::visualization::Window l_window(1280, 720,
                                               "Tsunami Lab — Gebietsauswahl");
@@ -938,6 +1101,7 @@ int main() {
       drawRegionUi(l_region);
       drawBathyLegend(l_region);
       drawWaveLegend(l_region);
+      drawCursorFeedback(l_region);
     }
     l_ui.endFrame();
 
