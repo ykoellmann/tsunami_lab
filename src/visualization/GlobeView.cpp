@@ -40,7 +40,7 @@ GlobeView::~GlobeView() {
     glDeleteVertexArrays(1, &m_terrVao);
     glDeleteBuffers(1, &m_terrVbPos);
     glDeleteBuffers(1, &m_terrVbElv);
-    glDeleteBuffers(1, &m_terrEbo);
+    glDeleteBuffers(lod::k_maxLevels, m_terrEbos);
   }
   if (m_selVao) {
     glDeleteVertexArrays(1, &m_selVao);
@@ -110,39 +110,26 @@ void GlobeView::buildTerrainMesh(const float* i_elev, int i_w, int i_h) {
     }
   }
 
-  const int nQuadsW = i_w - 1;
-  const int nQuadsH = i_h - 1;
-  std::vector<unsigned int> idx((size_t)nQuadsW * nQuadsH * 6);
-  size_t cursor = 0;
-  for (int j = 0; j < nQuadsH; j++) {
-    for (int i = 0; i < nQuadsW; i++) {
-      unsigned int v00 = (unsigned int)(j * i_w + i);
-      unsigned int v01 = v00 + 1;
-      unsigned int v10 = v00 + (unsigned int)i_w;
-      unsigned int v11 = v10 + 1;
-      idx[cursor++] = v00;
-      idx[cursor++] = v10;
-      idx[cursor++] = v01;
-      idx[cursor++] = v10;
-      idx[cursor++] = v11;
-      idx[cursor++] = v01;
-    }
-  }
-  m_terrIdxCnt = (GLsizei)idx.size();
+  // World-unit (degree) size of one lon cell; drives the LOD pick in draw().
+  m_cellWorld = 360.0f / (float)std::max(i_w - 1, 1);
+  m_gridW = i_w;
+  m_gridH = i_h;
 
   // Free any previously built mesh so setResolution() can rebuild without leak.
   if (m_terrVao) {
     glDeleteVertexArrays(1, &m_terrVao);
     glDeleteBuffers(1, &m_terrVbPos);
     glDeleteBuffers(1, &m_terrVbElv);
-    glDeleteBuffers(1, &m_terrEbo);
-    m_terrVao = m_terrVbPos = m_terrVbElv = m_terrEbo = 0;
+    glDeleteBuffers(lod::k_maxLevels, m_terrEbos);
+    m_terrVao = m_terrVbPos = m_terrVbElv = 0;
+    for (int l_L = 0; l_L < lod::k_maxLevels; l_L++)
+      m_terrEbos[l_L] = 0;
   }
 
   glGenVertexArrays(1, &m_terrVao);
   glGenBuffers(1, &m_terrVbPos);
   glGenBuffers(1, &m_terrVbElv);
-  glGenBuffers(1, &m_terrEbo);
+  glGenBuffers(lod::k_maxLevels, m_terrEbos);
 
   glBindVertexArray(m_terrVao);
 
@@ -158,10 +145,23 @@ void GlobeView::buildTerrainMesh(const float* i_elev, int i_w, int i_h) {
   glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
   glEnableVertexAttribArray(1);
 
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_terrEbo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-               (GLsizeiptr)(idx.size() * sizeof(unsigned int)), idx.data(),
-               GL_STATIC_DRAW);
+  // One index buffer per LOD level (vertex stride doubles each level, until a
+  // further level would no longer reduce the grid).
+  m_terrNumLods = 0;
+  std::vector<unsigned int> idx;
+  for (int l_L = 0; l_L < lod::k_maxLevels; l_L++) {
+    const int l_stride = 1 << l_L;
+    if (l_L > 0 && l_stride >= i_w - 1 && l_stride >= i_h - 1)
+      break;
+    lod::buildIndices(i_w, i_h, l_stride, idx);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_terrEbos[l_L]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                 (GLsizeiptr)(idx.size() * sizeof(unsigned int)), idx.data(),
+                 GL_STATIC_DRAW);
+    m_terrIdxCnts[l_L] = (GLsizei)idx.size();
+    m_terrNumLods = l_L + 1;
+  }
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_terrEbos[0]);
 
   glBindVertexArray(0);
 }
@@ -181,11 +181,22 @@ void GlobeView::initSelectionVao() {
 }
 
 void GlobeView::draw(const glm::mat4& i_vp) const {
-  if (m_terrVao) {
+  if (m_terrVao && m_terrNumLods > 0) {
+    const int l_lod = lod::pickLevel(m_cellWorld, m_terrNumLods,
+                                     lodCamDistance, lodViewportPx);
+    // The flat map lies in the y = 0 plane; cull grid rows/columns outside
+    // the frustum footprint so close zooms do not pay vertex costs for the
+    // whole (up to ~150 M triangle) globe mesh. World X = lon, Z = -lat.
+    float l_minX, l_maxX, l_minZ, l_maxZ;
+    lod::frustumFootprintXZ(i_vp, 0.0f, 0.0f, l_minX, l_maxX, l_minZ, l_maxZ);
+    int l_i0, l_i1, l_j0, l_j1;
+    lod::visibleRange(-180.0f, 180.0f, m_gridW, l_minX, l_maxX, l_i0, l_i1);
+    lod::visibleRange(90.0f, -90.0f, m_gridH, l_minZ, l_maxZ, l_j0, l_j1);
     m_terrShader.use();
     m_terrShader.setMat4("uVP", i_vp);
     glBindVertexArray(m_terrVao);
-    glDrawElements(GL_TRIANGLES, m_terrIdxCnt, GL_UNSIGNED_INT, nullptr);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_terrEbos[l_lod]);
+    lod::drawGridWindow(m_gridW, m_gridH, 1 << l_lod, l_i0, l_i1, l_j0, l_j1);
     glBindVertexArray(0);
   }
 

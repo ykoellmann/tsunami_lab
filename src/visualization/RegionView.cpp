@@ -1,5 +1,6 @@
 #include "RegionView.h"
 
+#include "Lod.h"
 #include "io/Slab2Reader.h"
 #include <algorithm>
 #include <cmath>
@@ -96,23 +97,22 @@ bool RegionView::load(const gebco::Region& i_region) {
     }
   }
 
-  std::vector<unsigned int> l_idx((size_t)(l_w - 1) * (l_h - 1) * 6);
-  size_t l_c = 0;
-  for (int j = 0; j < l_h - 1; j++) {
-    for (int i = 0; i < l_w - 1; i++) {
-      unsigned int l_v00 = (unsigned int)(j * l_w + i);
-      unsigned int l_v01 = l_v00 + 1;
-      unsigned int l_v10 = l_v00 + (unsigned int)l_w;
-      unsigned int l_v11 = l_v10 + 1;
-      l_idx[l_c++] = l_v00;
-      l_idx[l_c++] = l_v10;
-      l_idx[l_c++] = l_v01;
-      l_idx[l_c++] = l_v10;
-      l_idx[l_c++] = l_v11;
-      l_idx[l_c++] = l_v01;
-    }
+  // World-unit size of one grid cell (the larger side spans 200 units);
+  // drives the LOD pick in draw().
+  m_cellWorld = 200.0f / (float)std::max(std::max(l_w, l_h) - 1, 1);
+
+  // Grid extents and elevation range, for the frustum culling in draw().
+  const size_t l_last = (size_t)l_w * l_h - 1;
+  m_x0 = l_xz[0];
+  m_x1 = l_xz[l_last * 2 + 0];
+  m_z0 = l_xz[1];
+  m_z1 = l_xz[l_last * 2 + 1];
+  m_minElev = 0.0f;
+  m_maxElev = 0.0f;
+  for (size_t l_v = 0; l_v < i_region.elev.size(); l_v++) {
+    m_minElev = std::min(m_minElev, i_region.elev[l_v]);
+    m_maxElev = std::max(m_maxElev, i_region.elev[l_v]);
   }
-  m_idxCnt = (GLsizei)l_idx.size();
 
   m_xz = l_xz;
   m_hasDispl = false;
@@ -125,7 +125,7 @@ bool RegionView::load(const gebco::Region& i_region) {
     glGenBuffers(1, &m_vbXZ);
     glGenBuffers(1, &m_vbElv);
     glGenBuffers(1, &m_vbDisp);
-    glGenBuffers(1, &m_ebo);
+    glGenBuffers(k_maxLod, m_ebos);
   }
 
   glBindVertexArray(m_vao);
@@ -149,10 +149,23 @@ bool RegionView::load(const gebco::Region& i_region) {
   glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
   glEnableVertexAttribArray(2);
 
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-               (GLsizeiptr)(l_idx.size() * sizeof(unsigned int)), l_idx.data(),
-               GL_STATIC_DRAW);
+  // One index buffer per LOD level (vertex stride doubles each level, until a
+  // further level would no longer reduce the grid).
+  m_numLods = 0;
+  std::vector<unsigned int> l_idx;
+  for (int l_L = 0; l_L < k_maxLod; l_L++) {
+    const int l_stride = 1 << l_L;
+    if (l_L > 0 && l_stride >= l_w - 1 && l_stride >= l_h - 1)
+      break;
+    lod::buildIndices(l_w, l_h, l_stride, l_idx);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebos[l_L]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                 (GLsizeiptr)(l_idx.size() * sizeof(unsigned int)),
+                 l_idx.data(), GL_STATIC_DRAW);
+    m_idxCnts[l_L] = (GLsizei)l_idx.size();
+    m_numLods = l_L + 1;
+  }
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebos[0]);
 
   // Resize the sea-level plane to the exact horizontal footprint of this
   // region.
@@ -327,23 +340,8 @@ void RegionView::beginSimulation(t_idx i_nx, t_idx i_ny, const float* i_bath) {
     }
   }
 
-  std::vector<unsigned int> l_idx((size_t)(i_nx - 1) * (i_ny - 1) * 6);
-  size_t l_c = 0;
-  for (t_idx l_j = 0; l_j < i_ny - 1; l_j++) {
-    for (t_idx l_i = 0; l_i < i_nx - 1; l_i++) {
-      unsigned int l_v00 = (unsigned int)(l_j * i_nx + l_i);
-      unsigned int l_v01 = l_v00 + 1;
-      unsigned int l_v10 = l_v00 + (unsigned int)i_nx;
-      unsigned int l_v11 = l_v10 + 1;
-      l_idx[l_c++] = l_v00;
-      l_idx[l_c++] = l_v10;
-      l_idx[l_c++] = l_v01;
-      l_idx[l_c++] = l_v10;
-      l_idx[l_c++] = l_v11;
-      l_idx[l_c++] = l_v01;
-    }
-  }
-  m_waterIdxCnt = (GLsizei)l_idx.size();
+  m_waterCellWorld =
+      200.0f / (float)std::max((int)std::max(i_nx, i_ny) - 1, 1);
   m_waterH.assign(l_n, 0.0f);
 
   if (m_waterVao == 0) {
@@ -351,7 +349,7 @@ void RegionView::beginSimulation(t_idx i_nx, t_idx i_ny, const float* i_bath) {
     glGenBuffers(1, &m_waterVbXZ);
     glGenBuffers(1, &m_waterVbBath);
     glGenBuffers(1, &m_waterVbH);
-    glGenBuffers(1, &m_waterEbo);
+    glGenBuffers(k_maxLod, m_waterEbos);
   }
 
   glBindVertexArray(m_waterVao);
@@ -374,10 +372,22 @@ void RegionView::beginSimulation(t_idx i_nx, t_idx i_ny, const float* i_bath) {
   glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
   glEnableVertexAttribArray(2);
 
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_waterEbo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-               (GLsizeiptr)(l_idx.size() * sizeof(unsigned int)), l_idx.data(),
-               GL_STATIC_DRAW);
+  // LOD index buffers for the sim grid, mirroring the terrain mesh setup.
+  m_waterNumLods = 0;
+  std::vector<unsigned int> l_idx;
+  for (int l_L = 0; l_L < k_maxLod; l_L++) {
+    const int l_stride = 1 << l_L;
+    if (l_L > 0 && l_stride >= (int)i_nx - 1 && l_stride >= (int)i_ny - 1)
+      break;
+    lod::buildIndices((int)i_nx, (int)i_ny, l_stride, l_idx);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_waterEbos[l_L]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                 (GLsizeiptr)(l_idx.size() * sizeof(unsigned int)),
+                 l_idx.data(), GL_STATIC_DRAW);
+    m_waterIdxCnts[l_L] = (GLsizei)l_idx.size();
+    m_waterNumLods = l_L + 1;
+  }
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_waterEbos[0]);
 
   glBindVertexArray(0);
   // Seed the colour scale from the earthquake displacement: the open-ocean
@@ -414,8 +424,27 @@ void RegionView::updateWater(const float* i_h) {
 }
 
 void RegionView::draw(const glm::mat4& i_vp) const {
-  if (m_idxCnt == 0)
+  if (m_numLods == 0)
     return;
+
+  // Pick the index-buffer level that keeps triangles at roughly pixel size —
+  // rendering sub-pixel triangles adds no detail but multiplies the MSAA
+  // fill cost enough to stall the GPU when zoomed out.
+  const int l_lod =
+      lod::pickLevel(m_cellWorld, m_numLods, lodCamDistance, lodViewportPx);
+
+  // Frustum-cull off-screen grid rows/columns: zoomed in, the full mesh would
+  // put millions of off-screen triangles through the vertex stage every frame.
+  // The slab spans the mesh's vertical extent (terrain relief; +40 world
+  // units of headroom covers the displacement-preview bumps).
+  const float l_scl = m_scaleY * vertExaggeration;
+  float l_minX, l_maxX, l_minZ, l_maxZ;
+  lod::frustumFootprintXZ(i_vp, m_minElev * l_scl - 1.0f,
+                          m_maxElev * l_scl + 40.0f, l_minX, l_maxX, l_minZ,
+                          l_maxZ);
+  int l_i0, l_i1, l_j0, l_j1;
+  lod::visibleRange(m_x0, m_x1, gridW, l_minX, l_maxX, l_i0, l_i1);
+  lod::visibleRange(m_z0, m_z1, gridH, l_minZ, l_maxZ, l_j0, l_j1);
 
   // While a simulation runs, the wave mesh doubles as a gap-free water sheet:
   // its dry cells are snapped to sea level instead of discarded (see
@@ -436,16 +465,18 @@ void RegionView::draw(const glm::mat4& i_vp) const {
   m_terrShader.setFloat("uDispRange", m_dispPeak);
   m_terrShader.setInt("uMode", field == Field::Displacement ? 1 : 0);
   glBindVertexArray(m_vao);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebos[l_lod]);
+  const int l_stride = 1 << l_lod;
   if (l_simView) {
     m_terrShader.setInt("uClip", 1); // land only, writes depth
-    glDrawElements(GL_TRIANGLES, m_idxCnt, GL_UNSIGNED_INT, nullptr);
+    lod::drawGridWindow(gridW, gridH, l_stride, l_i0, l_i1, l_j0, l_j1);
     m_terrShader.setInt("uClip", 2); // seabed only, colour without depth write
     glDepthMask(GL_FALSE);
-    glDrawElements(GL_TRIANGLES, m_idxCnt, GL_UNSIGNED_INT, nullptr);
+    lod::drawGridWindow(gridW, gridH, l_stride, l_i0, l_i1, l_j0, l_j1);
     glDepthMask(GL_TRUE);
   } else {
     m_terrShader.setInt("uClip", 0);
-    glDrawElements(GL_TRIANGLES, m_idxCnt, GL_UNSIGNED_INT, nullptr);
+    lod::drawGridWindow(gridW, gridH, l_stride, l_i0, l_i1, l_j0, l_j1);
   }
   glBindVertexArray(0);
 
@@ -458,8 +489,17 @@ void RegionView::draw(const glm::mat4& i_vp) const {
     m_waterShader.setFloat("uScaleY", m_scaleY * vertExaggeration);
     m_waterShader.setFloat("uWaveExagg", waveExaggeration);
     m_waterShader.setFloat("uAnom", m_waterAnom);
+    // The water grid spans the same lon/lat box as the terrain, so the same
+    // footprint applies — only its vertex counts differ.
+    const int l_wLod = lod::pickLevel(m_waterCellWorld, m_waterNumLods,
+                                      lodCamDistance, lodViewportPx);
+    int l_wi0, l_wi1, l_wj0, l_wj1;
+    lod::visibleRange(m_x0, m_x1, (int)m_simNx, l_minX, l_maxX, l_wi0, l_wi1);
+    lod::visibleRange(m_z0, m_z1, (int)m_simNy, l_minZ, l_maxZ, l_wj0, l_wj1);
     glBindVertexArray(m_waterVao);
-    glDrawElements(GL_TRIANGLES, m_waterIdxCnt, GL_UNSIGNED_INT, nullptr);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_waterEbos[l_wLod]);
+    lod::drawGridWindow((int)m_simNx, (int)m_simNy, 1 << l_wLod, l_wi0, l_wi1,
+                        l_wj0, l_wj1);
     glBindVertexArray(0);
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
@@ -505,7 +545,7 @@ RegionView::~RegionView() {
     glDeleteBuffers(1, &m_vbXZ);
     glDeleteBuffers(1, &m_vbElv);
     glDeleteBuffers(1, &m_vbDisp);
-    glDeleteBuffers(1, &m_ebo);
+    glDeleteBuffers(k_maxLod, m_ebos);
   }
   if (m_seaVao) {
     glDeleteVertexArrays(1, &m_seaVao);
@@ -522,7 +562,7 @@ RegionView::~RegionView() {
     glDeleteBuffers(1, &m_waterVbXZ);
     glDeleteBuffers(1, &m_waterVbBath);
     glDeleteBuffers(1, &m_waterVbH);
-    glDeleteBuffers(1, &m_waterEbo);
+    glDeleteBuffers(k_maxLod, m_waterEbos);
   }
 }
 

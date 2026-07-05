@@ -1089,10 +1089,15 @@ int main() {
     if (simRunning() && g_simBuf->swap())
       l_region.updateWater(g_simBuf->front());
 
-    if (g_state == AppState::REGION_SELECT)
+    if (g_state == AppState::REGION_SELECT) {
+      l_globe.lodCamDistance = l_camera.getDistance();
+      l_globe.lodViewportPx = l_fbH;
       l_globe.draw(vp);
-    else
+    } else {
+      l_region.lodCamDistance = l_camera.getDistance();
+      l_region.lodViewportPx = l_fbH;
       l_region.draw(vp);
+    }
 
     l_ui.beginFrame();
     if (g_state == AppState::REGION_SELECT)

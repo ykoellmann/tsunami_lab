@@ -3,6 +3,7 @@
 
 #include "BBox.h"
 #include "Camera.h"
+#include "Lod.h"
 #include "Shader.h"
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -43,6 +44,14 @@ public:
 
   float maxSelDeg = DEFAULT_MAX_SEL_DEG;
 
+  // Per-frame LOD hints, set by the main loop before draw(): camera orbit
+  // distance (world units) and framebuffer height (pixels). draw() picks the
+  // index-buffer level that keeps triangles at roughly pixel size — the full
+  // globe mesh is up to ~150 M sub-pixel triangles otherwise, which multiplies
+  // the MSAA fill cost into unusable frame rates.
+  float lodCamDistance = 300.0f;
+  int lodViewportPx = 720;
+
   // Returns (lon, lat) in degrees, or (0,0) on failure.
   static std::pair<float, float> geocodeCity(const std::string& i_city);
 
@@ -63,8 +72,12 @@ private:
   GLuint m_terrVao = 0;
   GLuint m_terrVbPos = 0;
   GLuint m_terrVbElv = 0;
-  GLuint m_terrEbo = 0;
-  GLsizei m_terrIdxCnt = 0;
+  // Index buffers at vertex stride 1, 2, 4, … over the same vertex data.
+  GLuint m_terrEbos[lod::k_maxLevels] = {};
+  GLsizei m_terrIdxCnts[lod::k_maxLevels] = {};
+  int m_terrNumLods = 0;
+  float m_cellWorld = 0.0f; // world-unit (degree) size of one grid cell
+  int m_gridW = 0, m_gridH = 0;
 
   GLuint m_selVao = 0;
   GLuint m_selVbo = 0;
