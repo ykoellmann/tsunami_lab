@@ -31,9 +31,10 @@ sphinx/build/
 # ImGui auto-generated layout file
 imgui.ini
 
-# GEBCO / GMT data (large, re-downloadable)
+# GEBCO / GMT / Slab2 data (large, re-downloadable)
 data/*.zip
 data/*.nc
+data/*.grd
 data/*.pdf
 data/tmp/
 

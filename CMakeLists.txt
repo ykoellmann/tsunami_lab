@@ -96,6 +96,7 @@ add_library(solver_lib STATIC
   src/io/netcdf/NetCDF.cpp
   src/io/csv/Csv.cpp
   src/io/stations/Stations.cpp
+  src/io/Slab2Reader.cpp
 )
 target_include_directories(solver_lib PUBLIC src ${NETCDF_INCLUDE})
 target_link_directories(solver_lib PUBLIC ${NETCDF_LIBDIR})
