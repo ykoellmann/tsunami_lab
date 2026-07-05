@@ -10,6 +10,9 @@
 #include <vector>
 
 namespace tsunami_lab {
+namespace io {
+class Slab2Reader;
+} // namespace io
 namespace visualization {
 
 class RegionView {
@@ -28,6 +31,15 @@ public:
   void clearDisplacement();
   bool hasDisplacement() const { return m_hasDispl; }
 
+  /**
+   * Builds the semi-transparent subduction-zone overlay by sampling the Slab2
+   * model over the loaded region's lon/lat grid into an RGBA texture on a flat
+   * sea-level quad. Must be called after load().
+   *
+   * @param i_slab2 Slab2 reader used to classify each grid cell.
+   **/
+  void buildSlab2Overlay(const io::Slab2Reader& i_slab2);
+
   void beginSimulation(t_idx i_nx, t_idx i_ny, const float* i_bath);
   void updateWater(const float* i_h);
   void endSimulation() { m_simulating = false; }
@@ -43,6 +55,7 @@ public:
   float vertExaggeration = 25.0f;
   float waveExaggeration = 50.0f;
   bool showSea = true;
+  bool showSlab2Overlay = true; // draw the subduction-zone overlay pass
   Field field = Field::Bathymetry;
 
   double lonMin = 0, lonMax = 0, latMin = 0, latMax = 0;
@@ -69,6 +82,13 @@ private:
 
   GLuint m_seaVao = 0;
   GLuint m_seaVbo = 0;
+
+  // Subduction-zone overlay: an RGBA texture on a flat sea-level quad.
+  Shader m_overlayShader;
+  GLuint m_overlayVao = 0;
+  GLuint m_overlayVbo = 0;
+  GLuint m_overlayTex = 0;
+  bool m_hasOverlay = false;
 
   float m_scaleY = 1.0f;
 

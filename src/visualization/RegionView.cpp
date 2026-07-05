@@ -1,11 +1,34 @@
 #include "RegionView.h"
 
+#include "io/Slab2Reader.h"
 #include <algorithm>
 #include <cmath>
 #include <vector>
 
 namespace tsunami_lab {
 namespace visualization {
+
+// Inline shaders for the subduction-zone overlay: a flat sea-level quad
+// textured with the Slab2 coverage, whose texture alpha drives transparency.
+static const char* k_overlayVert = R"(#version 330 core
+layout(location = 0) in vec2 aXZ;  // (x, z) world position at sea level
+layout(location = 1) in vec2 aUV;
+uniform mat4 uVP;
+out vec2 vUV;
+void main() {
+    vUV = aUV;
+    gl_Position = uVP * vec4(aXZ.x, 0.0, aXZ.y, 1.0);
+}
+)";
+
+static const char* k_overlayFrag = R"(#version 330 core
+in vec2 vUV;
+uniform sampler2D u_overlay;
+out vec4 FragColor;
+void main() {
+    FragColor = texture(u_overlay, vUV);
+}
+)";
 
 void RegionView::init() {
   m_terrShader.buildFromFiles(SHADER_DIR "/region_terrain.vert",
@@ -14,6 +37,7 @@ void RegionView::init() {
                              SHADER_DIR "/region_sea.frag");
   m_waterShader.buildFromFiles(SHADER_DIR "/region_water.vert",
                                SHADER_DIR "/region_water.frag");
+  m_overlayShader.build(k_overlayVert, k_overlayFrag);
 
   const float k_s = 100.0f;
   const float l_quad[8] = {-k_s, -k_s, k_s, -k_s, -k_s, k_s, k_s, k_s};
@@ -92,6 +116,8 @@ bool RegionView::load(const gebco::Region& i_region) {
 
   m_xz = l_xz;
   m_hasDispl = false;
+  // A new grid invalidates the overlay until buildSlab2Overlay() rebuilds it.
+  m_hasOverlay = false;
   std::vector<float> l_disp((size_t)l_w * l_h, 0.0f);
 
   if (m_vao == 0) {
@@ -195,6 +221,81 @@ void RegionView::clearDisplacement() {
   m_dispPeak = 0.0f;
   m_dispScaleY = 0.0f;
   m_hasDispl = false;
+}
+
+void RegionView::buildSlab2Overlay(const io::Slab2Reader& i_slab2) {
+  if (m_vao == 0 || gridW < 2 || gridH < 2)
+    return;
+
+  // Slab2 is coarse (0.05°); a fine bathymetry grid would over-sample it and
+  // make the texture needlessly large, so cap the overlay resolution per axis.
+  constexpr t_idx k_maxDim = 1024;
+  const t_idx l_ow = std::min<t_idx>((t_idx)gridW, k_maxDim);
+  const t_idx l_oh = std::min<t_idx>((t_idx)gridH, k_maxDim);
+
+  // Orange where a slab exists, fully transparent elsewhere. Row j runs from
+  // latMin (row 0) to latMax, matching the quad's texcoords below.
+  std::vector<unsigned char> l_rgba((size_t)l_ow * l_oh * 4, 0);
+  for (t_idx l_j = 0; l_j < l_oh; l_j++) {
+    const double l_lat =
+        latMin + (double)l_j * (latMax - latMin) / (double)(l_oh - 1);
+    for (t_idx l_i = 0; l_i < l_ow; l_i++) {
+      const double l_lon =
+          lonMin + (double)l_i * (lonMax - lonMin) / (double)(l_ow - 1);
+      const size_t l_k = ((size_t)l_j * l_ow + l_i) * 4;
+      if (i_slab2.query(l_lon, l_lat).valid) {
+        l_rgba[l_k + 0] = 255;
+        l_rgba[l_k + 1] = 120;
+        l_rgba[l_k + 2] = 40;
+        l_rgba[l_k + 3] = 80;
+      }
+    }
+  }
+
+  if (m_overlayTex == 0)
+    glGenTextures(1, &m_overlayTex);
+  glBindTexture(GL_TEXTURE_2D, m_overlayTex);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)l_ow, (GLsizei)l_oh, 0,
+               GL_RGBA, GL_UNSIGNED_BYTE, l_rgba.data());
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  // Flat sea-level quad spanning the region's footprint. Corner (x, z) mapping
+  // mirrors load(): lonMin → -halfX, latMin → +halfZ (world Z = -lat). Layout
+  // per vertex: x, z, u, v.
+  const double l_latC = 0.5 * (latMin + latMax);
+  const double l_mPerLat = 111132.0;
+  const double l_mPerLon = 111320.0 * std::cos(glm::radians(l_latC));
+  const float l_halfX =
+      (float)(0.5 * (lonMax - lonMin) * l_mPerLon * m_scaleXZ);
+  const float l_halfZ =
+      (float)(0.5 * (latMax - latMin) * l_mPerLat * m_scaleXZ);
+  const float l_quad[16] = {
+      -l_halfX, l_halfZ,  0.0f, 0.0f, // lonMin, latMin
+      l_halfX,  l_halfZ,  1.0f, 0.0f, // lonMax, latMin
+      -l_halfX, -l_halfZ, 0.0f, 1.0f, // lonMin, latMax
+      l_halfX,  -l_halfZ, 1.0f, 1.0f, // lonMax, latMax
+  };
+
+  if (m_overlayVao == 0) {
+    glGenVertexArrays(1, &m_overlayVao);
+    glGenBuffers(1, &m_overlayVbo);
+  }
+  glBindVertexArray(m_overlayVao);
+  glBindBuffer(GL_ARRAY_BUFFER, m_overlayVbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(l_quad), l_quad, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                        (void*)(2 * sizeof(float)));
+  glEnableVertexAttribArray(1);
+  glBindVertexArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+  m_hasOverlay = true;
 }
 
 void RegionView::beginSimulation(t_idx i_nx, t_idx i_ny, const float* i_bath) {
@@ -374,6 +475,28 @@ void RegionView::draw(const glm::mat4& i_vp) const {
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
   }
+
+  // Subduction-zone overlay: a semi-transparent orange sheet at sea level,
+  // drawn last so it reads on top of the terrain/water. GL_LEQUAL lets it sit
+  // flush without writing depth; land poking above sea level still occludes it.
+  if (showSlab2Overlay && m_hasOverlay && m_overlayVao) {
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
+    glDepthFunc(GL_LEQUAL);
+    m_overlayShader.use();
+    m_overlayShader.setMat4("uVP", i_vp);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_overlayTex);
+    m_overlayShader.setInt("u_overlay", 0);
+    glBindVertexArray(m_overlayVao);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDepthFunc(GL_LESS);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+  }
 }
 
 RegionView::~RegionView() {
@@ -388,6 +511,12 @@ RegionView::~RegionView() {
     glDeleteVertexArrays(1, &m_seaVao);
     glDeleteBuffers(1, &m_seaVbo);
   }
+  if (m_overlayVao) {
+    glDeleteVertexArrays(1, &m_overlayVao);
+    glDeleteBuffers(1, &m_overlayVbo);
+  }
+  if (m_overlayTex)
+    glDeleteTextures(1, &m_overlayTex);
   if (m_waterVao) {
     glDeleteVertexArrays(1, &m_waterVao);
     glDeleteBuffers(1, &m_waterVbXZ);
