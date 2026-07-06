@@ -108,6 +108,8 @@ public:
    * height, 1: momentum.
    * @param o_netUpdateR will be set to the net-updates for the right side; 0:
    * height, 1: momentum.
+   *
+   * @remark sides with i_hL/i_hR <= c_dryTolerance are treated as dry.
    **/
   static void netUpdates(t_real i_hL,
                          t_real i_hR,

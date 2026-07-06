@@ -18,6 +18,9 @@ typedef float t_real;
 
 constexpr t_real g = 9.80665;
 
+//! water depth below which a cell is treated as dry
+constexpr t_real c_dryTolerance = 0.01f;
+
 } // namespace tsunami_lab
 
 #endif
