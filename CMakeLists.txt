@@ -170,6 +170,7 @@ if(ENABLE_VIZ)
   # viz executable
   add_executable(tsunami_lab_viz
     src/main_viz.cpp
+    src/util/CpuAffinity.cpp
     src/visualization/Window.cpp
     src/visualization/GlobeView.cpp
     src/visualization/Gebco.cpp
