@@ -8,6 +8,7 @@
 
 #include "WavePropagation2d.h"
 #include "../../solvers/fwave/FWave.h"
+#include <cmath>
 
 tsunami_lab::patches::WavePropagation2d::WavePropagation2d(t_idx i_nCells_x,
                                                            t_idx i_nCells_y) {
@@ -218,10 +219,15 @@ void tsunami_lab::patches::WavePropagation2d::timeStep(t_real i_scaling,
     for (t_idx l_iy = 1; l_iy <= m_nCells_y; l_iy += 2) {
       l_processYRow(l_iy);
     }
-    // clamp h >= 0: prevents negative-h accumulation at wet/dry boundaries.
+    // clamp h >= 0 and reset any non-finite cell (NaN/Inf) to dry, so a
+    // locally unstable cell can't keep infecting its neighbours via the
+    // stencil and ghost cells.
 #pragma omp for schedule(runtime)
     for (t_idx l_i = 0; l_i < l_size; l_i++) {
-      if (l_hNew[l_i] < 0) {
+      bool l_invalid = l_hNew[l_i] < 0 || !std::isfinite(l_hNew[l_i]) ||
+                       !std::isfinite(l_huNew[l_i]) ||
+                       !std::isfinite(l_hvNew[l_i]);
+      if (l_invalid) {
         l_hNew[l_i] = 0;
         l_huNew[l_i] = 0;
         l_hvNew[l_i] = 0;
