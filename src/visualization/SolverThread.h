@@ -37,11 +37,10 @@ public:
 
   t_idx steps() const { return m_steps.load(); }
 
-  double simTime() const {
-    return (double)m_steps.load() * (double)m_scaling * (double)m_dxy;
-  }
+  // Simulated time elapsed.
+  double simTime() const { return m_simTimeAccum.load(); }
 
-  t_real scaling() const { return m_scaling; }
+  t_real scaling() const { return m_scaling.load(); }
 
   // Simulated seconds to advance per wall-clock second; 0 = uncapped.
   void setTimeScale(double i_simSecondsPerRealSecond) {
@@ -54,7 +53,7 @@ public:
     const double l_step = m_stepSeconds.load();
     if (l_step <= 0.0)
       return 0.0;
-    return ((double)m_scaling * (double)m_dxy) / l_step;
+    return ((double)m_scaling.load() * (double)m_dxy) / l_step;
   }
 
   t_idx nx() const { return m_nx; }
@@ -73,7 +72,8 @@ private:
   t_idx m_nx;
   t_idx m_ny;
   t_real m_dxy;
-  t_real m_scaling = 0;
+  //! CFL-derived scaling for the step about to run; re-derived every step.
+  std::atomic<t_real> m_scaling{0};
   std::string m_mode = "fwave";
 
   std::thread m_thread;
@@ -82,6 +82,8 @@ private:
   std::atomic<double> m_timeScale{0.0};
   //! Smoothed wall-clock seconds per step (excludes pacing sleep).
   std::atomic<double> m_stepSeconds{0.0};
+  //! Simulated seconds elapsed, accumulated once per step (see simTime()).
+  std::atomic<double> m_simTimeAccum{0.0};
 };
 
 } // namespace visualization
