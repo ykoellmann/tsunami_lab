@@ -31,6 +31,8 @@ struct Slab2Point {
   double dip;
   //! false if no slab covers this location.
   bool valid;
+  //! display name of the covering region (static storage); nullptr if none.
+  const char* region;
 };
 
 class Slab2Reader {
@@ -75,6 +77,8 @@ private:
     double latLo, latHi;
     //! sample counts.
     t_idx nx, ny;
+    //! display name of the region (static storage).
+    const char* name;
     //! depth (km, negative down), row-major (y, x).
     std::vector<float> dep;
     //! strike (degrees), row-major (y, x).

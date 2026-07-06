@@ -1,5 +1,6 @@
 #include "GlobeView.h"
 
+#include "io/Slab2Reader.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -13,6 +14,56 @@
 
 namespace tsunami_lab {
 namespace visualization {
+
+// Inline shaders for the subduction-zone overlay: a world-spanning quad in
+// (lon, lat) over the flat map, textured with the depth-graded Slab2 coverage.
+static const char* k_slabVert = R"(#version 330 core
+layout(location = 0) in vec2 aPos; // (lon, lat) in degrees
+uniform mat4 uVP;
+out vec2 vUV;
+void main() {
+    vUV = vec2((aPos.x + 180.0) / 360.0, (aPos.y + 90.0) / 180.0);
+    // Slightly above the y=0 terrain, below the selection quad (y=0.05).
+    gl_Position = uVP * vec4(aPos.x, 0.02, -aPos.y, 1.0);
+}
+)";
+
+static const char* k_slabFrag = R"(#version 330 core
+in vec2 vUV;
+uniform sampler2D uSlab;
+out vec4 fragColor;
+void main() {
+    fragColor = texture(uSlab, vUV);
+}
+)";
+
+// Depth-graded colour for the subduction-zone overlay: amber at the trench
+// (shallow, tsunami-relevant) through orange-red and magenta to violet where
+// the slab dives deepest. The sqrt warp spends more of the gradient on the
+// shallow part. Mirrored by the legend in drawGlobeUi (main_viz.cpp).
+static void slabDepthColor(double i_depthKm, unsigned char* o_rgba) {
+  struct Stop {
+    float t, r, g, b, a;
+  };
+  static const Stop k_stops[] = {
+      {0.00f, 255.0f, 195.0f, 60.0f, 200.0f},
+      {0.35f, 255.0f, 95.0f, 40.0f, 185.0f},
+      {0.70f, 205.0f, 45.0f, 115.0f, 150.0f},
+      {1.00f, 115.0f, 35.0f, 165.0f, 115.0f},
+  };
+  const float l_t =
+      (float)std::sqrt(std::min(std::max(i_depthKm / 660.0, 0.0), 1.0));
+  int l_i = 0;
+  while (l_i < 2 && l_t > k_stops[l_i + 1].t)
+    l_i++;
+  const Stop& l_a = k_stops[l_i];
+  const Stop& l_b = k_stops[l_i + 1];
+  const float l_f = (l_t - l_a.t) / (l_b.t - l_a.t);
+  o_rgba[0] = (unsigned char)(l_a.r + (l_b.r - l_a.r) * l_f);
+  o_rgba[1] = (unsigned char)(l_a.g + (l_b.g - l_a.g) * l_f);
+  o_rgba[2] = (unsigned char)(l_a.b + (l_b.b - l_a.b) * l_f);
+  o_rgba[3] = (unsigned char)(l_a.a + (l_b.a - l_a.a) * l_f);
+}
 
 void GlobeView::init(const char* i_gebcoPath) {
   m_terrShader.buildFromFiles(SHADER_DIR "/globe_terrain.vert",
@@ -46,6 +97,60 @@ GlobeView::~GlobeView() {
     glDeleteVertexArrays(1, &m_selVao);
     glDeleteBuffers(1, &m_selVbo);
   }
+  if (m_slabVao) {
+    glDeleteVertexArrays(1, &m_slabVao);
+    glDeleteBuffers(1, &m_slabVbo);
+  }
+  if (m_slabTex)
+    glDeleteTextures(1, &m_slabTex);
+}
+
+void GlobeView::buildSlab2Overlay(const io::Slab2Reader& i_slab2) {
+  // Slab2 grids are 0.05°-spaced; 0.1° texels keep this one-time scan fast
+  // while the zones (several degrees across) stay crisp under linear
+  // filtering.
+  const int l_w = 3600;
+  const int l_h = 1800;
+  std::vector<unsigned char> l_rgba((size_t)l_w * l_h * 4, 0);
+  for (int l_j = 0; l_j < l_h; l_j++) {
+    const double l_lat = -90.0 + (l_j + 0.5) * (180.0 / l_h);
+    for (int l_i = 0; l_i < l_w; l_i++) {
+      const double l_lon = -180.0 + (l_i + 0.5) * (360.0 / l_w);
+      const io::Slab2Point l_p = i_slab2.query(l_lon, l_lat);
+      if (l_p.valid)
+        slabDepthColor(l_p.depth / 1000.0,
+                       &l_rgba[((size_t)l_j * l_w + l_i) * 4]);
+    }
+  }
+
+  m_slabShader.build(k_slabVert, k_slabFrag);
+
+  if (m_slabTex == 0)
+    glGenTextures(1, &m_slabTex);
+  glBindTexture(GL_TEXTURE_2D, m_slabTex);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, l_w, l_h, 0, GL_RGBA,
+               GL_UNSIGNED_BYTE, l_rgba.data());
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  // World-spanning quad in (lon, lat); the vertex shader derives the UVs.
+  const float l_quad[8] = {-180.0f, -90.0f, 180.0f, -90.0f,
+                           -180.0f, 90.0f,  180.0f, 90.0f};
+  if (m_slabVao == 0) {
+    glGenVertexArrays(1, &m_slabVao);
+    glGenBuffers(1, &m_slabVbo);
+  }
+  glBindVertexArray(m_slabVao);
+  glBindBuffer(GL_ARRAY_BUFFER, m_slabVbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(l_quad), l_quad, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+  glEnableVertexAttribArray(0);
+  glBindVertexArray(0);
+
+  m_hasSlabOverlay = true;
 }
 
 void GlobeView::loadGebco(const char* i_path, int i_lonSamples) {
@@ -198,6 +303,25 @@ void GlobeView::draw(const glm::mat4& i_vp) const {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_terrEbos[l_lod]);
     lod::drawGridWindow(m_gridW, m_gridH, 1 << l_lod, l_i0, l_i1, l_j0, l_j1);
     glBindVertexArray(0);
+  }
+
+  // Subduction zones: a depth-graded, semi-transparent sheet over the flat
+  // map, under the selection rectangle.
+  if (showSlab2Overlay && m_hasSlabOverlay && m_slabVao) {
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_DEPTH_TEST);
+    m_slabShader.use();
+    m_slabShader.setMat4("uVP", i_vp);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_slabTex);
+    m_slabShader.setInt("uSlab", 0);
+    glBindVertexArray(m_slabVao);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
   }
 
   if ((m_selecting || m_hasSelection) && m_selVao) {

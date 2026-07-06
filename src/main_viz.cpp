@@ -83,7 +83,7 @@ static constexpr double k_rake = 90.0;             // pure thrust (fixed)
 // Slab2 sample at the current click (or fallback); valid == false ⇒ no
 // coverage.
 static bool g_hasClick = false;
-static tsunami_lab::io::Slab2Point g_slabPt = {0.0, 0.0, 0.0, false};
+static tsunami_lab::io::Slab2Point g_slabPt = {0.0, 0.0, 0.0, false, nullptr};
 
 // The displacement applied on "Trigger Tsunami"; null until triggered /
 // cleared.
@@ -151,6 +151,25 @@ regionUnproject(float i_mx,
   return {l_world.x, l_world.z};
 }
 
+// Selection rectangle proposed when the user clicks a subduction zone on the
+// world map: centred on the click, sized for a typical tsunami run and clamped
+// to the world bounds and the configured per-axis selection limit.
+static tsunami_lab::visualization::BBox
+suggestSlabSelection(double i_lon, double i_lat, float i_maxSelDeg) {
+  const double l_lonSpan = std::min(12.0, (double)i_maxSelDeg);
+  const double l_latSpan = std::min(8.0, (double)i_maxSelDeg);
+  double l_lonMin = i_lon - 0.5 * l_lonSpan;
+  double l_latMin = i_lat - 0.5 * l_latSpan;
+  l_lonMin = std::min(std::max(l_lonMin, -180.0), 180.0 - l_lonSpan);
+  l_latMin = std::min(std::max(l_latMin, -90.0), 90.0 - l_latSpan);
+  tsunami_lab::visualization::BBox l_b;
+  l_b.lonMin = (float)l_lonMin;
+  l_b.lonMax = (float)(l_lonMin + l_lonSpan);
+  l_b.latMin = (float)l_latMin;
+  l_b.latMax = (float)(l_latMin + l_latSpan);
+  return l_b;
+}
+
 // Record the clicked spot as the earthquake epicentre and sample the Slab2
 // geometry there. The displacement itself is applied later via "Trigger
 // Tsunami".
@@ -166,7 +185,8 @@ static void onRegionClick(float i_mx, float i_my) {
   if (g_slab2)
     g_slabPt = g_slab2->query(g_epiLon, g_epiLat);
   else
-    g_slabPt = {k_fallbackDepth, k_fallbackStrike, k_fallbackDip, true};
+    g_slabPt = {k_fallbackDepth, k_fallbackStrike, k_fallbackDip, true,
+                nullptr};
   g_hasClick = true;
 
   // A new epicentre invalidates any previously applied displacement.
@@ -372,11 +392,26 @@ static void onMouseButton(GLFWwindow*, int i_btn, int i_act, int) {
     g_mouseLeft = pressed;
 
     if (g_state == AppState::REGION_SELECT && g_globeView) {
-      if (pressed)
+      if (pressed) {
+        g_pressX = g_lastX;
+        g_pressY = g_lastY;
         g_globeView->onMousePress((float)g_lastX, (float)g_lastY, g_screenW,
                                   g_screenH, *g_camera);
-      else
+      } else {
         g_globeView->onMouseRelease();
+        // Released without dragging on a subduction zone: propose a selection
+        // rectangle around that spot as a quick start for a simulation region.
+        const bool l_isClick =
+            std::abs(g_lastX - g_pressX) + std::abs(g_lastY - g_pressY) < 5.0;
+        if (l_isClick && g_slab2 && g_globeView->showSlab2Overlay && g_camera) {
+          const glm::vec2 l_w = regionUnproject(
+              (float)g_lastX, (float)g_lastY, g_screenW, g_screenH, *g_camera);
+          // World X = lon, Z = -lat on the flat map.
+          if (g_slab2->query(l_w.x, -l_w.y).valid)
+            g_globeView->setSelection(
+                suggestSlabSelection(l_w.x, -l_w.y, g_globeView->maxSelDeg));
+        }
+      }
     } else if (g_state == AppState::REGION_PREVIEW) {
       if (pressed) {
         g_pressX = g_lastX;
@@ -474,6 +509,7 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
   ImGui::Separator();
 
   ImGui::TextWrapped("Linksklick + Ziehen:  Gebiet zeichnen\n"
+                     "Klick auf Zone:       Gebiets-Vorschlag\n"
                      "Mittelklick + Ziehen: Karte verschieben\n"
                      "WASD / Pfeiltasten:   Karte verschieben\n"
                      "Scrollrad:            Zoom");
@@ -532,6 +568,41 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
   if (g_globeMaxDim != globeView.resolution()) {
     if (ImGui::Button("Auflösung anwenden", ImVec2(-1, 0)))
       globeView.setResolution(g_globeMaxDim);
+  }
+
+  ImGui::Spacing();
+  ImGui::SeparatorText("Subduktionszonen");
+  ImGui::Checkbox("Zonen anzeigen (Slab2)", &globeView.showSlab2Overlay);
+  if (globeView.showSlab2Overlay) {
+    // Depth legend mirroring slabDepthColor() in GlobeView.cpp (sqrt-warped
+    // scale, so the shallow trench side gets most of the gradient).
+    struct Stop {
+      float t;
+      ImU32 c;
+    };
+    static const Stop l_stops[] = {
+        {0.00f, IM_COL32(255, 195, 60, 255)},
+        {0.35f, IM_COL32(255, 95, 40, 255)},
+        {0.70f, IM_COL32(205, 45, 115, 255)},
+        {1.00f, IM_COL32(115, 35, 165, 255)},
+    };
+    ImDrawList* l_dl = ImGui::GetWindowDrawList();
+    const float l_barW = ImGui::GetContentRegionAvail().x;
+    const float l_barH = 12.0f;
+    const ImVec2 l_p = ImGui::GetCursorScreenPos();
+    for (int l_i = 0; l_i < 3; l_i++) {
+      const float l_x0 = l_p.x + l_stops[l_i].t * l_barW;
+      const float l_x1 = l_p.x + l_stops[l_i + 1].t * l_barW;
+      l_dl->AddRectFilledMultiColor(
+          ImVec2(l_x0, l_p.y), ImVec2(l_x1, l_p.y + l_barH), l_stops[l_i].c,
+          l_stops[l_i + 1].c, l_stops[l_i + 1].c, l_stops[l_i].c);
+    }
+    ImGui::Dummy(ImVec2(l_barW, l_barH));
+    const char* l_right = "tief (660 km)";
+    ImGui::TextDisabled("flach (Graben)");
+    ImGui::SameLine(l_barW - ImGui::CalcTextSize(l_right).x);
+    ImGui::TextDisabled("%s", l_right);
+    ImGui::TextDisabled("Hover: Zonen-Info · Klick: Gebiets-Vorschlag");
   }
 
   ImGui::Spacing();
@@ -621,6 +692,36 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
   }
 
   ImGui::End();
+}
+
+// Hover info on the world map: while the cursor is over a subduction zone,
+// show the zone's name and local Slab2 geometry next to the mouse.
+static void
+drawGlobeSlabTooltip(const tsunami_lab::visualization::GlobeView& i_globe) {
+  if (g_state != AppState::REGION_SELECT || !g_slab2 ||
+      !i_globe.showSlab2Overlay || !g_camera)
+    return;
+  if (ImGui::GetIO().WantCaptureMouse || g_mouseLeft)
+    return; // over a panel, or dragging a selection
+
+  const glm::vec2 l_w = regionUnproject((float)g_lastX, (float)g_lastY,
+                                        g_screenW, g_screenH, *g_camera);
+  const double l_lon = l_w.x, l_lat = -l_w.y; // world X = lon, Z = -lat
+  if (l_lon < -180.0 || l_lon > 180.0 || l_lat < -90.0 || l_lat > 90.0)
+    return;
+
+  const tsunami_lab::io::Slab2Point l_p = g_slab2->query(l_lon, l_lat);
+  if (!l_p.valid)
+    return;
+
+  ImGui::BeginTooltip();
+  ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.25f, 1), "%s",
+                     l_p.region ? l_p.region : "Subduktionszone");
+  ImGui::Text("Tiefe:     %.0f km", l_p.depth / 1000.0);
+  ImGui::Text("Streichen: %.0f°", l_p.strike);
+  ImGui::Text("Einfallen: %.0f°", l_p.dip);
+  ImGui::TextDisabled("Klick: Gebiets-Vorschlag");
+  ImGui::EndTooltip();
 }
 
 static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
@@ -714,6 +815,8 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
   // Depth/strike/dip come from Slab2 at the clicked location.
   const bool l_inCoverage = g_hasClick && g_slabPt.valid;
   if (l_inCoverage) {
+    if (g_slabPt.region)
+      ImGui::Text("Zone:      %s", g_slabPt.region);
     ImGui::Text("Tiefe:     %.0f km  (Slab2)", g_slabPt.depth / 1000.0);
     ImGui::Text("Streichen: %.0f°  (Slab2)", g_slabPt.strike);
     ImGui::Text("Einfallen: %.0f°  (Slab2)", g_slabPt.dip);
@@ -1033,6 +1136,10 @@ int main() {
   // Initialise globe overview (subsampled GEBCO) + region preview resources.
   std::printf("Lade GEBCO-Daten …\n");
   l_globe.init(g_gebcoPath.empty() ? nullptr : g_gebcoPath.c_str());
+  if (g_slab2) {
+    std::printf("Baue Subduktionszonen-Overlay …\n");
+    l_globe.buildSlab2Overlay(*g_slab2);
+  }
   l_region.init();
   std::printf("Fertig.\n");
 
@@ -1101,9 +1208,10 @@ int main() {
     }
 
     l_ui.beginFrame();
-    if (g_state == AppState::REGION_SELECT)
+    if (g_state == AppState::REGION_SELECT) {
       drawGlobeUi(l_globe);
-    else {
+      drawGlobeSlabTooltip(l_globe);
+    } else {
       drawRegionUi(l_region);
       drawBathyLegend(l_region);
       drawWaveLegend(l_region);
