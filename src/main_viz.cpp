@@ -2,6 +2,7 @@
 #include "displacement/OkadaFactory.h"
 #include "displacement/WellsCoppersmith.h"
 #include "io/Slab2Reader.h"
+#include "util/CpuAffinity.h"
 #include "visualization/Camera.h"
 #include "visualization/Gebco.h"
 #include "visualization/GlobeView.h"
@@ -1164,7 +1165,26 @@ drawCursorFeedback(const tsunami_lab::visualization::RegionView& i_region) {
 
 // Main
 
+// Pins the GUI thread (this thread) to a single fixed core, keeping it off
+// the cores OpenMP is told to use for the solver (see TSUNAMI_OMP_PLACES in
+// sphinx/source/chapters/09_parallelization.rst). Opt-in via TSUNAMI_VIZ_CORE
+// (logical CPU id) so builds/machines that don't care about this are
+// unaffected by default.
+static void pinGuiThreadFromEnv() {
+  const char* l_env = std::getenv("TSUNAMI_VIZ_CORE");
+  if (!l_env)
+    return;
+  int l_core = std::atoi(l_env);
+  if (tsunami_lab::util::pinThreadToCore(l_core))
+    std::printf("GUI-Thread an Kern %d gepinnt (TSUNAMI_VIZ_CORE).\n", l_core);
+  else
+    std::printf("Warnung: Konnte GUI-Thread nicht an Kern %d pinnen.\n",
+                l_core);
+}
+
 int main() {
+  pinGuiThreadFromEnv();
+
   // Resolve (and, on first run, download) the GEBCO grid before opening the
   // window — the one-time download prints progress to the terminal.
   g_gebcoPath = tsunami_lab::visualization::gebco::ensureAvailable();
