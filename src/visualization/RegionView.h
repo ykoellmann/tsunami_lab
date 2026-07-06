@@ -26,9 +26,29 @@ public:
 
   bool loaded() const { return m_numLods > 0; }
 
-  void applyDisplacement(float i_worldX,
-                         float i_worldZ,
-                         const displacement::DisplacementModel& i_model);
+  /**
+   * CPU half of the displacement build: samples the model over the terrain
+   * grid. Touches no GL state, so it may run on a worker thread — as long as
+   * no concurrent load() swaps the grid underneath it.
+   *
+   * @param i_worldX fault centre in the region world frame.
+   * @param i_worldZ fault centre in the region world frame.
+   * @param i_model displacement model to sample.
+   * @param o_disp per-vertex vertical displacement (metres).
+   * @param o_peak largest absolute displacement in o_disp.
+   **/
+  void computeDisplacementField(float i_worldX,
+                                float i_worldZ,
+                                const displacement::DisplacementModel& i_model,
+                                std::vector<float>& o_disp,
+                                float& o_peak) const;
+
+  /**
+   * GL half: uploads a field produced by computeDisplacementField. Must run
+   * on the GL thread; ignored if the grid size changed in the meantime.
+   **/
+  void applyDisplacementField(const std::vector<float>& i_disp, float i_peak);
+
   void clearDisplacement();
   bool hasDisplacement() const { return m_hasDispl; }
 

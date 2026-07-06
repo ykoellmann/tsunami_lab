@@ -85,10 +85,27 @@ static constexpr double k_rake = 90.0;             // pure thrust (fixed)
 static bool g_hasClick = false;
 static tsunami_lab::io::Slab2Point g_slabPt = {0.0, 0.0, 0.0, false, nullptr};
 
-// The displacement applied on "Trigger Tsunami"; null until triggered /
-// cleared.
+// The displacement currently applied to the preview; null until a click's
+// background build finishes (or after clearing).
 static std::unique_ptr<tsunami_lab::displacement::OkadaDisplacement>
     g_displModel;
+
+// Background displacement build: the Okada field over the full terrain grid
+// takes seconds on large regions, so a click only launches a worker thread
+// and pollDisplacementJob() uploads the result on the GL thread. While a job
+// runs, clicks are ignored and grid-changing actions are disabled (the worker
+// reads the RegionView grid).
+struct DispResult {
+  std::vector<float> disp;
+  float peak;
+};
+static std::future<DispResult> g_dispFuture;
+static bool g_dispComputing = false;
+// Magnitude changed while a job was running → rebuild once it finishes.
+static bool g_dispDirty = false;
+// Model handed to the worker; becomes g_displModel when the job completes.
+static std::unique_ptr<tsunami_lab::displacement::OkadaDisplacement>
+    g_pendingModel;
 
 // Builds the Okada displacement for the current magnitude and click location.
 // With a Slab2 grid loaded, the factory supplies depth/strike/dip where the
@@ -170,12 +187,53 @@ suggestSlabSelection(double i_lon, double i_lat, float i_maxSelDeg) {
   return l_b;
 }
 
-// Record the clicked spot as the earthquake epicentre and sample the Slab2
-// geometry there. The displacement itself is applied later via "Trigger
-// Tsunami".
+// Launches the background displacement build for the current click and
+// magnitude. No-op outside Slab2 coverage (restricted) or while a job runs.
+static void startDisplacementJob() {
+  if (!g_hasClick || !g_regionView || g_dispComputing)
+    return;
+  std::unique_ptr<tsunami_lab::displacement::OkadaDisplacement> l_model =
+      buildDisplacementModel();
+  if (!l_model)
+    return; // outside Slab2 coverage
+  g_pendingModel = std::move(l_model);
+  g_dispComputing = true;
+  g_dispDirty = false;
+
+  const tsunami_lab::visualization::RegionView* l_view = g_regionView;
+  const tsunami_lab::displacement::OkadaDisplacement* l_m =
+      g_pendingModel.get();
+  const float l_x = g_epiWorldX, l_z = g_epiWorldZ;
+  g_dispFuture = std::async(std::launch::async, [l_view, l_m, l_x, l_z]() {
+    DispResult l_r;
+    l_view->computeDisplacementField(l_x, l_z, *l_m, l_r.disp, l_r.peak);
+    return l_r;
+  });
+}
+
+// Uploads a finished background build on the GL thread; called every frame.
+static void pollDisplacementJob() {
+  if (!g_dispComputing || !g_dispFuture.valid())
+    return;
+  if (g_dispFuture.wait_for(std::chrono::seconds(0)) !=
+      std::future_status::ready)
+    return;
+  DispResult l_r = g_dispFuture.get();
+  g_dispComputing = false;
+  if (g_regionView)
+    g_regionView->applyDisplacementField(l_r.disp, l_r.peak);
+  g_displModel = std::move(g_pendingModel);
+  if (g_dispDirty)
+    startDisplacementJob(); // magnitude changed mid-build — redo once
+}
+
+// Record the clicked spot as the earthquake epicentre, sample the Slab2
+// geometry there and immediately launch the displacement build.
 static void onRegionClick(float i_mx, float i_my) {
   if (!g_regionView || !g_regionView->loaded() || !g_camera)
     return;
+  if (g_dispComputing)
+    return; // previous click's displacement is still building — ignore
   glm::vec2 l_world =
       regionUnproject(i_mx, i_my, g_screenW, g_screenH, *g_camera);
   g_epiWorldX = l_world.x;
@@ -192,19 +250,7 @@ static void onRegionClick(float i_mx, float i_my) {
   // A new epicentre invalidates any previously applied displacement.
   g_displModel.reset();
   g_regionView->clearDisplacement();
-}
-
-// Build the Okada displacement for the current click + magnitude and apply it
-// to the region preview (which also seeds the simulation initial condition).
-static void triggerTsunami() {
-  if (!g_hasClick || !g_regionView)
-    return;
-  std::unique_ptr<tsunami_lab::displacement::OkadaDisplacement> l_model =
-      buildDisplacementModel();
-  if (!l_model)
-    return; // outside Slab2 coverage
-  g_regionView->applyDisplacement(g_epiWorldX, g_epiWorldZ, *l_model);
-  g_displModel = std::move(l_model);
+  startDisplacementJob();
 }
 
 // Live simulation setup
@@ -725,6 +771,9 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
       ImGui::SetNextItemWidth(-1);
       ImGui::SliderInt("Max. Samples", &g_bathMaxDim, 500, 16000);
     }
+    // The displacement worker reads the current grid — no reload while it
+    // runs.
+    ImGui::BeginDisabled(g_dispComputing);
     if (ImGui::Button("Neu laden", ImVec2(-1, 0)) && g_loadedSel.valid() &&
         !g_gebcoPath.empty()) {
       tsunami_lab::visualization::gebco::Region l_reg;
@@ -738,6 +787,7 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
       } else
         g_regionError = "Neu laden fehlgeschlagen.";
     }
+    ImGui::EndDisabled();
     if (!g_regionError.empty())
       ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s", g_regionError.c_str());
   }
@@ -759,7 +809,9 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
 
   ImGui::Spacing();
   ImGui::SeparatorText("Erdbebenquelle");
-  ImGui::TextWrapped("Klick auf das Gelände: Epizentrum wählen");
+  ImGui::TextWrapped(
+      "Klick auf das Gelände: Epizentrum setzen — das Displacement "
+      "wird direkt im Hintergrund erzeugt");
 
   ImGui::Checkbox("Restrict to subduction zones", &g_restrictToSlab2);
   if (!g_restrictToSlab2) {
@@ -769,6 +821,14 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
   }
 
   ImGui::SliderFloat("Magnitude (Mw)", &g_mw, 6.0f, 9.5f, "%.1f");
+  // Without a generate button, releasing the slider rebuilds the displacement
+  // for the current epicentre; mid-build changes are queued via g_dispDirty.
+  if (ImGui::IsItemDeactivatedAfterEdit() && g_hasClick && !simRunning()) {
+    if (g_dispComputing)
+      g_dispDirty = true;
+    else
+      startDisplacementJob();
+  }
 
   // Fault geometry derived from the magnitude (updates live as Mw changes).
   namespace disp = tsunami_lab::displacement;
@@ -804,18 +864,10 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
   if (g_hasClick)
     ImGui::Text("Epizentrum: %.2f°, %.2f°", g_epiLon, g_epiLat);
 
-  // Restricted mode needs Slab2 coverage; unrestricted mode allows a fault
-  // anywhere (fallback parameters are used outside coverage).
-  const bool l_canTrigger =
-      g_hasClick && !simRunning() && (!g_restrictToSlab2 || g_slabPt.valid);
-  ImGui::BeginDisabled(!l_canTrigger);
-  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.35f, 0.1f, 1));
-  if (ImGui::Button("Displacement generieren", ImVec2(-1, 0)))
-    triggerTsunami();
-  ImGui::PopStyleColor();
-  ImGui::EndDisabled();
-
-  if (regionView.hasDisplacement()) {
+  if (g_dispComputing) {
+    ImGui::TextColored(ImVec4(1, 0.85f, 0.1f, 1),
+                       "Displacement wird berechnet …");
+  } else if (regionView.hasDisplacement()) {
     if (ImGui::Button("Displacement entfernen", ImVec2(-1, 0))) {
       regionView.clearDisplacement();
       g_displModel.reset();
@@ -871,10 +923,14 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
     }
   }
   if (!simRunning()) {
+    // Wait for a running displacement build: its result seeds the initial
+    // condition, so starting earlier would simulate without the quake.
+    ImGui::BeginDisabled(g_dispComputing);
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.65f, 0.2f, 1));
     if (ImGui::Button("Simulieren  ▶", ImVec2(-1, 0)))
       startSimulation();
     ImGui::PopStyleColor();
+    ImGui::EndDisabled();
   } else {
     {
       const double l_simT = g_sim->simTime();
@@ -901,12 +957,16 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
   }
 
   ImGui::Spacing();
+  // Leaving could load a new grid while the displacement worker still reads
+  // the current one — wait for it.
+  ImGui::BeginDisabled(g_dispComputing);
   if (ImGui::Button("← Zurück zur Gebietsauswahl", ImVec2(-1, 0))) {
     stopSimulation();
     g_state = AppState::REGION_SELECT;
     if (g_camera)
       setCameraGlobeView(*g_camera);
   }
+  ImGui::EndDisabled();
 
   ImGui::End();
 }
@@ -1073,7 +1133,9 @@ drawCursorFeedback(const tsunami_lab::visualization::RegionView& i_region) {
 
   const bool l_valid = g_slab2 && g_slab2->query(l_lon, l_lat).valid;
   ImU32 l_col;
-  if (l_valid)
+  if (g_dispComputing)
+    l_col = IM_COL32(160, 160, 160, 255); // grey: build running, clicks ignored
+  else if (l_valid)
     l_col = IM_COL32(40, 220, 80, 255); // green: covered
   else if (g_restrictToSlab2)
     l_col = IM_COL32(230, 60, 50, 255); // red: no fault here
@@ -1187,6 +1249,8 @@ int main() {
 
     float aspect = (l_winH > 0) ? (float)l_winW / (float)l_winH : 1.0f;
     glm::mat4 vp = l_camera.projection(aspect) * l_camera.view();
+
+    pollDisplacementJob();
 
     if (simRunning() && g_simBuf->swap())
       l_region.updateWater(g_simBuf->front());

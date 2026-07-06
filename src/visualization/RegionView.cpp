@@ -194,33 +194,38 @@ void RegionView::worldToLonLat(float i_worldX,
   o_lat = l_latC - ((double)i_worldZ / m_scaleXZ) / l_mPerLat;
 }
 
-void RegionView::applyDisplacement(
+void RegionView::computeDisplacementField(
     float i_worldX,
     float i_worldZ,
-    const displacement::DisplacementModel& i_model) {
-  if (m_vao == 0 || m_xz.empty())
-    return;
-
+    const displacement::DisplacementModel& i_model,
+    std::vector<float>& o_disp,
+    float& o_peak) const {
   const size_t l_n = m_xz.size() / 2;
-  std::vector<float> l_disp(l_n);
-  float l_peak = 0.0f;
+  o_disp.assign(l_n, 0.0f);
+  o_peak = 0.0f;
   for (size_t l_v = 0; l_v < l_n; l_v++) {
     // Local east/north offset from the click point, in metres. World Z runs
     // south to north as -lat, so +north = -dz.
     double l_east = ((double)m_xz[l_v * 2 + 0] - i_worldX) / m_scaleXZ;
     double l_north = -((double)m_xz[l_v * 2 + 1] - i_worldZ) / m_scaleXZ;
-    l_disp[l_v] = (float)i_model.verticalDisplacement(l_east, l_north);
-    l_peak = std::max(l_peak, std::abs(l_disp[l_v]));
+    o_disp[l_v] = (float)i_model.verticalDisplacement(l_east, l_north);
+    o_peak = std::max(o_peak, std::abs(o_disp[l_v]));
   }
+}
+
+void RegionView::applyDisplacementField(const std::vector<float>& i_disp,
+                                        float i_peak) {
+  if (m_vao == 0 || i_disp.empty() || i_disp.size() != m_xz.size() / 2)
+    return;
 
   glBindBuffer(GL_ARRAY_BUFFER, m_vbDisp);
   glBufferSubData(GL_ARRAY_BUFFER, 0,
-                  (GLsizeiptr)(l_disp.size() * sizeof(float)), l_disp.data());
+                  (GLsizeiptr)(i_disp.size() * sizeof(float)), i_disp.data());
 
   // Map the peak to a fixed on-screen height so the field is always visible.
   constexpr float k_targetHeight = 30.0f;
-  m_dispPeak = l_peak;
-  m_dispScaleY = (l_peak > 0.0f) ? k_targetHeight / l_peak : 0.0f;
+  m_dispPeak = i_peak;
+  m_dispScaleY = (i_peak > 0.0f) ? k_targetHeight / i_peak : 0.0f;
   m_hasDispl = true;
 }
 
