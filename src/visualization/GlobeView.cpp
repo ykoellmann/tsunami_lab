@@ -182,8 +182,8 @@ void GlobeView::initSelectionVao() {
 
 void GlobeView::draw(const glm::mat4& i_vp) const {
   if (m_terrVao && m_terrNumLods > 0) {
-    const int l_lod = lod::pickLevel(m_cellWorld, m_terrNumLods,
-                                     lodCamDistance, lodViewportPx);
+    const int l_lod = lod::pickLevel(m_cellWorld, m_terrNumLods, lodCamDistance,
+                                     lodViewportPx);
     // The flat map lies in the y = 0 plane; cull grid rows/columns outside
     // the frustum footprint so close zooms do not pay vertex costs for the
     // whole (up to ~150 M triangle) globe mesh. World X = lon, Z = -lat.

@@ -93,7 +93,6 @@ private:
   float m_x0 = 0.0f, m_x1 = 0.0f, m_z0 = 0.0f, m_z1 = 0.0f;
   float m_minElev = 0.0f, m_maxElev = 0.0f;
 
-
   std::vector<float> m_xz;
   float m_scaleXZ = 1.0f;
   bool m_hasDispl = false;
