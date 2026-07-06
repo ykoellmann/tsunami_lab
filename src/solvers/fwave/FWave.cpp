@@ -115,17 +115,17 @@ void tsunami_lab::solvers::FWave::netUpdates(t_real i_hL,
   bool l_doUpdateLeft = true;
   bool l_doUpdateRight = true;
 
-  if (i_hL <= 0 && i_hR <= 0) {
+  if (i_hL <= c_dryTolerance && i_hR <= c_dryTolerance) {
     o_netUpdateL[0] = o_netUpdateL[1] = 0;
     o_netUpdateR[0] = o_netUpdateR[1] = 0;
     return;
   }
-  if (i_hL <= 0) { // left side dry -> reflect to the right
+  if (i_hL <= c_dryTolerance) { // left side dry -> reflect to the right
     i_hL = i_hR;
     i_huL = -i_huR;
     i_bL = i_bR;
     l_doUpdateLeft = false;
-  } else if (i_hR <= 0) { // right side dry -> reflect to the left
+  } else if (i_hR <= c_dryTolerance) { // right side dry -> reflect to the left
     i_hR = i_hL;
     i_huR = -i_huL;
     i_bR = i_bL;
