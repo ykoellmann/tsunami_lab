@@ -303,7 +303,8 @@ static bool buildSimSetup(tsunami_lab::t_idx& o_nx,
       const size_t l_k = (size_t)l_j * l_nx + l_i;
       o_bath[l_k] = l_b;
 
-      float l_h = (l_b < 0.0f) ? -l_b : 0.0f; // still water to sea level
+      // still water to sea level; dry below the tolerance
+      float l_h = (l_b < -tsunami_lab::c_dryTolerance) ? -l_b : 0.0f;
       if (l_hasDisp && l_b < 0.0f) {
         const double l_east = (l_lon - g_epiLon) * l_mPerLon;
         const double l_north = (l_lat - g_epiLat) * l_mPerLat;
