@@ -58,15 +58,28 @@ them automatically:
    eval "$(scripts/viz_pinning_env.sh)"
    ./build/tsunami_lab_viz
 
-It distinguishes the same two cases described below: on a hybrid CPU it
-reads ``/sys/devices/cpu_core/cpus`` / ``cpu_atom/cpus`` and reserves an
-E-core for the GUI while giving OpenMP all P-cores; otherwise it groups
-logical CPUs by physical core via ``lscpu -p=CPU,CORE,ONLINE``, reserves one
-physical core for the GUI and gives OpenMP one thread per remaining physical
-core (leaving SMT siblings idle). It always prints what it detected to
-stderr, so the chosen cores stay visible even when redirected into ``eval``.
-On a single-core machine (or if the sysfs hybrid files exist but are empty)
-it leaves the variables unset rather than guessing.
+On **Linux** it distinguishes the same two cases described below: on a
+hybrid CPU it reads ``/sys/devices/cpu_core/cpus`` / ``cpu_atom/cpus`` and
+reserves an E-core for the GUI while giving OpenMP all P-cores; otherwise it
+groups logical CPUs by physical core via ``lscpu -p=CPU,CORE,ONLINE``,
+reserves one physical core for the GUI and gives OpenMP one thread per
+remaining physical core (leaving SMT siblings idle). If ``lscpu`` isn't
+installed, or only one physical core is found, it leaves the pinning
+variables unset rather than guessing.
+
+On **macOS** there is no user-space hard CPU-affinity API — no
+``pthread_setaffinity_np`` equivalent, and libomp doesn't honour
+``OMP_PLACES`` there — so ``pinThreadToCore()`` is a no-op by design (see
+above) and the script does not set ``TSUNAMI_VIZ_CORE``/``OMP_PLACES``/
+``OMP_PROC_BIND`` at all. It still tunes ``OMP_NUM_THREADS`` via
+``sysctl``: on Apple Silicon it uses ``hw.perflevel0.physicalcpu`` (the
+performance-core count, ``hw.perflevel1.physicalcpu`` efficiency cores
+excluded); on Intel Macs / unknown topologies it uses
+``hw.physicalcpu - 1``, reserving one core for the GUI *by count only* — the
+OS scheduler, not the app, decides which physical core actually runs it.
+
+It always prints what it detected to stderr, so the chosen cores/counts
+stay visible even when redirected into ``eval``.
 
 Finding which cores to use (manual / how the script decides)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
