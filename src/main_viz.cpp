@@ -544,12 +544,21 @@ static void zoomToLocation(float i_lon, float i_lat, float i_zoom = 25.0f) {
   }
 }
 
+// Shared width of the two left-hand panels. Note the built-in ImGui font only
+// covers ASCII + Latin-1 — characters beyond that (arrows, dashes, ellipses)
+// render as '?', so UI strings must stick to that range.
+static const float k_panelW = 360.0f;
+
 static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
   ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
-  ImGui::SetNextWindowSize(ImVec2(300, 0), ImGuiCond_Always);
+  ImGui::SetNextWindowSize(ImVec2(k_panelW, 0), ImGuiCond_Always);
   ImGui::Begin("##globe_panel", nullptr,
                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
+  // Wrap long lines at the panel edge and reserve label space right of the
+  // sliders so neither text nor widget labels spill out of the panel.
+  ImGui::PushTextWrapPos(0.0f);
+  ImGui::PushItemWidth(-150.0f);
 
   ImGui::TextColored(ImVec4(1, 0.85f, 0.1f, 1), "Gebiet auswählen");
   ImGui::Separator();
@@ -708,6 +717,8 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
     }
   }
 
+  ImGui::PopItemWidth();
+  ImGui::PopTextWrapPos();
   ImGui::End();
 }
 
@@ -743,16 +754,20 @@ drawGlobeSlabTooltip(const tsunami_lab::visualization::GlobeView& i_globe) {
 
 static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
   ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
-  ImGui::SetNextWindowSize(ImVec2(300, 0), ImGuiCond_Always);
+  ImGui::SetNextWindowSize(ImVec2(k_panelW, 0), ImGuiCond_Always);
   ImGui::Begin("##region_panel", nullptr,
                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
+  // Wrap long lines at the panel edge and reserve label space right of the
+  // sliders so neither text nor widget labels spill out of the panel.
+  ImGui::PushTextWrapPos(0.0f);
+  ImGui::PushItemWidth(-150.0f);
 
   ImGui::TextColored(ImVec4(0.2f, 0.8f, 1, 1), "Bathymetrie-Vorschau");
   ImGui::Separator();
 
-  ImGui::Text("Lon: %.2f° – %.2f°", regionView.lonMin, regionView.lonMax);
-  ImGui::Text("Lat: %.2f° – %.2f°", regionView.latMin, regionView.latMax);
+  ImGui::Text("Lon: %.2f° - %.2f°", regionView.lonMin, regionView.lonMax);
+  ImGui::Text("Lat: %.2f° - %.2f°", regionView.latMin, regionView.latMax);
   ImGui::Text("Gitter: %d × %d", regionView.gridW, regionView.gridH);
   ImGui::Spacing();
 
@@ -809,9 +824,8 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
 
   ImGui::Spacing();
   ImGui::SeparatorText("Erdbebenquelle");
-  ImGui::TextWrapped(
-      "Klick auf das Gelände: Epizentrum setzen — das Displacement "
-      "wird direkt im Hintergrund erzeugt");
+  ImGui::TextWrapped("Klick auf das Gelände setzt das Epizentrum und "
+                     "erzeugt das Displacement im Hintergrund.");
 
   ImGui::Checkbox("Restrict to subduction zones", &g_restrictToSlab2);
   if (!g_restrictToSlab2) {
@@ -841,7 +855,7 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
   if (g_slab2 == nullptr)
     ImGui::TextColored(
         ImVec4(1, 0.6f, 0.2f, 1),
-        "Slab2 nicht geladen — Fallback\n(Tiefe=20km, Streichen=0°, Dip=15°)");
+        "Slab2 nicht geladen - Fallback\n(Tiefe=20km, Streichen=0°, Dip=15°)");
 
   // Depth/strike/dip come from Slab2 at the clicked location.
   const bool l_inCoverage = g_hasClick && g_slabPt.valid;
@@ -855,9 +869,9 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
     ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1),
                        "Außerhalb der Slab2-Abdeckung");
   } else {
-    ImGui::Text("Tiefe:     –");
-    ImGui::Text("Streichen: –");
-    ImGui::Text("Einfallen: –");
+    ImGui::Text("Tiefe:     -");
+    ImGui::Text("Streichen: -");
+    ImGui::Text("Einfallen: -");
   }
   ImGui::Text("Rake:      90° (fest)");
 
@@ -866,7 +880,7 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
 
   if (g_dispComputing) {
     ImGui::TextColored(ImVec4(1, 0.85f, 0.1f, 1),
-                       "Displacement wird berechnet …");
+                       "Displacement wird berechnet ...");
   } else if (regionView.hasDisplacement()) {
     if (ImGui::Button("Displacement entfernen", ImVec2(-1, 0))) {
       regionView.clearDisplacement();
@@ -890,10 +904,10 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
     simGridFor(l_w, l_h, g_simCellSize, l_pnx, l_pny, l_pdxy);
     if (l_pdxy > g_simCellSize * 1.01)
       ImGui::TextColored(ImVec4(1, 0.6f, 0.2f, 1),
-                         "→ %zu × %zu Zellen (begrenzt: eff. %.0f m)",
+                         "-> %zu × %zu Zellen (begrenzt: eff. %.0f m)",
                          (size_t)l_pnx, (size_t)l_pny, l_pdxy);
     else
-      ImGui::TextDisabled("→ %zu × %zu Zellen", (size_t)l_pnx, (size_t)l_pny);
+      ImGui::TextDisabled("-> %zu × %zu Zellen", (size_t)l_pnx, (size_t)l_pny);
   }
   ImGui::Checkbox("Zeitraffer automatisch (CPU-Limit)", &g_simAutoSpeed);
   if (g_simAutoSpeed) {
@@ -909,7 +923,7 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
     if (l_max > 0.0)
       ImGui::Text("läuft bei ~%.0f× (CPU-Limit)", l_max);
     else
-      ImGui::TextDisabled("(CPU-Limit wird gemessen …)");
+      ImGui::TextDisabled("(CPU-Limit wird gemessen ...)");
   } else {
     ImGui::SliderFloat("Zeitraffer (Sim-s/s)", &g_simSpeed, 1.0f, 2000.0f,
                        "%.0f×", ImGuiSliderFlags_Logarithmic);
@@ -918,7 +932,7 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
       const double l_max = g_sim->maxTimeScale();
       if (l_max > 0.0 && g_simSpeed > l_max * 1.05)
         ImGui::TextColored(ImVec4(1, 0.6f, 0.2f, 1),
-                           "CPU schafft nur ~%.0f× – Rest wird gekappt.",
+                           "CPU schafft nur ~%.0f× - Rest wird gekappt.",
                            l_max);
     }
   }
@@ -927,7 +941,7 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
     // condition, so starting earlier would simulate without the quake.
     ImGui::BeginDisabled(g_dispComputing);
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.65f, 0.2f, 1));
-    if (ImGui::Button("Simulieren  ▶", ImVec2(-1, 0)))
+    if (ImGui::Button("Simulieren  >>", ImVec2(-1, 0)))
       startSimulation();
     ImGui::PopStyleColor();
     ImGui::EndDisabled();
@@ -937,7 +951,7 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
       const int l_h = (int)(l_simT / 3600.0);
       const int l_m = (int)(l_simT / 60.0) % 60;
       const int l_s = (int)l_simT % 60;
-      ImGui::TextColored(ImVec4(0.2f, 0.8f, 1, 1), "läuft – %zu Schritte",
+      ImGui::TextColored(ImVec4(0.2f, 0.8f, 1, 1), "läuft - %zu Schritte",
                          (size_t)g_sim->steps());
       if (l_h > 0)
         ImGui::TextColored(ImVec4(1, 0.85f, 0.1f, 1),
@@ -951,7 +965,7 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
                            l_simT);
     }
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.2f, 0.15f, 1));
-    if (ImGui::Button("Stop  ■", ImVec2(-1, 0)))
+    if (ImGui::Button("Stop", ImVec2(-1, 0)))
       stopSimulation();
     ImGui::PopStyleColor();
   }
@@ -960,7 +974,7 @@ static void drawRegionUi(tsunami_lab::visualization::RegionView& regionView) {
   // Leaving could load a new grid while the displacement worker still reads
   // the current one — wait for it.
   ImGui::BeginDisabled(g_dispComputing);
-  if (ImGui::Button("← Zurück zur Gebietsauswahl", ImVec2(-1, 0))) {
+  if (ImGui::Button("<< Zurück zur Gebietsauswahl", ImVec2(-1, 0))) {
     stopSimulation();
     g_state = AppState::REGION_SELECT;
     if (g_camera)
