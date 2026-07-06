@@ -3,6 +3,7 @@
 #include "displacement/WellsCoppersmith.h"
 #include "io/Slab2Reader.h"
 #include "util/CpuAffinity.h"
+#include "util/OmpDefaults.h"
 #include "visualization/Camera.h"
 #include "visualization/Gebco.h"
 #include "visualization/GlobeView.h"
@@ -1183,6 +1184,7 @@ static void pinGuiThreadFromEnv() {
 }
 
 int main() {
+  tsunami_lab::util::applySaneOmpScheduleDefault();
   pinGuiThreadFromEnv();
 
   // Resolve (and, on first run, download) the GEBCO grid before opening the
