@@ -50,9 +50,10 @@ void SolverThread::start() {
   // 0.45 keeps a margin below the CFL limit of the dimensionally-split scheme.
   constexpr t_real l_cfl = t_real(0.45);
   const t_real l_speedMax = maxWaveSpeed();
-  m_scaling = (l_speedMax > t_real(0)) ? l_cfl / l_speedMax : t_real(0);
+  m_scaling.store((l_speedMax > t_real(0)) ? l_cfl / l_speedMax : t_real(0));
 
   m_steps.store(0);
+  m_simTimeAccum.store(0.0);
   m_running.store(true);
   m_thread = std::thread(&SolverThread::run, this);
 }
@@ -65,18 +66,27 @@ void SolverThread::stop() {
 }
 
 void SolverThread::run() {
+  // 0.45 keeps a margin below the CFL limit of the dimensionally-split scheme.
+  constexpr t_real l_cfl = t_real(0.45);
+
   std::vector<t_real> l_frame(m_nx * m_ny);
   const t_idx l_stride = m_solver.getStride();
-  const double l_dt = (double)m_scaling * (double)m_dxy;
   std::chrono::steady_clock::time_point l_next =
       std::chrono::steady_clock::now();
 
   while (m_running.load()) {
     const auto l_t0 = std::chrono::steady_clock::now();
 
+    // re-derive the CFL-stable scaling from the current state every step
+    const t_real l_speedMax = maxWaveSpeed();
+    const t_real l_scaling =
+        (l_speedMax > t_real(0)) ? l_cfl / l_speedMax : t_real(0);
+    m_scaling.store(l_scaling);
+    const double l_dt = (double)l_scaling * (double)m_dxy;
+
     m_solver.setGhost(patches::BoundaryCondition::Outflow,
                       patches::BoundaryCondition::Outflow);
-    m_solver.timeStep(m_scaling, m_mode);
+    m_solver.timeStep(l_scaling, m_mode);
 
     const t_real* l_h = m_solver.getHeight();
     for (t_idx l_y = 0; l_y < m_ny; l_y++)
@@ -84,6 +94,8 @@ void SolverThread::run() {
                 l_frame.begin() + l_y * m_nx);
 
     m_buffer.write(l_frame.data(), m_nx * m_ny);
+
+    m_simTimeAccum.store(m_simTimeAccum.load() + l_dt); // single writer
 
     const double l_comp =
         std::chrono::duration<double>(std::chrono::steady_clock::now() - l_t0)
