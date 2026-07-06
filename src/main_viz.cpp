@@ -573,37 +573,8 @@ static void drawGlobeUi(tsunami_lab::visualization::GlobeView& globeView) {
   ImGui::Spacing();
   ImGui::SeparatorText("Subduktionszonen");
   ImGui::Checkbox("Zonen anzeigen (Slab2)", &globeView.showSlab2Overlay);
-  if (globeView.showSlab2Overlay) {
-    // Depth legend mirroring slabDepthColor() in GlobeView.cpp (sqrt-warped
-    // scale, so the shallow trench side gets most of the gradient).
-    struct Stop {
-      float t;
-      ImU32 c;
-    };
-    static const Stop l_stops[] = {
-        {0.00f, IM_COL32(255, 195, 60, 255)},
-        {0.35f, IM_COL32(255, 95, 40, 255)},
-        {0.70f, IM_COL32(205, 45, 115, 255)},
-        {1.00f, IM_COL32(115, 35, 165, 255)},
-    };
-    ImDrawList* l_dl = ImGui::GetWindowDrawList();
-    const float l_barW = ImGui::GetContentRegionAvail().x;
-    const float l_barH = 12.0f;
-    const ImVec2 l_p = ImGui::GetCursorScreenPos();
-    for (int l_i = 0; l_i < 3; l_i++) {
-      const float l_x0 = l_p.x + l_stops[l_i].t * l_barW;
-      const float l_x1 = l_p.x + l_stops[l_i + 1].t * l_barW;
-      l_dl->AddRectFilledMultiColor(
-          ImVec2(l_x0, l_p.y), ImVec2(l_x1, l_p.y + l_barH), l_stops[l_i].c,
-          l_stops[l_i + 1].c, l_stops[l_i + 1].c, l_stops[l_i].c);
-    }
-    ImGui::Dummy(ImVec2(l_barW, l_barH));
-    const char* l_right = "tief (660 km)";
-    ImGui::TextDisabled("flach (Graben)");
-    ImGui::SameLine(l_barW - ImGui::CalcTextSize(l_right).x);
-    ImGui::TextDisabled("%s", l_right);
+  if (globeView.showSlab2Overlay)
     ImGui::TextDisabled("Hover: Zonen-Info · Klick: Gebiets-Vorschlag");
-  }
 
   ImGui::Spacing();
   ImGui::SeparatorText("Auswahl");
@@ -1059,6 +1030,29 @@ drawWaveLegend(const tsunami_lab::visualization::RegionView& regionView) {
               l_neg, l_pos_buf);
 }
 
+// Subduction-depth colour scale for the world map, anchored to the
+// bottom-right corner like the region-view legends. Stops mirror
+// slabDepthColor() in GlobeView.cpp (sqrt-warped depth scale, so the shallow
+// trench side gets most of the gradient).
+static void
+drawSlabLegend(const tsunami_lab::visualization::GlobeView& i_globe) {
+  if (!g_slab2 || !i_globe.showSlab2Overlay)
+    return;
+
+  static const LegendStop l_stops[] = {
+      {0.00f, IM_COL32(255, 195, 60, 255)},  // trench (shallow)
+      {0.35f, IM_COL32(255, 95, 40, 255)},
+      {0.70f, IM_COL32(205, 45, 115, 255)},
+      {1.00f, IM_COL32(115, 35, 165, 255)}}; // deepest slab
+  const int l_n = (int)(sizeof(l_stops) / sizeof(l_stops[0]));
+
+  const ImGuiIO& l_io = ImGui::GetIO();
+  const ImVec2 l_pos(l_io.DisplaySize.x - k_legW - k_legPad,
+                     l_io.DisplaySize.y - k_legH - k_legPad);
+  drawHLegend("##slab_legend", l_pos, "Slab-Tiefe (Subduktion)", l_stops, l_n,
+              "0 km (Graben)", "660 km");
+}
+
 // Hover cursor feedback: a coloured ring at the mouse while it is over the
 // bathymetry. Green = inside Slab2 coverage; red = outside and restricted (no
 // fault possible); yellow = outside but fallback parameters would be used.
@@ -1211,6 +1205,7 @@ int main() {
     if (g_state == AppState::REGION_SELECT) {
       drawGlobeUi(l_globe);
       drawGlobeSlabTooltip(l_globe);
+      drawSlabLegend(l_globe);
     } else {
       drawRegionUi(l_region);
       drawBathyLegend(l_region);
