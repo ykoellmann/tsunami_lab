@@ -95,6 +95,47 @@ const Slab2Region k_regions[] = {
 };
 const int k_nRegions = (int)(sizeof(k_regions) / sizeof(k_regions[0]));
 
+// Human-readable names for the Slab2 region codes (shown in the UI).
+const struct {
+  const char* code;
+  const char* name;
+} k_regionNames[] = {
+    {"alu", "Aleuten & Alaska"},
+    {"cal", "Kalabrien"},
+    {"cam", "Mittelamerika"},
+    {"car", "Kleine Antillen"},
+    {"cas", "Cascadia"},
+    {"cot", "Cotabato"},
+    {"hal", "Halmahera"},
+    {"hel", "Hellenischer Bogen"},
+    {"him", "Himalaya"},
+    {"hin", "Hindukusch"},
+    {"izu", "Izu-Bonin-Marianen"},
+    {"ker", "Tonga-Kermadec"},
+    {"kur", "Kurilen-Kamtschatka-Japan"},
+    {"mak", "Makran"},
+    {"man", "Manila-Graben"},
+    {"mue", "Muertos-Graben"},
+    {"pam", "Pamir"},
+    {"phi", "Philippinen"},
+    {"png", "Neuguinea"},
+    {"puy", "Puysegur"},
+    {"ryu", "Ryukyu-Nankai"},
+    {"sam", "Südamerika (Anden)"},
+    {"sco", "Scotia (Südsandwich)"},
+    {"sol", "Salomonen"},
+    {"sul", "Sulawesi"},
+    {"sum", "Sumatra-Java"},
+    {"van", "Vanuatu"},
+};
+
+const char* regionName(const char* i_code) {
+  for (const auto& l_n : k_regionNames)
+    if (std::string(l_n.code) == i_code)
+      return l_n.name;
+  return i_code;
+}
+
 // Stable on-disk path for a region's quantity grid ("dep" / "str" / "dip").
 std::string localPath(const char* i_code, const char* i_quantity) {
   return std::string("data/") + i_code + "_slab2_" + i_quantity + ".grd";
@@ -242,6 +283,7 @@ Slab2Reader::Slab2Reader() {
 
     l_g.nx = static_cast<t_idx>(l_nx);
     l_g.ny = static_cast<t_idx>(l_ny);
+    l_g.name = regionName(l_reg.code);
     l_g.dep = std::move(l_dep);
     l_g.str = std::move(l_str);
     l_g.dip = std::move(l_dip);
@@ -259,7 +301,7 @@ Slab2Reader::Slab2Reader() {
 }
 
 Slab2Point Slab2Reader::query(double i_lon, double i_lat) const {
-  Slab2Point l_best = {0.0, 0.0, 0.0, false};
+  Slab2Point l_best = {0.0, 0.0, 0.0, false, nullptr};
   double l_bestDist = std::numeric_limits<double>::infinity();
 
   for (const Grid& l_g : m_grids) {
@@ -300,6 +342,7 @@ Slab2Point Slab2Reader::query(double i_lon, double i_lat) const {
       l_best.strike = l_s;
       l_best.dip = l_d;
       l_best.valid = true;
+      l_best.region = l_g.name;
     }
   }
   return l_best;

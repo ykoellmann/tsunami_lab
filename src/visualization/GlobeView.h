@@ -11,6 +11,9 @@
 #include <utility>
 
 namespace tsunami_lab {
+namespace io {
+class Slab2Reader;
+} // namespace io
 namespace visualization {
 
 class GlobeView {
@@ -28,6 +31,15 @@ public:
   int resolution() const { return m_lonSamples; }
   void draw(const glm::mat4& i_vp) const;
 
+  /**
+   * Builds the global subduction-zone overlay: samples the Slab2 model onto an
+   * equirectangular RGBA texture, colour-graded by slab depth. One-time cost;
+   * call once after init() when a Slab2 reader is available.
+   *
+   * @param i_slab2 Slab2 reader sampled per texel.
+   **/
+  void buildSlab2Overlay(const io::Slab2Reader& i_slab2);
+
   void
   onMousePress(float i_mx, float i_my, int i_w, int i_h, const Camera& i_cam);
   void onMouseRelease();
@@ -43,6 +55,8 @@ public:
   }
 
   float maxSelDeg = DEFAULT_MAX_SEL_DEG;
+
+  bool showSlab2Overlay = true; // draw the subduction-zone overlay pass
 
   // Per-frame LOD hints, set by the main loop before draw(): camera orbit
   // distance (world units) and framebuffer height (pixels). draw() picks the
@@ -81,6 +95,14 @@ private:
 
   GLuint m_selVao = 0;
   GLuint m_selVbo = 0;
+
+  // Subduction-zone overlay: a depth-graded RGBA texture on a world-spanning
+  // quad (see buildSlab2Overlay).
+  Shader m_slabShader;
+  GLuint m_slabVao = 0;
+  GLuint m_slabVbo = 0;
+  GLuint m_slabTex = 0;
+  bool m_hasSlabOverlay = false;
 
   std::string m_gebcoPath;
   int m_lonSamples = DEFAULT_LON_SAMPLES;
