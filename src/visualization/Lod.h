@@ -21,10 +21,8 @@ const int k_maxLevels = 8;
 // so drawGridWindow() can render a rectangular sub-window as one contiguous
 // index span per row. The last row/column is clamped into the final quads so
 // every level spans the full mesh extent. Winding matches the stride-1 mesh.
-inline void buildIndices(int i_w,
-                         int i_h,
-                         int i_stride,
-                         std::vector<unsigned int>& o_idx) {
+inline void
+buildIndices(int i_w, int i_h, int i_stride, std::vector<unsigned int>& o_idx) {
   o_idx.clear();
   for (int l_j = 0; l_j < i_h - 1; l_j += i_stride) {
     const int l_j2 = std::min(l_j + i_stride, i_h - 1);
@@ -149,13 +147,8 @@ inline void visibleRange(float i_a0,
 // matching LOD index buffer must be bound as GL_ELEMENT_ARRAY_BUFFER. This is
 // what makes close zooms cheap: only on-screen rows/columns are submitted
 // instead of the whole mesh.
-inline void drawGridWindow(int i_w,
-                           int i_h,
-                           int i_stride,
-                           int i_i0,
-                           int i_i1,
-                           int i_j0,
-                           int i_j1) {
+inline void drawGridWindow(
+    int i_w, int i_h, int i_stride, int i_i0, int i_i1, int i_j0, int i_j1) {
   if (i_i1 < i_i0 || i_j1 < i_j0 || i_w < 2 || i_h < 2)
     return;
   const int l_cols = (i_w - 2) / i_stride + 1; // quads per row at this level

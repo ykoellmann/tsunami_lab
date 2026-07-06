@@ -340,8 +340,7 @@ void RegionView::beginSimulation(t_idx i_nx, t_idx i_ny, const float* i_bath) {
     }
   }
 
-  m_waterCellWorld =
-      200.0f / (float)std::max((int)std::max(i_nx, i_ny) - 1, 1);
+  m_waterCellWorld = 200.0f / (float)std::max((int)std::max(i_nx, i_ny) - 1, 1);
   m_waterH.assign(l_n, 0.0f);
 
   if (m_waterVao == 0) {
